@@ -70,11 +70,16 @@ alloy-rpc-client = { version = "0.4.2", default-features = false }
 
 # async
 tokio = { version = "1.0", features = ["full"] }
+tokio-tungstenite = { version = "0.24", features = [] }
 futures = "0.3.26"
 
 
 # web
 reqwest = { version = "0.12.2", features = ["json"] }
+jsonrpsee = "0.24"
+jsonrpsee-core = "0.24"
+jsonrpsee-http-client = "0.24"
+jsonrpsee-types = "0.24"
 
 # misc
 eyre = "0.6.12"

@@ -1,21 +1,39 @@
 #[derive(Debug, Clone)]
 pub struct AngstromProvider {
-    client: reqwest::Client,
-    url: String,
+    rpc_client: reqwest::Client,
+    rpc_url: String,
+    http_port: u64,
+    ws_port: u64,
 }
 
-impl AngstromProvider {
-    pub fn new(angstrom_url: impl ToString) -> Self {
+pub struct AngstromProviderBuilder {
+    rpc_url: String,
+    http_port: u64,
+    ws_port: u64,
+    http_client: Option<reqwest::Client>,
+}
+
+impl AngstromProviderBuilder {
+    pub fn new(rpc_url: String, http_port: u64, ws_port: u64) -> Self {
         Self {
-            client: reqwest::Client::new(),
-            url: angstrom_url.to_string(),
+            rpc_url,
+            http_port,
+            ws_port,
+            http_client: None,
         }
     }
 
-    pub fn new_with_client(client: reqwest::Client, angstrom_url: impl ToString) -> Self {
-        Self {
-            client,
-            url: angstrom_url.to_string(),
+    pub fn with_client(mut self, client: reqwest::Client) -> Self {
+        self.http_client = Some(client);
+        self
+    }
+
+    pub fn build(self) -> AngstromProvider {
+        AngstromProvider {
+            rpc_client: self.http_client.unwrap_or_default(),
+            rpc_url: self.rpc_url,
+            http_port: self.http_port,
+            ws_port: self.ws_port,
         }
     }
 }

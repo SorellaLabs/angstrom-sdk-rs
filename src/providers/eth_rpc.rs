@@ -1,6 +1,16 @@
-use alloy_provider::RootProvider;
+use crate::types::PoolMetadata;
+use crate::types::{TokenPairInfo, ANGSTROM_ADDRESS, POOL_CONFIG_STORE_SLOT};
+use alloy_primitives::{Address, Bytes, TxHash, B256, U256};
+use alloy_provider::{Provider, RootProvider};
 use alloy_rpc_client::ClientBuilder;
 use alloy_transport::BoxTransport;
+use angstrom_types::{
+    contract_payloads::angstrom::AngstromPoolConfigStore, sol_bindings::grouped_orders::AllOrders,
+};
+
+use crate::apis::data_api::AngstromDataApi;
+
+use super::eth_provider::EthProvider;
 
 #[derive(Debug, Clone)]
 #[repr(transparent)]
@@ -29,5 +39,32 @@ impl EthRpcProvider {
             .await?;
         let provider = RootProvider::new(builder).boxed();
         Ok(Self(provider))
+    }
+}
+
+impl EthProvider for EthRpcProvider {
+    async fn get_storage_at(&self, address: Address, key: U256) -> eyre::Result<U256> {
+        Ok(self.0.get_storage_at(address, key).latest().await?)
+    }
+
+    async fn get_code_at(&self, address: Address) -> eyre::Result<Bytes> {
+        Ok(self.0.get_code_at(address).latest().await?)
+    }
+}
+
+impl AngstromDataApi for EthRpcProvider {
+    async fn historical_trade(&self, tx_hash: TxHash, order_hash: B256) -> eyre::Result<AllOrders> {
+        todo!()
+    }
+
+    async fn historical_trades(
+        &self,
+        from_block: Option<u64>,
+        to_block: Option<u64>,
+    ) -> eyre::Result<Vec<AllOrders>> {
+        todo!()
+    }
+    async fn pool_metadata(&self, token0: Address, token1: Address) -> eyre::Result<PoolMetadata> {
+        todo!()
     }
 }

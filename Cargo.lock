@@ -1348,9 +1348,14 @@ dependencies = [
  "angstrom-types",
  "eyre",
  "futures",
+ "jsonrpsee",
+ "jsonrpsee-core",
+ "jsonrpsee-http-client",
+ "jsonrpsee-types",
  "reqwest",
  "serde",
  "tokio",
+ "tokio-tungstenite",
 ]
 
 [[package]]
