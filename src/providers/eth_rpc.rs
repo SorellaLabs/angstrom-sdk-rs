@@ -1,12 +1,13 @@
-use crate::types::PoolMetadata;
-use crate::types::{TokenPairInfo, ANGSTROM_ADDRESS, POOL_CONFIG_STORE_SLOT};
-use alloy_primitives::{Address, Bytes, TxHash, B256, U256};
+use crate::types::{PoolMetadata, TokenInfo};
+
+use alloy_primitives::{Address, Bytes, TxHash, TxKind, B256, U256};
 use alloy_provider::{Provider, RootProvider};
 use alloy_rpc_client::ClientBuilder;
+use alloy_rpc_types::{TransactionInput, TransactionRequest};
+use alloy_sol_types::SolCall;
 use alloy_transport::BoxTransport;
-use angstrom_types::{
-    contract_payloads::angstrom::AngstromPoolConfigStore, sol_bindings::grouped_orders::AllOrders,
-};
+use angstrom_types::sol_bindings::{grouped_orders::AllOrders, testnet::MockERC20};
+use tokio::try_join;
 
 use crate::apis::data_api::AngstromDataApi;
 
@@ -49,6 +50,31 @@ impl EthProvider for EthRpcProvider {
 
     async fn get_code_at(&self, address: Address) -> eyre::Result<Bytes> {
         Ok(self.0.get_code_at(address).latest().await?)
+    }
+
+    async fn view_call<IC>(&self, contract: Address, call: IC) -> eyre::Result<IC::Return>
+    where
+        IC: SolCall + Send,
+    {
+        let tx = TransactionRequest {
+            to: Some(TxKind::Call(contract)),
+            input: TransactionInput::both(call.abi_encode().into()),
+            ..Default::default()
+        };
+
+        Ok(IC::abi_decode_returns(&self.0.call(&tx).await?, true)?)
+    }
+
+    async fn get_erc20_info(&self, token_address: Address) -> eyre::Result<TokenInfo> {
+        let symbol_fut = self.view_call(token_address, MockERC20::symbolCall {});
+        let decimals_fut = self.view_call(token_address, MockERC20::decimalsCall {});
+        let (symbols, decimals) = try_join!(symbol_fut, decimals_fut)?;
+
+        Ok(TokenInfo {
+            symbol: symbols._0,
+            address: token_address,
+            decimals: decimals._0,
+        })
     }
 }
 

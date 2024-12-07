@@ -22,6 +22,7 @@ pub struct TokenPairInfo {
 pub struct TokenInfo {
     pub symbol: String,
     pub address: Address,
+    pub decimals: u8,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
