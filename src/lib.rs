@@ -1,4 +1,5 @@
 #![allow(async_fn_in_trait)]
+#![allow(private_interfaces)]
 
 pub mod apis;
 pub mod providers;

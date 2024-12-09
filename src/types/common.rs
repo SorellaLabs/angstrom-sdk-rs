@@ -10,12 +10,6 @@ use serde::{Deserialize, Serialize};
 
 use super::ANGSTROM_ADDRESS;
 
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub struct MarketContext {
-//     pub tokens: Vec<TokenContext>,
-//     pub universe: Vec<PoolContext>,
-// }
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TokenPairInfo {
     pub token0: Address,
@@ -54,23 +48,3 @@ impl PoolMetadata {
         }
     }
 }
-
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub struct TickerContext {
-//     pub pool: PoolContext,
-//     pub stats: PoolStats,
-// }
-
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub struct PoolStats {}
-
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub struct PoolCandle {}
-
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub enum CandleTimeframe {
-//     OneMinute,
-//     FifteenMinutes,
-//     OneHour,
-//     OneDay,
-// }
