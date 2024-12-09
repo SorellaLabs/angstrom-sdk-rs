@@ -13,6 +13,10 @@ name = "angstrom_sdk"
 angstrom-types = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-types" }
 angstrom-rpc = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-rpc" }
 
+# pade
+pade = { git = "https://github.com/SorellaLabs/pade", version = "0.1.0" }
+pade-macro = { git = "https://github.com/SorellaLabs/pade", version = "0.1.0" }
+
 # alloy
 alloy = { version = "0.4.2", features = [
     "rlp",

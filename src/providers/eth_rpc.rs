@@ -1,13 +1,10 @@
-use crate::types::{PoolMetadata, TokenInfo};
-
-use alloy_primitives::{Address, Bytes, TxHash, TxKind, B256, U256};
+use alloy_primitives::{Address, Bytes, TxKind, U256};
 use alloy_provider::{Provider, RootProvider};
 use alloy_rpc_client::ClientBuilder;
-use alloy_rpc_types::{TransactionInput, TransactionRequest};
+use alloy_rpc_types::{Block, BlockTransactionsKind, TransactionInput, TransactionRequest};
 use alloy_sol_types::SolCall;
 use alloy_transport::BoxTransport;
-use angstrom_types::sol_bindings::{grouped_orders::AllOrders, testnet::MockERC20};
-use tokio::try_join;
+use eyre::OptionExt;
 
 use crate::apis::data_api::AngstromDataApi;
 
@@ -65,32 +62,29 @@ impl EthProvider for EthRpcProvider {
         Ok(IC::abi_decode_returns(&self.0.call(&tx).await?, true)?)
     }
 
-    async fn get_erc20_info(&self, token_address: Address) -> eyre::Result<TokenInfo> {
-        let symbol_fut = self.view_call(token_address, MockERC20::symbolCall {});
-        let decimals_fut = self.view_call(token_address, MockERC20::decimalsCall {});
-        let (symbols, decimals) = try_join!(symbol_fut, decimals_fut)?;
-
-        Ok(TokenInfo {
-            symbol: symbols._0,
-            address: token_address,
-            decimals: decimals._0,
-        })
+    async fn current_block_number(&self) -> eyre::Result<u64> {
+        Ok(self.0.get_block_number().await?)
     }
+
+    async fn get_block(&self, number: u64, kind: BlockTransactionsKind) -> eyre::Result<Block> {
+        Ok(self
+            .0
+            .get_block(number.into(), kind)
+            .await?
+            .ok_or_eyre(eyre::eyre!("no block found for block number {number}"))?)
+    }
+
+    // async fn get_erc20_info(&self, token_address: Address) -> eyre::Result<TokenInfo> {
+    //     let symbol_fut = self.view_call(token_address, MockERC20::symbolCall {});
+    //     let decimals_fut = self.view_call(token_address, MockERC20::decimalsCall {});
+    //     let (symbols, decimals) = try_join!(symbol_fut, decimals_fut)?;
+
+    //     Ok(TokenInfo {
+    //         symbol: symbols._0,
+    //         address: token_address,
+    //         decimals: decimals._0,
+    //     })
+    // }
 }
 
-impl AngstromDataApi for EthRpcProvider {
-    async fn historical_trade(&self, tx_hash: TxHash, order_hash: B256) -> eyre::Result<AllOrders> {
-        todo!()
-    }
-
-    async fn historical_trades(
-        &self,
-        from_block: Option<u64>,
-        to_block: Option<u64>,
-    ) -> eyre::Result<Vec<AllOrders>> {
-        todo!()
-    }
-    async fn pool_metadata(&self, token0: Address, token1: Address) -> eyre::Result<PoolMetadata> {
-        todo!()
-    }
-}
+impl AngstromDataApi for EthRpcProvider {}

@@ -1352,6 +1352,8 @@ dependencies = [
  "jsonrpsee-core",
  "jsonrpsee-http-client",
  "jsonrpsee-types",
+ "pade",
+ "pade-macro",
  "reqwest",
  "serde",
  "tokio",
