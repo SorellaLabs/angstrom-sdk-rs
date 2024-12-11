@@ -74,6 +74,10 @@ impl EthProvider for EthRpcProvider {
             .ok_or_eyre(eyre::eyre!("no block found for block number {number}"))?)
     }
 
+    async fn get_nonce(&self, address: Address) -> eyre::Result<u64> {
+        Ok(self.0.get_transaction_count(address).await?)
+    }
+
     // async fn get_erc20_info(&self, token_address: Address) -> eyre::Result<TokenInfo> {
     //     let symbol_fut = self.view_call(token_address, MockERC20::symbolCall {});
     //     let decimals_fut = self.view_call(token_address, MockERC20::decimalsCall {});

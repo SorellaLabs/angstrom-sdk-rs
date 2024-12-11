@@ -1,48 +1,100 @@
 mod balance_check;
+
+use angstrom_types::sol_bindings::grouped_orders::AllOrders;
 pub use balance_check::*;
+mod signer;
+pub use signer::*;
+mod nonce_generator;
+pub use nonce_generator::*;
+mod chain_id;
+pub use chain_id::*;
 
-use crate::providers::{AngstromFillProvider, EthProvider};
+use crate::providers::{AngstromFillProvider, AngstromProvider, EthProvider};
 
-pub(crate) trait AngstromFiller<O>: Sized {
-    type FillOutput: FillFrom<O>;
+use super::TransactionRequestWithLiquidityMeta;
 
-    async fn fill<E: EthProvider>(&self, provider: &E, order: &mut O) -> eyre::Result<()> {
-        let input = self.prepare(provider, &order).await?;
-        input.prepare_with(order)?;
+pub(crate) trait AngstromFiller: Sized {
+    type FillOutput: FillFrom<Self, AllOrders> + FillFrom<Self, TransactionRequestWithLiquidityMeta>;
+
+    async fn fill<E: EthProvider>(
+        &self,
+        eth_provider: &E,
+        angstrom_provider: &AngstromProvider,
+        order: &mut FillerOrder,
+    ) -> eyre::Result<()> {
+        let input = self
+            .prepare(eth_provider, angstrom_provider, &order)
+            .await?;
+        match order {
+            FillerOrder::AngstromOrder(all_orders) => input.prepare_with(all_orders)?,
+            FillerOrder::RegularOrder(tx_request) => input.prepare_with(tx_request)?,
+        }
+
         Ok(())
     }
 
     async fn prepare<E: EthProvider>(
         &self,
-        provider: &E,
-        order: &O,
+        eth_provider: &E,
+        angstrom_provider: &AngstromProvider,
+        order: &FillerOrder,
     ) -> eyre::Result<Self::FillOutput>;
 }
 
-impl<O> AngstromFiller<O> for () {
+impl AngstromFiller for () {
     type FillOutput = ();
 
-    async fn prepare<E: EthProvider>(&self, _: &E, _: &O) -> eyre::Result<()> {
+    async fn prepare<E: EthProvider>(
+        &self,
+        _: &E,
+        _: &AngstromProvider,
+        _: &FillerOrder,
+    ) -> eyre::Result<()> {
         Ok(())
     }
 }
 
-pub(crate) trait FillFrom<O> {
+pub(crate) trait FillWrapper: AngstromFiller {
+    fn wrap_with_filler<F: AngstromFiller>(self, filler: F) -> AngstromFillProvider<Self, F>;
+}
+
+impl FillWrapper for () {
+    fn wrap_with_filler<F: AngstromFiller>(self, filler: F) -> AngstromFillProvider<Self, F> {
+        AngstromFillProvider::new(self, filler)
+    }
+}
+
+pub(crate) trait FillFrom<F: AngstromFiller, O> {
     fn prepare_with(self, input_order: &mut O) -> eyre::Result<()>;
 }
 
-impl<O> FillFrom<O> for () {
+impl<F: AngstromFiller, O> FillFrom<F, O> for () {
     fn prepare_with(self, _: &mut O) -> eyre::Result<()> {
         Ok(())
     }
 }
 
-pub(crate) trait FillWrapper<O>: AngstromFiller<O> {
-    fn wrap_with_filler<F: AngstromFiller<O>>(self, filler: F) -> AngstromFillProvider<Self, F>;
+pub(crate) enum FillerOrder {
+    AngstromOrder(AllOrders),
+    RegularOrder(TransactionRequestWithLiquidityMeta),
 }
 
-impl<O> FillWrapper<O> for () {
-    fn wrap_with_filler<F: AngstromFiller<O>>(self, filler: F) -> AngstromFillProvider<Self, F> {
-        AngstromFillProvider::new(self, filler)
+impl From<AllOrders> for FillerOrder {
+    fn from(value: AllOrders) -> Self {
+        FillerOrder::AngstromOrder(value)
     }
 }
+
+impl From<TransactionRequestWithLiquidityMeta> for FillerOrder {
+    fn from(value: TransactionRequestWithLiquidityMeta) -> Self {
+        FillerOrder::RegularOrder(value)
+    }
+}
+
+/*
+
+ TODO
+  - gas price calc
+  - gas estimator
+
+*/

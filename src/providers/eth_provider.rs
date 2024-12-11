@@ -19,4 +19,6 @@ pub trait EthProvider: Clone + Send + 'static {
     async fn current_block_number(&self) -> eyre::Result<u64>;
 
     async fn get_block(&self, number: u64, kind: BlockTransactionsKind) -> eyre::Result<Block>;
+
+    async fn get_nonce(&self, address: Address) -> eyre::Result<u64>;
 }

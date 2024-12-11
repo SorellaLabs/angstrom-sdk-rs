@@ -1,10 +1,14 @@
+use std::collections::HashMap;
+
 use alloy_primitives::{
     aliases::{I24, U24},
-    Address,
+    Address, U256,
 };
+use alloy_rpc_types::TransactionRequest;
 use angstrom_types::{
-    contract_bindings::angstrom::Angstrom::PoolKey,
-    contract_payloads::angstrom::AngPoolConfigEntry, primitive::PoolId,
+    contract_bindings::{angstrom::Angstrom::PoolKey, pool_gate::PoolGate},
+    contract_payloads::angstrom::AngPoolConfigEntry,
+    primitive::PoolId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -45,6 +49,46 @@ impl PoolMetadata {
             fee: config_store.fee_in_e6,
             tick_spacing: config_store.tick_spacing,
             storage_idx: config_store.store_index as u64,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransactionRequestWithLiquidityMeta {
+    pub tx_request: TransactionRequest,
+    pub tokens: (Address, Address),
+    pub tick_lower: i32,
+    pub tick_upper: i32,
+    pub liquidity: U256,
+    pub is_add: bool,
+}
+
+impl TransactionRequestWithLiquidityMeta {
+    pub fn new_add_liqudity(
+        tx_request: TransactionRequest,
+        call: PoolGate::addLiquidityCall,
+    ) -> Self {
+        Self {
+            tx_request,
+            tokens: (call.asset0, call.asset1),
+            tick_lower: call.tickLower.try_into().unwrap(),
+            tick_upper: call.tickUpper.try_into().unwrap(),
+            liquidity: call.liquidity,
+            is_add: true,
+        }
+    }
+
+    pub fn new_remove_liqudity(
+        tx_request: TransactionRequest,
+        call: PoolGate::removeLiquidityCall,
+    ) -> Self {
+        Self {
+            tx_request,
+            tokens: (call.asset0, call.asset1),
+            tick_lower: call.tickLower.try_into().unwrap(),
+            tick_upper: call.tickUpper.try_into().unwrap(),
+            liquidity: call.liquidity,
+            is_add: false,
         }
     }
 }
