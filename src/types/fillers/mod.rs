@@ -57,12 +57,7 @@ where
     }
 }
 
-impl<L, R> FillWrapper for AngstromFillProvider<L, R>
-where
-    L: AngstromFiller,
-    R: AngstromFiller,
-{
-}
+impl<L: AngstromFiller, R: AngstromFiller> FillWrapper for AngstromFillProvider<L, R> {}
 
 pub(crate) trait AngstromFiller: Sized {
     type FillOutput: FillFrom<Self, AllOrders> + FillFrom<Self, TransactionRequestWithLiquidityMeta>;

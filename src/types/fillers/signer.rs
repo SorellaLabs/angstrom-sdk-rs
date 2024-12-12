@@ -17,21 +17,19 @@ use crate::{
 
 use super::{AngstromFiller, FillFrom, FillerOrder};
 
-pub struct SignerFiller<S> {
-    signer: S,
-}
+pub struct SignerFiller<S>(S);
 
 impl<S: Signer + SignerSync> SignerFiller<S> {
     pub fn new(signer: S) -> Self {
-        Self { signer }
+        Self(signer)
     }
 
     fn sign_into_meta<O: OmitOrderMeta>(&self, order: &O) -> eyre::Result<OrderMeta> {
         let hash = order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
-        let sig = self.signer.sign_hash_sync(&hash)?;
+        let sig = self.0.sign_hash_sync(&hash)?;
         Ok(OrderMeta {
             isEcdsa: true,
-            from: self.signer.address(),
+            from: self.0.address(),
             signature: sig.pade_encode().into(),
         })
     }
@@ -46,7 +44,7 @@ impl<S: Signer + SignerSync> AngstromFiller for SignerFiller<S> {
         _: &AngstromProvider,
         order: &FillerOrder,
     ) -> eyre::Result<Self::FillOutput> {
-        let my_address = self.signer.address();
+        let my_address = self.0.address();
 
         let order_meta = if let FillerOrder::AngstromOrder(fill_order) = order {
             let om = match fill_order {

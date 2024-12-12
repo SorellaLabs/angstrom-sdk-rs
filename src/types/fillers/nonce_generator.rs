@@ -8,13 +8,11 @@ use angstrom_types::sol_bindings::grouped_orders::StandingVariants;
 use super::{AngstromFiller, FillFrom, FillerOrder};
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct NonceGeneratorFiller {
-    my_address: Address,
-}
+pub struct NonceGeneratorFiller(Address);
 
 impl NonceGeneratorFiller {
     pub fn new(my_address: Address) -> Self {
-        Self { my_address }
+        Self(my_address)
     }
 }
 
@@ -31,11 +29,8 @@ impl AngstromFiller for NonceGeneratorFiller {
             return Ok(None);
         }
 
-        let current_nonce = eth_provider.get_nonce(self.my_address).await?;
-        let pending_orders = angstrom_provider
-            .pending_orders(vec![self.my_address])
-            .await?
-            .len() as u64;
+        let current_nonce = eth_provider.get_nonce(self.0).await?;
+        let pending_orders = angstrom_provider.pending_orders(vec![self.0]).await?.len() as u64;
 
         Ok(Some(current_nonce + pending_orders + 1))
     }

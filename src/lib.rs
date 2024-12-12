@@ -6,8 +6,12 @@ pub mod apis;
 pub mod providers;
 pub mod types;
 
-use alloy_signer::{Signer, SignerSync};
-use providers::AngstromProvider;
+use alloy_network::TxSigner;
+use alloy_primitives::Address;
+use alloy_provider::Provider;
+use alloy_signer::{Signature, Signer, SignerSync};
+use alloy_transport::Transport;
+use providers::{AngstromProvider, EthRpcProvider, RpcWalletProvider};
 use types::fillers::{
     AngstromFillProvider, AngstromFiller, FillWrapper, NonceGeneratorFiller, SignerFiller,
     TokenBalanceCheckFiller,
@@ -42,15 +46,57 @@ where
     E: EthProvider,
     F: FillWrapper,
 {
-    pub fn with_filler<OtherFiller: AngstromFiller>(
+    pub fn with_nonce_generator_filler(
         self,
-        filler: OtherFiller,
-    ) -> AngstromApi<E, AngstromFillProvider<F, OtherFiller>> {
+        my_address: Address,
+    ) -> AngstromApi<E, AngstromFillProvider<F, NonceGeneratorFiller>> {
         AngstromApi {
             eth_provider: self.eth_provider,
             angstrom: self.angstrom,
             config: self.config,
-            filler: self.filler.wrap_with_filler(filler),
+            filler: self
+                .filler
+                .wrap_with_filler(NonceGeneratorFiller::new(my_address)),
+        }
+    }
+
+    pub fn with_token_balance_filler(
+        self,
+        my_address: Address,
+    ) -> AngstromApi<E, AngstromFillProvider<F, TokenBalanceCheckFiller>> {
+        AngstromApi {
+            eth_provider: self.eth_provider,
+            angstrom: self.angstrom,
+            config: self.config,
+            filler: self
+                .filler
+                .wrap_with_filler(TokenBalanceCheckFiller::new(my_address)),
+        }
+    }
+}
+
+impl<P, T, F> AngstromApi<EthRpcProvider<P, T>, F>
+where
+    P: Provider<T> + Clone,
+    T: Transport + Clone,
+    F: FillWrapper,
+{
+    pub fn with_signer_filler<S>(
+        self,
+        signer: S,
+    ) -> AngstromApi<
+        EthRpcProvider<RpcWalletProvider<P, T>, T>,
+        AngstromFillProvider<F, SignerFiller<S>>,
+    >
+    where
+        S: Signer + SignerSync + TxSigner<Signature> + Clone + Send + Sync + 'static,
+        SignerFiller<S>: AngstromFiller,
+    {
+        AngstromApi {
+            eth_provider: self.eth_provider.with_wallet(signer.clone()),
+            angstrom: self.angstrom,
+            config: self.config,
+            filler: self.filler.wrap_with_filler(SignerFiller::new(signer)),
         }
     }
 }
@@ -59,7 +105,6 @@ impl<E, F> AngstromApi<E, F>
 where
     E: EthProvider,
     F: FillWrapper,
-    TokenBalanceCheckFiller: AngstromFiller,
 {
     pub fn with_all_fillers<S>(
         self,
@@ -75,7 +120,7 @@ where
         >,
     >
     where
-        S: Signer + SignerSync,
+        S: Signer + SignerSync + Send,
         SignerFiller<S>: AngstromFiller,
     {
         AngstromApi {

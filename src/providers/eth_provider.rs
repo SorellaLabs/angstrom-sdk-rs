@@ -7,11 +7,6 @@ pub trait EthProvider: Clone + Send + 'static {
 
     async fn get_code_at(&self, address: Address) -> eyre::Result<Bytes>;
 
-    // async fn get_erc20_info(
-    //     &self,
-    //     token_address: Address,
-    // ) -> eyre::Result<TokenInfo>;
-
     async fn view_call<IC>(&self, contract: Address, call: IC) -> eyre::Result<IC::Return>
     where
         IC: SolCall + Send;

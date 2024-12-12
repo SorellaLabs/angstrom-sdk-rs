@@ -8,13 +8,11 @@ use angstrom_types::sol_bindings::grouped_orders::{FlashVariants, StandingVarian
 use super::{AngstromFiller, FillerOrder};
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct TokenBalanceCheckFiller {
-    my_address: Address,
-}
+pub struct TokenBalanceCheckFiller(Address);
 
 impl TokenBalanceCheckFiller {
     pub fn new(my_address: Address) -> Self {
-        Self { my_address }
+        Self(my_address)
     }
 
     async fn handle_angstrom_order<E: EthProvider>(
@@ -51,12 +49,7 @@ impl TokenBalanceCheckFiller {
         };
 
         let user_balance_of = eth_provider
-            .view_call(
-                token,
-                ERC20::balanceOfCall {
-                    _owner: self.my_address,
-                },
-            )
+            .view_call(token, ERC20::balanceOfCall { _owner: self.0 })
             .await?
             .balance;
 
