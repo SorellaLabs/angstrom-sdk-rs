@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
 use super::eth_provider::EthProvider;
-use crate::apis::data_api::AngstromDataApi;
 use alloy_network::Ethereum;
 use alloy_network::EthereumWallet;
 use alloy_network::TxSigner;
@@ -114,11 +113,4 @@ where
     async fn get_nonce(&self, address: Address) -> eyre::Result<u64> {
         Ok(self.0.get_transaction_count(address).await?)
     }
-}
-
-impl<P, T> AngstromDataApi for EthRpcProvider<P, T>
-where
-    P: Provider<T> + Clone + 'static,
-    T: Transport + Clone,
-{
 }

@@ -10,9 +10,13 @@ use futures::StreamExt;
 
 use crate::types::*;
 
-pub trait AngstromDataApi: EthProvider {
+pub trait AngstromDataApi {
+    type EthProvider: EthProvider;
+
+    fn eth_provider(&self) -> &Self::EthProvider;
+
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
-        let partial_keys = pool_config_store(self)
+        let partial_keys = pool_config_store(self.eth_provider())
             .await?
             .all_entries()
             .iter()
@@ -20,6 +24,7 @@ pub trait AngstromDataApi: EthProvider {
             .collect::<Vec<_>>();
 
         let all_pools_call = self
+            .eth_provider()
             .view_call(
                 CONTROLLER_V1_ADDRESS,
                 ControllerV1::getAllPoolsCall {
@@ -40,7 +45,7 @@ pub trait AngstromDataApi: EthProvider {
     }
 
     async fn pool_metadata(&self, token0: Address, token1: Address) -> eyre::Result<PoolMetadata> {
-        let config_store = pool_config_store(self).await?;
+        let config_store = pool_config_store(self.eth_provider()).await?;
         let pool_config_store = config_store.get_entry(token0, token1).ok_or(eyre::eyre!(
             "no config store entry for tokens {token0:?} - {token1:?}"
         ))?;
@@ -52,18 +57,22 @@ pub trait AngstromDataApi: EthProvider {
         &self,
         filter: &HistoricalOrdersFilter,
     ) -> eyre::Result<Vec<HistoricalOrders>> {
-        let pool_stores = &AngstromPoolTokenIndexToPair::new_with_tokens(self, filter).await?;
+        let pool_stores =
+            &AngstromPoolTokenIndexToPair::new_with_tokens(self.eth_provider(), filter).await?;
 
         let start_block = filter.from_block.unwrap_or(ANGSTROM_DEPLOYED_BLOCK);
         let end_block = if let Some(e) = filter.to_block {
             e
         } else {
-            self.current_block_number().await?
+            self.eth_provider().current_block_number().await?
         };
 
         let mut block_stream = futures::stream::iter(start_block..end_block)
             .map(|bn| async move {
-                let block = self.get_block(bn, BlockTransactionsKind::Full).await?;
+                let block = self
+                    .eth_provider()
+                    .get_block(bn, BlockTransactionsKind::Full)
+                    .await?;
 
                 Ok::<_, eyre::ErrReport>(filter.filter_block(block, pool_stores))
             })
