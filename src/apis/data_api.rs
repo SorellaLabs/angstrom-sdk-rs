@@ -76,4 +76,8 @@ pub trait AngstromDataApi: EthProvider {
 
         Ok(all_orders)
     }
+
+    async fn tick_data(&self, token0: Address, token1: Address) -> eyre::Result<()> {
+        todo!()
+    }
 }

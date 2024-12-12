@@ -1352,12 +1352,16 @@ dependencies = [
  "jsonrpsee-core",
  "jsonrpsee-http-client",
  "jsonrpsee-types",
+ "malachite",
+ "malachite-q",
  "pade",
  "pade-macro",
  "reqwest",
  "serde",
+ "thiserror 1.0.69",
  "tokio",
  "tokio-tungstenite",
+ "uniswap-v4",
 ]
 
 [[package]]
