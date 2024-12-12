@@ -4,5 +4,3 @@ mod angstrom;
 pub use angstrom::*;
 mod eth_provider;
 pub use eth_provider::*;
-mod filler;
-pub use filler::*;

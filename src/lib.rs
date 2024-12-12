@@ -7,9 +7,10 @@ pub mod providers;
 pub mod types;
 
 use alloy_signer::{Signer, SignerSync};
-use providers::{AngstromFillProvider, AngstromProvider};
+use providers::AngstromProvider;
 use types::fillers::{
-    AngstromFiller, FillWrapper, NonceGeneratorFiller, SignerFiller, TokenBalanceCheckFiller,
+    AngstromFillProvider, AngstromFiller, FillWrapper, NonceGeneratorFiller, SignerFiller,
+    TokenBalanceCheckFiller,
 };
 use types::AngstromApiConfig;
 

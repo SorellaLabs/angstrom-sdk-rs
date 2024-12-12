@@ -9,9 +9,60 @@ pub use nonce_generator::*;
 mod chain_id;
 pub use chain_id::*;
 
-use crate::providers::{AngstromFillProvider, AngstromProvider, EthProvider};
+use crate::providers::{AngstromProvider, EthProvider};
 
 use super::TransactionRequestWithLiquidityMeta;
+
+pub(crate) struct AngstromFillProvider<L, R> {
+    left: L,
+    right: R,
+}
+
+impl<L, R> AngstromFillProvider<L, R> {
+    pub(crate) fn new(left: L, right: R) -> Self {
+        Self { left, right }
+    }
+}
+
+impl<L, R> AngstromFiller for AngstromFillProvider<L, R>
+where
+    L: AngstromFiller,
+    R: AngstromFiller,
+{
+    type FillOutput = ();
+
+    async fn fill<E: EthProvider>(
+        &self,
+        eth_provider: &E,
+        angstrom_provider: &AngstromProvider,
+        order: &mut FillerOrder,
+    ) -> eyre::Result<()> {
+        self.left
+            .fill(eth_provider, angstrom_provider, order)
+            .await?;
+        self.right
+            .fill(eth_provider, angstrom_provider, order)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn prepare<E: EthProvider>(
+        &self,
+        _: &E,
+        _: &AngstromProvider,
+        _: &FillerOrder,
+    ) -> eyre::Result<()> {
+        Ok(())
+    }
+}
+
+impl<L, R> FillWrapper for AngstromFillProvider<L, R>
+where
+    L: AngstromFiller,
+    R: AngstromFiller,
+{
+}
 
 pub(crate) trait AngstromFiller: Sized {
     type FillOutput: FillFrom<Self, AllOrders> + FillFrom<Self, TransactionRequestWithLiquidityMeta>;
@@ -55,14 +106,12 @@ impl AngstromFiller for () {
 }
 
 pub(crate) trait FillWrapper: AngstromFiller {
-    fn wrap_with_filler<F: AngstromFiller>(self, filler: F) -> AngstromFillProvider<Self, F>;
-}
-
-impl FillWrapper for () {
     fn wrap_with_filler<F: AngstromFiller>(self, filler: F) -> AngstromFillProvider<Self, F> {
         AngstromFillProvider::new(self, filler)
     }
 }
+
+impl FillWrapper for () {}
 
 pub(crate) trait FillFrom<F: AngstromFiller, O> {
     fn prepare_with(self, input_order: &mut O) -> eyre::Result<()>;

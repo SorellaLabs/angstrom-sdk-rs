@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use alloy_primitives::{
     aliases::{I24, U24},
     Address, U256,
