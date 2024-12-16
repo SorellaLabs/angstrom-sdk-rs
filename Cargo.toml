@@ -10,9 +10,9 @@ name = "angstrom_sdk"
 [dependencies]
 
 # angstrom
-angstrom-types = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-types" }
-angstrom-rpc = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-rpc" }
-uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git", package = "uniswap-v4" }
+angstrom-types = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-types", branch = "feat/sdk-connections" }
+angstrom-rpc = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-rpc", branch = "feat/sdk-connections" }
+uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git", package = "uniswap-v4", branch = "feat/sdk-connections" }
 
 # pade
 pade = { git = "https://github.com/SorellaLabs/pade", version = "0.1.0" }

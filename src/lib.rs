@@ -8,8 +8,9 @@ pub mod types;
 
 use alloy_network::TxSigner;
 use alloy_primitives::Address;
+use alloy_primitives::Signature;
 use alloy_provider::Provider;
-use alloy_signer::{Signature, Signer, SignerSync};
+use alloy_signer::{Signer, SignerSync};
 use alloy_transport::Transport;
 use providers::{AngstromProvider, EthRpcProvider, RpcWalletProvider};
 use types::fillers::{
