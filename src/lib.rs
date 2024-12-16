@@ -4,6 +4,8 @@
 
 pub mod apis;
 pub mod providers;
+#[cfg(test)]
+pub mod test_utils;
 pub mod types;
 
 use alloy_network::TxSigner;

@@ -208,3 +208,18 @@ where
         Ok(enhanced_uni_pool)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::test_utils::spawn_ws_provider;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_all_token_pairs() {
+        let provider = spawn_ws_provider().await.unwrap();
+
+        let all_pairs = provider.all_token_pairs().await.unwrap();
+        println!("{all_pairs:?}");
+    }
+}
