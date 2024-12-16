@@ -19,7 +19,7 @@ pade = { git = "https://github.com/SorellaLabs/pade", version = "0.1.0" }
 pade-macro = { git = "https://github.com/SorellaLabs/pade", version = "0.1.0" }
 
 # alloy
-alloy = { version = "0.4.2", features = [
+alloy = { version = "0.7.3", features = [
     "rlp",
     "full",
     "node-bindings",
@@ -35,43 +35,43 @@ alloy = { version = "0.4.2", features = [
     "sol-types",
     "contract",
 ] }
-alloy-chains = "0.1.32"
-alloy-primitives = "0.8.7"
-alloy-sol-macro = "0.8.0"
-alloy-dyn-abi = "0.8.0"
-alloy-sol-types = "0.8.0"
-alloy-rlp = "0.3.4"
+alloy-chains = { version = "0.1.32", default-features = false }
+alloy-primitives = { version = "0.8.11", default-features = false }
+alloy-sol-macro = "0.8.11"
+alloy-dyn-abi = "0.8.11"
+alloy-sol-types = "0.8.11"
+alloy-rlp = "0.3.10"
 alloy-rlp-derive = "0.3.8"
-alloy-trie = "0.6"
-alloy-rpc-types = { version = "0.4.2", default-features = false, features = [
+alloy-trie = { version = "0.7", default-features = false }
+alloy-rpc-types = { version = "0.7.3", default-features = false, features = [
     "eth",
 ] }
-alloy-rpc-types-anvil = { version = "0.4.2", default-features = false }
-alloy-rpc-types-beacon = { version = "0.4.2", default-features = false }
-alloy-rpc-types-admin = { version = "0.4.2", default-features = false }
-alloy-rpc-types-txpool = { version = "0.4.2", default-features = false }
-alloy-serde = { version = "0.4.2", default-features = false }
-alloy-rpc-types-engine = { version = "0.4.2", default-features = false }
-alloy-rpc-types-eth = { version = "0.4.2", default-features = false }
-alloy-genesis = { version = "0.4.2", default-features = false }
-alloy-node-bindings = { version = "0.4.2", default-features = false }
-alloy-provider = { version = "0.4.2", default-features = false, features = [
+alloy-rpc-types-anvil = { version = "0.7.3", default-features = false }
+alloy-rpc-types-beacon = { version = "0.7.3", default-features = false }
+alloy-rpc-types-admin = { version = "0.7.3", default-features = false }
+alloy-rpc-types-txpool = { version = "0.7.3", default-features = false }
+alloy-serde = { version = "0.7.3", default-features = false }
+alloy-rpc-types-engine = { version = "0.7.3", default-features = false }
+alloy-rpc-types-eth = { version = "0.7.3", default-features = false }
+alloy-genesis = { version = "0.7.3", default-features = false }
+alloy-node-bindings = { version = "0.7.3", default-features = false }
+alloy-provider = { version = "0.7.3", default-features = false, features = [
     "reqwest",
 ] }
-alloy-eips = { version = "0.4.2", default-features = false }
-alloy-signer = { version = "0.4.2", default-features = false }
-alloy-signer-local = { version = "0.4.2", default-features = false }
-alloy-network = { version = "0.4.2", default-features = false }
-alloy-consensus = { version = "0.4.2", default-features = false }
-alloy-transport = { version = "0.4.2" }
-alloy-transport-http = { version = "0.4.2", features = [
+alloy-eips = { version = "0.7.3", default-features = false }
+alloy-signer = { version = "0.7.3", default-features = false }
+alloy-signer-local = { version = "0.7.3", default-features = false }
+alloy-network = { version = "0.7.3", default-features = false }
+alloy-consensus = { version = "0.7.3", default-features = false }
+alloy-transport = { version = "0.7.3" }
+alloy-transport-http = { version = "0.7.3", features = [
     "reqwest-rustls-tls",
 ], default-features = false }
-alloy-transport-ws = { version = "0.4.2", default-features = false }
-alloy-transport-ipc = { version = "0.4.2", default-features = false }
-alloy-pubsub = { version = "0.4.2", default-features = false }
-alloy-json-rpc = { version = "0.4.2", default-features = false }
-alloy-rpc-client = { version = "0.4.2", default-features = false }
+alloy-transport-ws = { version = "0.7.3", default-features = false }
+alloy-transport-ipc = { version = "0.7.3", default-features = false }
+alloy-pubsub = { version = "0.7.3", default-features = false }
+alloy-json-rpc = { version = "0.7.3", default-features = false }
+alloy-rpc-client = { version = "0.7.3", default-features = false }
 
 # async
 tokio = { version = "1.0", features = ["full"] }
@@ -92,6 +92,11 @@ serde = { version = "1.0", features = ["derive"] }
 malachite = "0.4.0"
 malachite-q = "0.4.0"
 thiserror = "1.0"
+dotenv = "0.15"
+
+
+[dev-dependencies]
+testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", branch = "feat/sdk-connections" }
 
 
 [features]

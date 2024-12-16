@@ -100,3 +100,29 @@ pub trait AngstromNodeApi {
         Ok(provider.orders_by_pairs(pair_with_location).await?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use alloy_primitives::address;
+
+    use crate::{
+        apis::data_api::AngstromDataApi,
+        test_utils::{make_generator, spawn_angstrom_provider, spawn_ws_provider},
+    };
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_pool_key() {
+        let eth_provider = spawn_ws_provider().await.unwrap();
+        let angstrom_provider = spawn_angstrom_provider().await.unwrap();
+
+        let generator = make_generator(&eth_provider).await.unwrap();
+        let order = generator.generate_orders().first().unwrap();
+
+        let tob_order = AllOrders::TOB(order.tob);
+
+        assert!(angstrom_provider.send_order(tob_order).await.unwrap());
+    }
+}

@@ -10,16 +10,16 @@ mod config;
 pub use config::*;
 
 pub const CONTROLLER_V1_ADDRESS: alloy_primitives::Address =
-    alloy_primitives::address!("58ba1dD9Fe664434D4E4092c6c2026984b896be3");
+    alloy_primitives::address!("e5aCa092d5e2e3De7Cc44fFEdb972ec9fC98B508");
 
 pub const ANGSTROM_ADDRESS: alloy_primitives::Address =
-    alloy_primitives::address!("207a00AD719F07B5Dc48129E05c0fe0fd4F2aA80");
+    alloy_primitives::address!("7417f1eC45ED81aA4217DE53324eC1Fe7eE22A80");
 
 pub const POOL_GATE_ADDRESS: alloy_primitives::Address =
-    alloy_primitives::address!("f409Fad5AC3060521326F3b247BF54eDdEDd6EDa");
+    alloy_primitives::address!("99e9E21C1909AB06d63372179B43e1c91645fb71");
 
 pub const POOL_MANAGER_ADDRESS: alloy_primitives::Address =
-    alloy_primitives::address!("9BcF03b86a1531EBe9D79dE22994aF3B60D53A07");
+    alloy_primitives::address!("b6816Cda17a80aFB1D161Cfe5f577951b9DCFCFb");
 
 pub const ANGSTROM_DEPLOYED_BLOCK: u64 = 0;
 pub const POOL_CONFIG_STORE_SLOT: u8 = 2;

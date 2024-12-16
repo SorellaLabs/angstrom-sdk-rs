@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 
 use super::ANGSTROM_ADDRESS;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TokenPairInfo {
     pub token0: Address,
     pub token1: Address,
@@ -88,5 +88,29 @@ impl TransactionRequestWithLiquidityMeta {
             liquidity: call.liquidity,
             is_add: false,
         }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum TokensOrPoolId {
+    Tokens(Address, Address),
+    PoolId(PoolId),
+}
+
+impl From<PoolId> for TokensOrPoolId {
+    fn from(value: PoolId) -> Self {
+        TokensOrPoolId::PoolId(value)
+    }
+}
+
+impl From<(Address, Address)> for TokensOrPoolId {
+    fn from(value: (Address, Address)) -> Self {
+        let (t0, t1) = if value.0 > value.1 {
+            (value.1, value.0)
+        } else {
+            (value.0, value.1)
+        };
+
+        TokensOrPoolId::Tokens(t0, t1)
     }
 }

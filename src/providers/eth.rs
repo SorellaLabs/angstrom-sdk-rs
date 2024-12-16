@@ -89,7 +89,10 @@ where
             ..Default::default()
         };
 
-        Ok(IC::abi_decode_returns(&self.0.call(&tx).await?, true)?)
+        Ok(IC::abi_decode_returns(
+            &self.provider().call(&tx).await?,
+            true,
+        )?)
     }
 
     pub(crate) fn with_wallet<S>(self, signer: S) -> EthRpcProvider<RpcWalletProvider<P, T>, T>
@@ -110,7 +113,7 @@ where
     T: Transport + Clone,
 {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
-        let partial_keys = pool_config_store(self)
+        let partial_keys = pool_config_store(self.provider())
             .await?
             .all_entries()
             .iter()
@@ -138,7 +141,7 @@ where
     }
 
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
-        let config_store = pool_config_store(self).await?;
+        let config_store = pool_config_store(self.provider()).await?;
         let pool_config_store = config_store.get_entry(token0, token1).ok_or(eyre::eyre!(
             "no config store entry for tokens {token0:?} - {token1:?}"
         ))?;
@@ -211,6 +214,9 @@ where
 
 #[cfg(test)]
 mod tests {
+
+    use alloy_primitives::address;
+
     use crate::test_utils::spawn_ws_provider;
 
     use super::*;
@@ -220,6 +226,29 @@ mod tests {
         let provider = spawn_ws_provider().await.unwrap();
 
         let all_pairs = provider.all_token_pairs().await.unwrap();
-        println!("{all_pairs:?}");
+
+        assert!(all_pairs.len() > 0);
+        let first = all_pairs.first().unwrap();
+
+        assert_ne!(Address::ZERO, first.token0);
+        assert_ne!(Address::ZERO, first.token1);
+    }
+
+    #[tokio::test]
+    async fn test_pool_key() {
+        let provider = spawn_ws_provider().await.unwrap();
+        let token0 = address!("103e49ae6ee71f068d1cdc06ff97f81a66fe8884");
+        let token1 = address!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
+
+        let pool_key = provider.pool_key(token0, token1).await.unwrap();
+        let expected_pool_key = PoolKey {
+            currency0: token0,
+            currency1: token1,
+            fee: U24::ZERO,
+            tickSpacing: I24::unchecked_from(60),
+            hooks: ANGSTROM_ADDRESS,
+        };
+
+        assert_eq!(pool_key, expected_pool_key);
     }
 }

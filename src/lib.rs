@@ -80,14 +80,7 @@ where
                 .wrap_with_filler(TokenBalanceCheckFiller::new(my_address)),
         }
     }
-}
 
-impl<P, T, F> AngstromApi<P, T, F>
-where
-    P: Provider<T> + Clone,
-    T: Transport + Clone,
-    F: FillWrapper,
-{
     pub fn with_signer_filler<S>(
         self,
         signer: S,
@@ -103,14 +96,7 @@ where
             filler: self.filler.wrap_with_filler(SignerFiller::new(signer)),
         }
     }
-}
 
-impl<P, T, F> AngstromApi<P, T, F>
-where
-    P: Provider<T> + Clone,
-    T: Transport + Clone,
-    F: FillWrapper,
-{
     pub fn with_all_fillers<S>(
         self,
         signer: S,
