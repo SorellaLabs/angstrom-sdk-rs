@@ -1,6 +1,8 @@
-use crate::providers::{AngstromProvider, EthProvider};
+use crate::providers::{AngstromProvider, EthRpcProvider};
 use crate::types::TransactionRequestWithLiquidityMeta;
 use alloy_primitives::{Address, U256};
+use alloy_provider::Provider;
+use alloy_transport::Transport;
 use angstrom_types::primitive::ERC20;
 use angstrom_types::sol_bindings::grouped_orders::AllOrders;
 use angstrom_types::sol_bindings::grouped_orders::{FlashVariants, StandingVariants};
@@ -15,11 +17,15 @@ impl TokenBalanceCheckFiller {
         Self(my_address)
     }
 
-    async fn handle_angstrom_order<E: EthProvider>(
+    async fn handle_angstrom_order<P, T>(
         &self,
-        eth_provider: &E,
+        provider: &EthRpcProvider<P, T>,
         order: &AllOrders,
-    ) -> eyre::Result<()> {
+    ) -> eyre::Result<()>
+    where
+        P: Provider<T>,
+        T: Transport + Clone,
+    {
         let (token, amt) = match order {
             AllOrders::Standing(standing_variants) => match standing_variants {
                 StandingVariants::Partial(partial_standing_order) => (
@@ -48,7 +54,7 @@ impl TokenBalanceCheckFiller {
             ),
         };
 
-        let user_balance_of = eth_provider
+        let user_balance_of = provider
             .view_call(token, ERC20::balanceOfCall { _owner: self.0 })
             .await?
             .balance;
@@ -60,11 +66,15 @@ impl TokenBalanceCheckFiller {
         Ok(())
     }
 
-    async fn handle_liquidity_order<E: EthProvider>(
+    async fn handle_liquidity_order<P, T>(
         &self,
-        eth_provider: &E,
+        provider: &EthRpcProvider<P, T>,
         order: &TransactionRequestWithLiquidityMeta,
-    ) -> eyre::Result<()> {
+    ) -> eyre::Result<()>
+    where
+        P: Provider<T>,
+        T: Transport + Clone,
+    {
         todo!();
     }
 }
@@ -72,20 +82,22 @@ impl TokenBalanceCheckFiller {
 impl AngstromFiller for TokenBalanceCheckFiller {
     type FillOutput = ();
 
-    async fn prepare<E: EthProvider>(
+    async fn prepare<P, T>(
         &self,
-        eth_provider: &E,
+        provider: &EthRpcProvider<P, T>,
         _: &AngstromProvider,
         order: &FillerOrder,
-    ) -> eyre::Result<Self::FillOutput> {
+    ) -> eyre::Result<Self::FillOutput>
+    where
+        P: Provider<T>,
+        T: Transport + Clone,
+    {
         match order {
             FillerOrder::AngstromOrder(angstrom_order) => {
-                self.handle_angstrom_order(eth_provider, angstrom_order)
-                    .await
+                self.handle_angstrom_order(provider, angstrom_order).await
             }
             FillerOrder::RegularOrder(liquidity_order) => {
-                self.handle_liquidity_order(eth_provider, liquidity_order)
-                    .await
+                self.handle_liquidity_order(provider, liquidity_order).await
             }
         }
     }

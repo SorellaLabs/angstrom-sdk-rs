@@ -1,5 +1,7 @@
-use crate::providers::{AngstromProvider, EthProvider};
+use crate::providers::{AngstromProvider, EthRpcProvider};
 use crate::types::TransactionRequestWithLiquidityMeta;
+use alloy_provider::Provider;
+use alloy_transport::Transport;
 use angstrom_types::sol_bindings::grouped_orders::AllOrders;
 
 use super::{AngstromFiller, FillFrom, FillerOrder};
@@ -16,12 +18,16 @@ impl ChainIdFiller {
 impl AngstromFiller for ChainIdFiller {
     type FillOutput = Option<u64>;
 
-    async fn prepare<E: EthProvider>(
+    async fn prepare<P, T>(
         &self,
-        _: &E,
+        _: &EthRpcProvider<P, T>,
         _: &AngstromProvider,
         order: &FillerOrder,
-    ) -> eyre::Result<Self::FillOutput> {
+    ) -> eyre::Result<Self::FillOutput>
+    where
+        P: Provider<T>,
+        T: Transport + Clone,
+    {
         Ok(matches!(order, FillerOrder::RegularOrder(_)).then_some(self.0))
     }
 }

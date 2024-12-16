@@ -1,14 +1,16 @@
 use std::collections::{HashMap, HashSet};
 
 use alloy_primitives::Address;
+use alloy_provider::Provider;
 use alloy_rpc_types::Block;
+use alloy_transport::Transport;
 use angstrom_types::{
     contract_payloads::angstrom::{AngstromBundle, TopOfBlockOrder, UserOrder},
     primitive::PoolId,
 };
 use pade::PadeDecode;
 
-use crate::{apis::utils::pool_config_store, providers::EthProvider};
+use crate::{apis::utils::pool_config_store, providers::EthRpcProvider};
 
 use super::PoolMetadata;
 
@@ -191,10 +193,14 @@ pub enum HistoricalOrders {
 pub(crate) struct AngstromPoolTokenIndexToPair(HashMap<u16, PoolMetadata>);
 
 impl AngstromPoolTokenIndexToPair {
-    pub(crate) async fn new_with_tokens<E: EthProvider>(
-        provider: &E,
+    pub(crate) async fn new_with_tokens<P, T>(
+        provider: &EthRpcProvider<P, T>,
         filter: &HistoricalOrdersFilter,
-    ) -> eyre::Result<Self> {
+    ) -> eyre::Result<Self>
+    where
+        P: Provider<T>,
+        T: Transport + Clone,
+    {
         let token_pairs = filter
             .order_filters
             .iter()

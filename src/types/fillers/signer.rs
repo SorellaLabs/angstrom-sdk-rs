@@ -1,6 +1,8 @@
 use alloy_primitives::Address;
+use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 
+use alloy_transport::Transport;
 use angstrom_types::{
     primitive::ANGSTROM_DOMAIN,
     sol_bindings::{
@@ -11,7 +13,7 @@ use angstrom_types::{
 use pade::PadeEncode;
 
 use crate::{
-    providers::{AngstromProvider, EthProvider},
+    providers::{AngstromProvider, EthRpcProvider},
     types::TransactionRequestWithLiquidityMeta,
 };
 
@@ -38,12 +40,16 @@ impl<S: Signer + SignerSync> SignerFiller<S> {
 impl<S: Signer + SignerSync> AngstromFiller for SignerFiller<S> {
     type FillOutput = (Address, Option<OrderMeta>);
 
-    async fn prepare<E: EthProvider>(
+    async fn prepare<P, T>(
         &self,
-        _: &E,
+        _: &EthRpcProvider<P, T>,
         _: &AngstromProvider,
         order: &FillerOrder,
-    ) -> eyre::Result<Self::FillOutput> {
+    ) -> eyre::Result<Self::FillOutput>
+    where
+        P: Provider<T>,
+        T: Transport + Clone,
+    {
         let my_address = self.0.address();
 
         let order_meta = if let FillerOrder::AngstromOrder(fill_order) = order {

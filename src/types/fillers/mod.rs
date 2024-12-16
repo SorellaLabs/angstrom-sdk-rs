@@ -1,5 +1,7 @@
 mod balance_check;
 
+use alloy_provider::Provider;
+use alloy_transport::Transport;
 use angstrom_types::sol_bindings::grouped_orders::AllOrders;
 pub use balance_check::*;
 mod signer;
@@ -9,7 +11,7 @@ pub use nonce_generator::*;
 mod chain_id;
 pub use chain_id::*;
 
-use crate::providers::{AngstromProvider, EthProvider};
+use crate::providers::{AngstromProvider, EthRpcProvider};
 
 use super::TransactionRequestWithLiquidityMeta;
 
@@ -31,28 +33,32 @@ where
 {
     type FillOutput = ();
 
-    async fn fill<E: EthProvider>(
+    async fn fill<P, T>(
         &self,
-        eth_provider: &E,
+        provider: &EthRpcProvider<P, T>,
         angstrom_provider: &AngstromProvider,
         order: &mut FillerOrder,
-    ) -> eyre::Result<()> {
-        self.left
-            .fill(eth_provider, angstrom_provider, order)
-            .await?;
-        self.right
-            .fill(eth_provider, angstrom_provider, order)
-            .await?;
+    ) -> eyre::Result<()>
+    where
+        P: Provider<T>,
+        T: Transport + Clone,
+    {
+        self.left.fill(provider, angstrom_provider, order).await?;
+        self.right.fill(provider, angstrom_provider, order).await?;
 
         Ok(())
     }
 
-    async fn prepare<E: EthProvider>(
+    async fn prepare<P, T>(
         &self,
-        _: &E,
+        _: &EthRpcProvider<P, T>,
         _: &AngstromProvider,
         _: &FillerOrder,
-    ) -> eyre::Result<()> {
+    ) -> eyre::Result<()>
+    where
+        P: Provider<T>,
+        T: Transport + Clone,
+    {
         Ok(())
     }
 }
@@ -62,15 +68,17 @@ impl<L: AngstromFiller, R: AngstromFiller> FillWrapper for AngstromFillProvider<
 pub(crate) trait AngstromFiller: Sized {
     type FillOutput: FillFrom<Self, AllOrders> + FillFrom<Self, TransactionRequestWithLiquidityMeta>;
 
-    async fn fill<E: EthProvider>(
+    async fn fill<P, T>(
         &self,
-        eth_provider: &E,
+        provider: &EthRpcProvider<P, T>,
         angstrom_provider: &AngstromProvider,
         order: &mut FillerOrder,
-    ) -> eyre::Result<()> {
-        let input = self
-            .prepare(eth_provider, angstrom_provider, &order)
-            .await?;
+    ) -> eyre::Result<()>
+    where
+        P: Provider<T>,
+        T: Transport + Clone,
+    {
+        let input = self.prepare(provider, angstrom_provider, &order).await?;
         match order {
             FillerOrder::AngstromOrder(all_orders) => input.prepare_with(all_orders)?,
             FillerOrder::RegularOrder(tx_request) => input.prepare_with(tx_request)?,
@@ -79,23 +87,30 @@ pub(crate) trait AngstromFiller: Sized {
         Ok(())
     }
 
-    async fn prepare<E: EthProvider>(
+    async fn prepare<P, T>(
         &self,
-        eth_provider: &E,
+        provider: &EthRpcProvider<P, T>,
         angstrom_provider: &AngstromProvider,
         order: &FillerOrder,
-    ) -> eyre::Result<Self::FillOutput>;
+    ) -> eyre::Result<Self::FillOutput>
+    where
+        P: Provider<T>,
+        T: Transport + Clone;
 }
 
 impl AngstromFiller for () {
     type FillOutput = ();
 
-    async fn prepare<E: EthProvider>(
+    async fn prepare<P, T>(
         &self,
-        _: &E,
+        _: &EthRpcProvider<P, T>,
         _: &AngstromProvider,
         _: &FillerOrder,
-    ) -> eyre::Result<()> {
+    ) -> eyre::Result<()>
+    where
+        P: Provider<T>,
+        T: Transport + Clone,
+    {
         Ok(())
     }
 }

@@ -1,7 +1,10 @@
 use crate::apis::node_api::AngstromNodeApi;
-use crate::providers::{AngstromProvider, EthProvider};
+use crate::providers::AngstromProvider;
+use crate::providers::EthRpcProvider;
 use crate::types::TransactionRequestWithLiquidityMeta;
 use alloy_primitives::Address;
+use alloy_provider::Provider;
+use alloy_transport::Transport;
 use angstrom_types::sol_bindings::grouped_orders::AllOrders;
 use angstrom_types::sol_bindings::grouped_orders::StandingVariants;
 
@@ -19,17 +22,21 @@ impl NonceGeneratorFiller {
 impl AngstromFiller for NonceGeneratorFiller {
     type FillOutput = Option<u64>;
 
-    async fn prepare<E: EthProvider>(
+    async fn prepare<P, T>(
         &self,
-        eth_provider: &E,
+        provider: &EthRpcProvider<P, T>,
         angstrom_provider: &AngstromProvider,
         order: &FillerOrder,
-    ) -> eyre::Result<Self::FillOutput> {
+    ) -> eyre::Result<Self::FillOutput>
+    where
+        P: Provider<T>,
+        T: Transport + Clone,
+    {
         if !order_contains_nonce(order) {
             return Ok(None);
         }
 
-        let current_nonce = eth_provider.get_nonce(self.0).await?;
+        let current_nonce = provider.provider().get_transaction_count(self.0).await?;
         let pending_orders = angstrom_provider.pending_orders(vec![self.0]).await?.len() as u64;
 
         Ok(Some(current_nonce + pending_orders + 1))

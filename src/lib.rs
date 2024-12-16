@@ -18,20 +18,23 @@ use types::fillers::{
 };
 use types::AngstromApiConfig;
 
-use crate::providers::EthProvider;
-
-pub struct AngstromApi<E, F> {
-    eth_provider: E,
+pub struct AngstromApi<P, T, F = ()> {
+    eth_provider: EthRpcProvider<P, T>,
     angstrom: AngstromProvider,
     filler: F,
     config: AngstromApiConfig,
 }
 
-impl<E> AngstromApi<E, ()>
+impl<P, T> AngstromApi<P, T>
 where
-    E: EthProvider,
+    P: Provider<T>,
+    T: Transport + Clone,
 {
-    pub fn new(eth_provider: E, angstrom: AngstromProvider, config: AngstromApiConfig) -> Self {
+    pub fn new(
+        eth_provider: EthRpcProvider<P, T>,
+        angstrom: AngstromProvider,
+        config: AngstromApiConfig,
+    ) -> Self {
         Self {
             eth_provider,
             angstrom,
@@ -41,15 +44,16 @@ where
     }
 }
 
-impl<E, F> AngstromApi<E, F>
+impl<P, T, F> AngstromApi<P, T, F>
 where
-    E: EthProvider,
+    P: Provider<T>,
+    T: Transport + Clone,
     F: FillWrapper,
 {
     pub fn with_nonce_generator_filler(
         self,
         my_address: Address,
-    ) -> AngstromApi<E, AngstromFillProvider<F, NonceGeneratorFiller>> {
+    ) -> AngstromApi<P, T, AngstromFillProvider<F, NonceGeneratorFiller>> {
         AngstromApi {
             eth_provider: self.eth_provider,
             angstrom: self.angstrom,
@@ -63,7 +67,7 @@ where
     pub fn with_token_balance_filler(
         self,
         my_address: Address,
-    ) -> AngstromApi<E, AngstromFillProvider<F, TokenBalanceCheckFiller>> {
+    ) -> AngstromApi<P, T, AngstromFillProvider<F, TokenBalanceCheckFiller>> {
         AngstromApi {
             eth_provider: self.eth_provider,
             angstrom: self.angstrom,
@@ -75,7 +79,7 @@ where
     }
 }
 
-impl<P, T, F> AngstromApi<EthRpcProvider<P, T>, F>
+impl<P, T, F> AngstromApi<P, T, F>
 where
     P: Provider<T> + Clone,
     T: Transport + Clone,
@@ -84,10 +88,7 @@ where
     pub fn with_signer_filler<S>(
         self,
         signer: S,
-    ) -> AngstromApi<
-        EthRpcProvider<RpcWalletProvider<P, T>, T>,
-        AngstromFillProvider<F, SignerFiller<S>>,
-    >
+    ) -> AngstromApi<RpcWalletProvider<P, T>, T, AngstromFillProvider<F, SignerFiller<S>>>
     where
         S: Signer + SignerSync + TxSigner<Signature> + Clone + Send + Sync + 'static,
         SignerFiller<S>: AngstromFiller,
@@ -101,16 +102,18 @@ where
     }
 }
 
-impl<E, F> AngstromApi<E, F>
+impl<P, T, F> AngstromApi<P, T, F>
 where
-    E: EthProvider,
+    P: Provider<T> + Clone,
+    T: Transport + Clone,
     F: FillWrapper,
 {
     pub fn with_all_fillers<S>(
         self,
         signer: S,
     ) -> AngstromApi<
-        E,
+        P,
+        T,
         AngstromFillProvider<
             AngstromFillProvider<
                 AngstromFillProvider<F, NonceGeneratorFiller>,
@@ -122,6 +125,8 @@ where
     where
         S: Signer + SignerSync + Send,
         SignerFiller<S>: AngstromFiller,
+        P: Provider<T> + Clone,
+        T: Transport + Clone,
     {
         AngstromApi {
             eth_provider: self.eth_provider,
