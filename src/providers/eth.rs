@@ -240,8 +240,8 @@ mod tests {
     #[tokio::test]
     async fn test_pool_key() {
         let provider = spawn_ws_provider().await.unwrap();
-        let token0 = address!("103e49ae6ee71f068d1cdc06ff97f81a66fe8884");
-        let token1 = address!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
+        let token0 = address!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
+        let token1 = address!("cbcb9b1dff95bc829c17290c6c096c105974a14d");
 
         let pool_key = provider.pool_key(token0, token1).await.unwrap();
         let expected_pool_key = PoolKey {

@@ -103,27 +103,60 @@ pub trait AngstromNodeApi {
 
 #[cfg(test)]
 mod tests {
+    #![allow(unused)]
 
-    use alloy_primitives::address;
-
-    use crate::{
-        apis::data_api::AngstromDataApi,
-        test_utils::{make_generator, spawn_angstrom_provider, spawn_ws_provider},
+    use angstrom_types::sol_bindings::{
+        grouped_orders::{FlashVariants, GroupedVanillaOrder, StandingVariants},
+        rpc_orders::TopOfBlockOrder,
     };
+    use testing_tools::order_generator::GeneratedPoolOrders;
+
+    use crate::test_utils::{make_generator, spawn_angstrom_provider, spawn_ws_provider};
 
     use super::*;
 
+    fn get_standing_order(orders: &[GeneratedPoolOrders]) -> StandingVariants {
+        orders
+            .iter()
+            .flat_map(|book| book.book.clone())
+            .filter_map(|order| match order {
+                GroupedVanillaOrder::Standing(or) => Some(or.clone()),
+                _ => None,
+            })
+            .next()
+            .unwrap()
+    }
+
+    fn get_flash_order(orders: &[GeneratedPoolOrders]) -> FlashVariants {
+        orders
+            .iter()
+            .flat_map(|book| book.book.clone())
+            .filter_map(|order| match order {
+                GroupedVanillaOrder::KillOrFill(or) => Some(or.clone()),
+                _ => None,
+            })
+            .next()
+            .unwrap()
+    }
+
+    fn get_tob_order(orders: &[GeneratedPoolOrders]) -> TopOfBlockOrder {
+        orders.first().clone().unwrap().tob.clone()
+    }
+
     #[tokio::test]
-    async fn test_pool_key() {
+    async fn test_send_order() {
         let eth_provider = spawn_ws_provider().await.unwrap();
         let angstrom_provider = spawn_angstrom_provider().await.unwrap();
 
         let generator = make_generator(&eth_provider).await.unwrap();
-        let binding = generator.generate_orders();
-        let order = binding.first().unwrap();
+        let orders = generator.generate_orders();
 
-        let tob_order = AllOrders::TOB(order.tob.clone());
+        let tob_order = AllOrders::TOB(get_tob_order(&orders));
+        let tob_order_sent = angstrom_provider.send_order(tob_order).await.unwrap();
+        assert!(tob_order_sent);
 
-        assert!(angstrom_provider.send_order(tob_order).await.unwrap());
+        let user_order = AllOrders::Flash(get_flash_order(&orders));
+        let user_order_sent = angstrom_provider.send_order(user_order).await.unwrap();
+        assert!(user_order_sent);
     }
 }
