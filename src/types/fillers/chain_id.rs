@@ -25,7 +25,7 @@ impl AngstromFiller for ChainIdFiller {
         order: &FillerOrder,
     ) -> eyre::Result<Self::FillOutput>
     where
-        P: Provider<T>,
+        P: Provider<T> + Clone,
         T: Transport + Clone,
     {
         Ok(matches!(order, FillerOrder::RegularOrder(_)).then_some(self.0))

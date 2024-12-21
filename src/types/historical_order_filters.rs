@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use alloy_consensus::Transaction;
 use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_rpc_types::Block;
@@ -66,7 +67,7 @@ impl HistoricalOrdersFilter {
             .transactions
             .into_transactions()
             .filter_map(|transaction| {
-                let mut input: &[u8] = &transaction.input;
+                let mut input: &[u8] = &transaction.input();
                 AngstromBundle::pade_decode(&mut input, None).ok()
             })
             .flat_map(|bundle| self.apply_kinds(bundle, pool_stores))
@@ -198,7 +199,7 @@ impl AngstromPoolTokenIndexToPair {
         filter: &HistoricalOrdersFilter,
     ) -> eyre::Result<Self>
     where
-        P: Provider<T>,
+        P: Provider<T> + Clone,
         T: Transport + Clone,
     {
         let token_pairs = filter

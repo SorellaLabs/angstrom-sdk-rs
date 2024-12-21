@@ -23,7 +23,7 @@ impl TokenBalanceCheckFiller {
         order: &AllOrders,
     ) -> eyre::Result<()>
     where
-        P: Provider<T>,
+        P: Provider<T> + Clone,
         T: Transport + Clone,
     {
         let (token, amt) = match order {
@@ -72,7 +72,7 @@ impl TokenBalanceCheckFiller {
         order: &TransactionRequestWithLiquidityMeta,
     ) -> eyre::Result<()>
     where
-        P: Provider<T>,
+        P: Provider<T> + Clone,
         T: Transport + Clone,
     {
         todo!();
@@ -89,7 +89,7 @@ impl AngstromFiller for TokenBalanceCheckFiller {
         order: &FillerOrder,
     ) -> eyre::Result<Self::FillOutput>
     where
-        P: Provider<T>,
+        P: Provider<T> + Clone,
         T: Transport + Clone,
     {
         match order {

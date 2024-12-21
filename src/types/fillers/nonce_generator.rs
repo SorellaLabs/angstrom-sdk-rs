@@ -29,7 +29,7 @@ impl AngstromFiller for NonceGeneratorFiller {
         order: &FillerOrder,
     ) -> eyre::Result<Self::FillOutput>
     where
-        P: Provider<T>,
+        P: Provider<T> + Clone,
         T: Transport + Clone,
     {
         if !order_contains_nonce(order) {

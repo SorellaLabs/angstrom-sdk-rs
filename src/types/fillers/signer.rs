@@ -47,7 +47,7 @@ impl<S: Signer + SignerSync> AngstromFiller for SignerFiller<S> {
         order: &FillerOrder,
     ) -> eyre::Result<Self::FillOutput>
     where
-        P: Provider<T>,
+        P: Provider<T> + Clone,
         T: Transport + Clone,
     {
         let my_address = self.0.address();

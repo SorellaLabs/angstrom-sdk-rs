@@ -40,7 +40,7 @@ where
         order: &mut FillerOrder,
     ) -> eyre::Result<()>
     where
-        P: Provider<T>,
+        P: Provider<T> + Clone,
         T: Transport + Clone,
     {
         self.left.fill(provider, angstrom_provider, order).await?;
@@ -56,7 +56,7 @@ where
         _: &FillerOrder,
     ) -> eyre::Result<()>
     where
-        P: Provider<T>,
+        P: Provider<T> + Clone,
         T: Transport + Clone,
     {
         Ok(())
@@ -75,7 +75,7 @@ pub(crate) trait AngstromFiller: Sized {
         order: &mut FillerOrder,
     ) -> eyre::Result<()>
     where
-        P: Provider<T>,
+        P: Provider<T> + Clone,
         T: Transport + Clone,
     {
         let input = self.prepare(provider, angstrom_provider, &order).await?;
@@ -94,7 +94,7 @@ pub(crate) trait AngstromFiller: Sized {
         order: &FillerOrder,
     ) -> eyre::Result<Self::FillOutput>
     where
-        P: Provider<T>,
+        P: Provider<T> + Clone,
         T: Transport + Clone;
 }
 
@@ -108,7 +108,7 @@ impl AngstromFiller for () {
         _: &FillerOrder,
     ) -> eyre::Result<()>
     where
-        P: Provider<T>,
+        P: Provider<T> + Clone,
         T: Transport + Clone,
     {
         Ok(())

@@ -10,7 +10,7 @@ pub mod types;
 
 use alloy_network::TxSigner;
 use alloy_primitives::Address;
-use alloy_primitives::Signature;
+use alloy_primitives::PrimitiveSignature;
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use alloy_transport::Transport;
@@ -21,7 +21,11 @@ use types::fillers::{
 };
 use types::AngstromApiConfig;
 
-pub struct AngstromApi<P, T, F = ()> {
+pub struct AngstromApi<P, T, F = ()>
+where
+    P: Provider<T> + Clone,
+    T: Transport + Clone,
+{
     eth_provider: EthRpcProvider<P, T>,
     angstrom: AngstromProvider,
     filler: F,
@@ -30,7 +34,7 @@ pub struct AngstromApi<P, T, F = ()> {
 
 impl<P, T> AngstromApi<P, T>
 where
-    P: Provider<T>,
+    P: Provider<T> + Clone,
     T: Transport + Clone,
 {
     pub fn new(
@@ -49,7 +53,7 @@ where
 
 impl<P, T, F> AngstromApi<P, T, F>
 where
-    P: Provider<T>,
+    P: Provider<T> + Clone,
     T: Transport + Clone,
     F: FillWrapper,
 {
@@ -86,7 +90,7 @@ where
         signer: S,
     ) -> AngstromApi<RpcWalletProvider<P, T>, T, AngstromFillProvider<F, SignerFiller<S>>>
     where
-        S: Signer + SignerSync + TxSigner<Signature> + Clone + Send + Sync + 'static,
+        S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Clone + Send + Sync + 'static,
         SignerFiller<S>: AngstromFiller,
     {
         AngstromApi {

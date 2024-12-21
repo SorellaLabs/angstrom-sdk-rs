@@ -1,9 +1,9 @@
 use alloy_primitives::{Address, FixedBytes, B256};
-use angstrom_rpc::api::{CancelOrderRequest, GasEstimateResponse, OrderApiClient};
+use angstrom_rpc::api::{GasEstimateResponse, OrderApiClient};
 use angstrom_rpc::types::{
     OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult,
 };
-use angstrom_types::orders::{OrderLocation, OrderStatus};
+use angstrom_types::orders::{CancelOrderRequest, OrderLocation, OrderStatus};
 use jsonrpsee_http_client::HttpClient;
 use std::collections::HashSet;
 
@@ -119,9 +119,10 @@ mod tests {
         let angstrom_provider = spawn_angstrom_provider().await.unwrap();
 
         let generator = make_generator(&eth_provider).await.unwrap();
-        let order = generator.generate_orders().first().unwrap();
+        let binding = generator.generate_orders();
+        let order = binding.first().unwrap();
 
-        let tob_order = AllOrders::TOB(order.tob);
+        let tob_order = AllOrders::TOB(order.tob.clone());
 
         assert!(angstrom_provider.send_order(tob_order).await.unwrap());
     }

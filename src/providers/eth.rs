@@ -19,7 +19,7 @@ use crate::types::*;
 use alloy_network::Ethereum;
 use alloy_network::EthereumWallet;
 use alloy_network::TxSigner;
-use alloy_primitives::Signature;
+use alloy_primitives::PrimitiveSignature;
 use alloy_primitives::TxKind;
 use alloy_provider::fillers::FillProvider;
 use alloy_provider::fillers::JoinFill;
@@ -38,7 +38,10 @@ pub(crate) type RpcWalletProvider<P, T> =
 
 #[derive(Debug, Clone)]
 #[repr(transparent)]
-pub struct EthRpcProvider<P, T>(P, PhantomData<T>);
+pub struct EthRpcProvider<P, T>(P, PhantomData<T>)
+where
+    P: Provider<T> + Clone,
+    T: Transport + Clone;
 
 impl EthRpcProvider<RootProvider<BoxTransport>, BoxTransport> {
     pub fn new_http(http_url: impl ToString) -> eyre::Result<Self> {
@@ -68,7 +71,7 @@ impl EthRpcProvider<RootProvider<BoxTransport>, BoxTransport> {
 
 impl<P, T> EthRpcProvider<P, T>
 where
-    P: Provider<T>,
+    P: Provider<T> + Clone,
     T: Transport + Clone,
 {
     pub fn new(provider: P) -> Self {
@@ -97,7 +100,7 @@ where
 
     pub(crate) fn with_wallet<S>(self, signer: S) -> EthRpcProvider<RpcWalletProvider<P, T>, T>
     where
-        S: Signer + SignerSync + TxSigner<Signature> + Send + Sync + 'static,
+        S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Send + Sync + 'static,
     {
         let p = alloy_provider::builder::<Ethereum>()
             .wallet(EthereumWallet::new(signer))
