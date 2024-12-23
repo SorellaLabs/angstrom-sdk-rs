@@ -135,20 +135,4 @@ where
 }
 
 #[cfg(test)]
-mod tests {
-    // use providers::{AngstromFillProvider, EthRpcProvider};
-    // use types::fillers::TokenBalanceCheckFiller;
-
-    // use super::*;
-
-    // async fn init_angstrom_api<R, O>() -> eyre::Result<()> {
-    //     let angstrom = AngstromProvider {};
-
-    //     let filler = AngstromFillProvider::new((), ());
-    //     let config = AngstromApiConfig::new("35.245.117.24".to_owned(), "", 0, 8546);
-
-    //     let eth_provider = EthRpcProvider::new_ws(config.ws_url()).await?;
-
-    //     Ok(())
-    // }
-}
+mod tests {}
