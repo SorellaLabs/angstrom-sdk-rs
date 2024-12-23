@@ -1409,7 +1409,7 @@ checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
 [[package]]
 name = "angstrom"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#f56b55e0b35cc955132a5a83d7824ead3d317d88"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/rpc-return-type#21a416730283b6197fcc3564cf226d0c30674a9b"
 dependencies = [
  "alloy 0.7.3",
  "alloy-chains",
@@ -1449,7 +1449,7 @@ dependencies = [
 [[package]]
 name = "angstrom-eth"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#f56b55e0b35cc955132a5a83d7824ead3d317d88"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/rpc-return-type#21a416730283b6197fcc3564cf226d0c30674a9b"
 dependencies = [
  "alloy 0.7.3",
  "angstrom-types",
@@ -1469,7 +1469,7 @@ dependencies = [
 [[package]]
 name = "angstrom-metrics"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#f56b55e0b35cc955132a5a83d7824ead3d317d88"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/rpc-return-type#21a416730283b6197fcc3564cf226d0c30674a9b"
 dependencies = [
  "alloy-primitives 0.8.15",
  "angstrom-types",
@@ -1492,7 +1492,7 @@ dependencies = [
 [[package]]
 name = "angstrom-network"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#f56b55e0b35cc955132a5a83d7824ead3d317d88"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/rpc-return-type#21a416730283b6197fcc3564cf226d0c30674a9b"
 dependencies = [
  "alloy 0.7.3",
  "alloy-chains",
@@ -1551,7 +1551,7 @@ dependencies = [
 [[package]]
 name = "angstrom-rpc"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#f56b55e0b35cc955132a5a83d7824ead3d317d88"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/rpc-return-type#21a416730283b6197fcc3564cf226d0c30674a9b"
 dependencies = [
  "alloy-primitives 0.8.15",
  "alloy-sol-types 0.8.15",
@@ -1589,7 +1589,6 @@ dependencies = [
  "alloy-consensus 0.7.3",
  "alloy-dyn-abi",
  "alloy-eips 0.7.3",
- "alloy-genesis 0.7.3",
  "alloy-json-rpc 0.7.3",
  "alloy-network 0.7.3",
  "alloy-node-bindings",
@@ -1615,7 +1614,6 @@ dependencies = [
  "alloy-transport-http 0.7.3",
  "alloy-transport-ipc",
  "alloy-transport-ws",
- "alloy-trie",
  "angstrom-rpc",
  "angstrom-types",
  "dotenv",
@@ -1637,12 +1635,13 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "uniswap-v4",
+ "validation",
 ]
 
 [[package]]
 name = "angstrom-types"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#f56b55e0b35cc955132a5a83d7824ead3d317d88"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/rpc-return-type#21a416730283b6197fcc3564cf226d0c30674a9b"
 dependencies = [
  "alloy 0.7.3",
  "alloy-primitives 0.8.15",
@@ -1689,7 +1688,7 @@ dependencies = [
 [[package]]
 name = "angstrom-utils"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#f56b55e0b35cc955132a5a83d7824ead3d317d88"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/rpc-return-type#21a416730283b6197fcc3564cf226d0c30674a9b"
 dependencies = [
  "futures",
  "pin-project",
@@ -2826,7 +2825,7 @@ dependencies = [
 [[package]]
 name = "consensus"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#f56b55e0b35cc955132a5a83d7824ead3d317d88"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/rpc-return-type#21a416730283b6197fcc3564cf226d0c30674a9b"
 dependencies = [
  "alloy 0.7.3",
  "alloy-rlp",
@@ -5431,7 +5430,7 @@ dependencies = [
 [[package]]
 name = "matching-engine"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#f56b55e0b35cc955132a5a83d7824ead3d317d88"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/rpc-return-type#21a416730283b6197fcc3564cf226d0c30674a9b"
 dependencies = [
  "alloy 0.7.3",
  "alloy-primitives 0.8.15",
@@ -6142,7 +6141,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "order-pool"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#f56b55e0b35cc955132a5a83d7824ead3d317d88"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/rpc-return-type#21a416730283b6197fcc3564cf226d0c30674a9b"
 dependencies = [
  "alloy 0.7.3",
  "angstrom-eth",
@@ -10864,7 +10863,7 @@ dependencies = [
 [[package]]
 name = "testing-tools"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#f56b55e0b35cc955132a5a83d7824ead3d317d88"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/rpc-return-type#21a416730283b6197fcc3564cf226d0c30674a9b"
 dependencies = [
  "alloy 0.7.3",
  "alloy-chains",
@@ -11605,7 +11604,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "uniswap-v4"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#f56b55e0b35cc955132a5a83d7824ead3d317d88"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/rpc-return-type#21a416730283b6197fcc3564cf226d0c30674a9b"
 dependencies = [
  "alloy 0.7.3",
  "alloy-primitives 0.8.15",
@@ -11729,7 +11728,7 @@ dependencies = [
 [[package]]
 name = "validation"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#f56b55e0b35cc955132a5a83d7824ead3d317d88"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/rpc-return-type#21a416730283b6197fcc3564cf226d0c30674a9b"
 dependencies = [
  "alloy 0.7.3",
  "angstrom-eth",

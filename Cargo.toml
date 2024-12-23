@@ -10,9 +10,10 @@ name = "angstrom_sdk"
 [dependencies]
 
 # angstrom
-angstrom-types = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-types", branch = "feat/sdk-connections" }
-angstrom-rpc = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-rpc", branch = "feat/sdk-connections" }
-uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git", package = "uniswap-v4", branch = "feat/sdk-connections" }
+angstrom-types = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-types", branch = "feat/rpc-return-type" }
+angstrom-rpc = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-rpc", branch = "feat/rpc-return-type" }
+uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git", package = "uniswap-v4", branch = "feat/rpc-return-type" }
+validation = { git = "https://github.com/SorellaLabs/angstrom.git", package = "validation", branch = "feat/rpc-return-type" }
 
 # pade
 pade = { git = "https://github.com/SorellaLabs/pade", version = "0.1.0" }
@@ -42,7 +43,6 @@ alloy-dyn-abi = "0.8.11"
 alloy-sol-types = "0.8.11"
 alloy-rlp = "0.3.10"
 alloy-rlp-derive = "0.3.8"
-alloy-trie = { version = "0.7", default-features = false }
 alloy-rpc-types = { version = "0.7.3", default-features = false, features = [
     "eth",
 ] }
@@ -53,7 +53,6 @@ alloy-rpc-types-txpool = { version = "0.7.3", default-features = false }
 alloy-serde = { version = "0.7.3", default-features = false }
 alloy-rpc-types-engine = { version = "0.7.3", default-features = false }
 alloy-rpc-types-eth = { version = "0.7.3", default-features = false }
-alloy-genesis = { version = "0.7.3", default-features = false }
 alloy-node-bindings = { version = "0.7.3", default-features = false }
 alloy-provider = { version = "0.7.3", default-features = false, features = [
     "reqwest",
@@ -97,7 +96,7 @@ parking_lot = "0.12"
 
 
 [dev-dependencies]
-testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", branch = "feat/sdk-connections" }
+testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", branch = "feat/rpc-return-type" }
 
 
 [features]
