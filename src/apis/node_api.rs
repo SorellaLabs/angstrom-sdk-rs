@@ -1,9 +1,10 @@
-use alloy_primitives::{Address, FixedBytes, B256};
+use alloy_primitives::{Address, B256};
 use angstrom_rpc::api::{GasEstimateResponse, OrderApiClient};
 use angstrom_rpc::types::{
     OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult,
 };
 use angstrom_types::orders::{CancelOrderRequest, OrderLocation, OrderStatus};
+use angstrom_types::primitive::PoolId;
 use angstrom_types::sol_bindings::grouped_orders::AllOrders;
 use futures::{Stream, StreamExt, TryStreamExt};
 use jsonrpsee_http_client::HttpClient;
@@ -38,13 +39,13 @@ pub trait AngstromNodeApi {
         Ok(provider.order_status(order_hash).await?)
     }
 
-    async fn orders_by_pair(
+    async fn orders_by_pool_id(
         &self,
-        pair: FixedBytes<32>,
+        pool_id: PoolId,
         location: OrderLocation,
     ) -> eyre::Result<Vec<AllOrders>> {
         let provider = self.rpc_provider();
-        Ok(provider.orders_by_pair(pair, location).await?)
+        Ok(provider.orders_by_pool_id(pool_id, location).await?)
     }
 
     async fn subscribe_orders(
@@ -95,43 +96,35 @@ pub trait AngstromNodeApi {
         Ok(provider.status_of_orders(order_hashes).await?)
     }
 
-    async fn orders_by_pairs(
+    async fn orders_by_pool_ids(
         &self,
-        pair_with_location: Vec<(FixedBytes<32>, OrderLocation)>,
+        pool_ids_with_location: Vec<(PoolId, OrderLocation)>,
     ) -> eyre::Result<Vec<AllOrders>> {
         let provider = self.rpc_provider();
-        Ok(provider.orders_by_pairs(pair_with_location).await?)
+        Ok(provider.orders_by_pool_ids(pool_ids_with_location).await?)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    #![allow(unused)]
+
+    use std::task::Poll;
 
     use alloy_primitives::U256;
+    use alloy_provider::Provider;
+    use alloy_transport::Transport;
     use angstrom_types::sol_bindings::RawPoolOrder;
     use angstrom_types::sol_bindings::{
-        grouped_orders::{FlashVariants, GroupedVanillaOrder, StandingVariants},
+        grouped_orders::{FlashVariants, GroupedVanillaOrder},
         rpc_orders::TopOfBlockOrder,
     };
-
     use testing_tools::order_generator::GeneratedPoolOrders;
 
+    use crate::apis::data_api::AngstromDataApi;
+    use crate::providers::{AngstromProvider, EthRpcProvider};
     use crate::test_utils::{make_generator, spawn_angstrom_provider, spawn_ws_provider};
 
     use super::*;
-
-    fn get_standing_order(orders: &[GeneratedPoolOrders]) -> StandingVariants {
-        orders
-            .iter()
-            .flat_map(|book| book.book.clone())
-            .filter_map(|order| match order {
-                GroupedVanillaOrder::Standing(or) => Some(or.clone()),
-                _ => None,
-            })
-            .next()
-            .unwrap()
-    }
 
     fn get_flash_order(orders: &[GeneratedPoolOrders]) -> FlashVariants {
         orders
@@ -149,21 +142,52 @@ mod tests {
         orders.first().clone().unwrap().tob.clone()
     }
 
+    struct AllOrdersSent {
+        tob: AllOrders,
+        user: AllOrders,
+    }
+
+    impl AllOrdersSent {
+        async fn send_orders<P, T>(
+            eth_provider: &EthRpcProvider<P, T>,
+            angstrom_provider: &AngstromProvider,
+        ) -> eyre::Result<Self>
+        where
+            P: Provider<T> + Clone,
+            T: Transport + Clone,
+        {
+            let generator = make_generator(&eth_provider).await.unwrap();
+            let orders = generator.generate_orders();
+
+            let tob_order = AllOrders::TOB(get_tob_order(&orders));
+            let tob_order_sent = angstrom_provider
+                .send_order(tob_order.clone())
+                .await
+                .unwrap();
+            assert!(tob_order_sent.is_valid());
+
+            let user_order = AllOrders::Flash(get_flash_order(&orders));
+            let user_order_sent = angstrom_provider
+                .send_order(user_order.clone())
+                .await
+                .unwrap();
+            assert!(user_order_sent.is_valid());
+
+            Ok(Self {
+                tob: tob_order,
+                user: user_order,
+            })
+        }
+    }
+
     #[tokio::test]
     async fn test_send_order() {
         let eth_provider = spawn_ws_provider().await.unwrap();
         let angstrom_provider = spawn_angstrom_provider().await.unwrap();
 
-        let generator = make_generator(&eth_provider).await.unwrap();
-        let orders = generator.generate_orders();
-
-        let tob_order = AllOrders::TOB(get_tob_order(&orders));
-        let tob_order_sent = angstrom_provider.send_order(tob_order).await.unwrap();
-        assert!(tob_order_sent.is_valid());
-
-        let user_order = AllOrders::Flash(get_flash_order(&orders));
-        let user_order_sent = angstrom_provider.send_order(user_order).await.unwrap();
-        assert!(user_order_sent.is_valid());
+        let _ = AllOrdersSent::send_orders(&eth_provider, &angstrom_provider)
+            .await
+            .unwrap();
     }
 
     #[tokio::test]
@@ -171,32 +195,21 @@ mod tests {
         let eth_provider = spawn_ws_provider().await.unwrap();
         let angstrom_provider = spawn_angstrom_provider().await.unwrap();
 
-        let generator = make_generator(&eth_provider).await.unwrap();
-        let orders = generator.generate_orders();
-
-        let tob_order = AllOrders::TOB(get_tob_order(&orders));
-        let tob_order_sent = angstrom_provider
-            .send_order(tob_order.clone())
+        let orders = AllOrdersSent::send_orders(&eth_provider, &angstrom_provider)
             .await
             .unwrap();
-        assert!(tob_order_sent.is_valid());
+
         let pending_tob_order = angstrom_provider
-            .pending_order(tob_order.from())
+            .pending_order(orders.tob.from())
             .await
             .unwrap();
-        assert_eq!(vec![tob_order.clone()], pending_tob_order);
+        assert_eq!(vec![orders.tob.clone()], pending_tob_order);
 
-        let user_order = AllOrders::Flash(get_flash_order(&orders));
-        let user_order_sent = angstrom_provider
-            .send_order(user_order.clone())
-            .await
-            .unwrap();
-        assert!(user_order_sent.is_valid());
         let pending_user_orders = angstrom_provider
-            .pending_order(user_order.from())
+            .pending_order(orders.user.from())
             .await
             .unwrap();
-        assert_eq!(vec![user_order.clone()], pending_user_orders);
+        assert_eq!(vec![orders.user.clone()], pending_user_orders);
     }
 
     #[tokio::test]
@@ -204,36 +217,25 @@ mod tests {
         let eth_provider = spawn_ws_provider().await.unwrap();
         let angstrom_provider = spawn_angstrom_provider().await.unwrap();
 
-        let generator = make_generator(&eth_provider).await.unwrap();
-        let orders = generator.generate_orders();
-
-        let tob_order = AllOrders::TOB(get_tob_order(&orders));
-        let tob_order_sent = angstrom_provider
-            .send_order(tob_order.clone())
+        let orders = AllOrdersSent::send_orders(&eth_provider, &angstrom_provider)
             .await
             .unwrap();
-        assert!(tob_order_sent.is_valid());
+
         let canceled_tob_order = angstrom_provider
             .cancel_order(CancelOrderRequest {
-                signature: tob_order.order_signature().unwrap(),
-                user_address: tob_order.from(),
-                order_id: tob_order.order_hash(),
+                signature: orders.tob.order_signature().unwrap(),
+                user_address: orders.tob.from(),
+                order_id: orders.tob.order_hash(),
             })
             .await
             .unwrap();
         assert!(canceled_tob_order);
 
-        let user_order = AllOrders::Flash(get_flash_order(&orders));
-        let user_order_sent = angstrom_provider
-            .send_order(user_order.clone())
-            .await
-            .unwrap();
-        assert!(user_order_sent.is_valid());
         let canceled_user_orders = angstrom_provider
             .cancel_order(CancelOrderRequest {
-                signature: user_order.order_signature().unwrap(),
-                user_address: user_order.from(),
-                order_id: user_order.order_hash(),
+                signature: orders.user.order_signature().unwrap(),
+                user_address: orders.user.from(),
+                order_id: orders.user.order_hash(),
             })
             .await
             .unwrap();
@@ -274,31 +276,87 @@ mod tests {
         let eth_provider = spawn_ws_provider().await.unwrap();
         let angstrom_provider = spawn_angstrom_provider().await.unwrap();
 
-        let generator = make_generator(&eth_provider).await.unwrap();
-        let orders = generator.generate_orders();
-
-        let tob_order = AllOrders::TOB(get_tob_order(&orders));
-        let tob_order_sent = angstrom_provider
-            .send_order(tob_order.clone())
+        let orders = AllOrdersSent::send_orders(&eth_provider, &angstrom_provider)
             .await
             .unwrap();
-        assert!(tob_order_sent.is_valid());
+
         let status_tob_order = angstrom_provider
-            .order_status(tob_order.order_hash())
+            .order_status(orders.tob.order_hash())
             .await
             .unwrap();
         assert_eq!(status_tob_order, Some(OrderStatus::Pending));
 
-        let user_order = AllOrders::Flash(get_flash_order(&orders));
-        let user_order_sent = angstrom_provider
-            .send_order(user_order.clone())
-            .await
-            .unwrap();
-        assert!(user_order_sent.is_valid());
         let status_user_order = angstrom_provider
-            .order_status(user_order.order_hash())
+            .order_status(orders.user.order_hash())
             .await
             .unwrap();
         assert_eq!(status_user_order, Some(OrderStatus::Pending));
+    }
+
+    #[tokio::test]
+    async fn test_order_by_pool_id() {
+        let eth_provider = spawn_ws_provider().await.unwrap();
+        let angstrom_provider = spawn_angstrom_provider().await.unwrap();
+
+        let orders = AllOrdersSent::send_orders(&eth_provider, &angstrom_provider)
+            .await
+            .unwrap();
+
+        let tob_pool_id = eth_provider
+            .pool_id(orders.tob.token_in(), orders.tob.token_out())
+            .await
+            .unwrap();
+        let tob_orders = angstrom_provider
+            .orders_by_pool_id(tob_pool_id, orders.tob.order_location())
+            .await
+            .unwrap();
+        assert_eq!(vec![orders.tob.clone()], tob_orders);
+
+        let user_pool_id = eth_provider
+            .pool_id(orders.user.token_in(), orders.user.token_out())
+            .await
+            .unwrap();
+        let user_orders = angstrom_provider
+            .orders_by_pool_id(user_pool_id, orders.user.order_location())
+            .await
+            .unwrap();
+        assert_eq!(vec![orders.user.clone()], user_orders);
+    }
+
+    #[tokio::test]
+    async fn test_subscribe_orders() {
+        let eth_provider = spawn_ws_provider().await.unwrap();
+        let angstrom_provider = spawn_angstrom_provider().await.unwrap();
+
+        let mut sub_stream = angstrom_provider
+            .subscribe_orders(HashSet::new(), HashSet::new())
+            .await
+            .unwrap();
+
+        let order_cycles = 2;
+
+        let stream_fut = std::future::poll_fn(|cx| {
+            let mut i = order_cycles * 2;
+
+            loop {
+                if let Poll::Ready(Some(val)) = sub_stream.poll_next_unpin(cx) {
+                    let _ = val.unwrap();
+                    i -= 1;
+                    if i == 0 {
+                        return Poll::Ready(());
+                    }
+                }
+            }
+        });
+
+        let order_send_fut = async {
+            for _ in 0..order_cycles {
+                let _ = AllOrdersSent::send_orders(&eth_provider, &angstrom_provider)
+                    .await
+                    .unwrap();
+            }
+        };
+
+        tokio::join!(order_send_fut, stream_fut);
     }
 }

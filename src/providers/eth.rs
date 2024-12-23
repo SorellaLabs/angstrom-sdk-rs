@@ -144,6 +144,12 @@ where
     }
 
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
+        let (token0, token1) = if token0 > token1 {
+            (token0, token1)
+        } else {
+            (token1, token0)
+        };
+
         let config_store = pool_config_store(self.provider()).await?;
         let pool_config_store = config_store.get_entry(token0, token1).ok_or(eyre::eyre!(
             "no config store entry for tokens {token0:?} - {token1:?}"

@@ -12,6 +12,10 @@ pub trait AngstromDataApi {
 
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey>;
 
+    async fn pool_id(&self, token0: Address, token1: Address) -> eyre::Result<PoolId> {
+        self.pool_key(token0, token1).await.map(Into::into)
+    }
+
     async fn historical_orders(
         &self,
         filter: &HistoricalOrdersFilter,
