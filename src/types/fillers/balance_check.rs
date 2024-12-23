@@ -76,7 +76,8 @@ impl TokenBalanceCheckFiller {
         P: Provider<T> + Clone,
         T: Transport + Clone,
     {
-        todo!();
+        // todo!();
+        Ok(())
     }
 }
 
