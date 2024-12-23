@@ -6,7 +6,6 @@ use crate::{
 };
 use alloy_provider::{Provider, RootProvider};
 use alloy_transport::{BoxTransport, Transport};
-use jsonrpsee_http_client::HttpClient;
 use std::sync::Arc;
 use std::sync::RwLock;
 use testing_tools::order_generator::OrderGenerator;
@@ -23,9 +22,7 @@ pub async fn spawn_angstrom_provider() -> eyre::Result<AngstromProvider> {
     dotenv::dotenv().ok();
     let http_url = std::env::var("ANGSTROM_HTTP_URL").expect("ANGSTROM_HTTP_URL not found in .env");
 
-    let client = HttpClient::builder().build(http_url).unwrap();
-
-    Ok(AngstromProvider::new(client))
+    Ok(AngstromProvider::new(http_url)?)
 }
 
 pub async fn make_generator<P, T>(provider: &EthRpcProvider<P, T>) -> eyre::Result<OrderGenerator>

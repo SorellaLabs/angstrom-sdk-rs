@@ -1619,6 +1619,7 @@ dependencies = [
  "dotenv",
  "eyre",
  "futures",
+ "itertools 0.12.1",
  "jsonrpsee",
  "jsonrpsee-core",
  "jsonrpsee-http-client",

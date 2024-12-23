@@ -1,23 +1,15 @@
+use super::{AngstromFiller, FillFrom, FillerOrder};
 use crate::apis::node_api::AngstromNodeApi;
 use crate::providers::AngstromProvider;
 use crate::providers::EthRpcProvider;
 use crate::types::TransactionRequestWithLiquidityMeta;
-use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_transport::Transport;
 use angstrom_types::sol_bindings::grouped_orders::AllOrders;
 use angstrom_types::sol_bindings::grouped_orders::StandingVariants;
 
-use super::{AngstromFiller, FillFrom, FillerOrder};
-
 #[derive(Clone, Copy, Debug, Default)]
-pub struct NonceGeneratorFiller(Address);
-
-impl NonceGeneratorFiller {
-    pub fn new(my_address: Address) -> Self {
-        Self(my_address)
-    }
-}
+pub struct NonceGeneratorFiller;
 
 impl AngstromFiller for NonceGeneratorFiller {
     type FillOutput = Option<u64>;
@@ -36,11 +28,29 @@ impl AngstromFiller for NonceGeneratorFiller {
             return Ok(None);
         }
 
-        let current_nonce = provider.provider().get_transaction_count(self.0).await?;
-        let pending_orders = angstrom_provider.pending_orders(vec![self.0]).await?.len() as u64;
+        let Some(from) = order.from() else {
+            return Ok(None);
+        };
+
+        let current_nonce = provider.provider().get_transaction_count(from).await?;
+        let pending_orders = angstrom_provider.pending_orders(vec![from]).await?.len() as u64;
 
         Ok(Some(current_nonce + pending_orders + 1))
     }
+
+    // probably need different function for this
+    // async fn prepare_many<P, T>(
+    //     &self,
+    //     provider: &EthRpcProvider<P, T>,
+    //     angstrom_provider: &AngstromProvider,
+    //     orders: &[FillerOrder],
+    // ) -> eyre::Result<Vec<Self::FillOutput>>
+    // where
+    //     P: Provider<T> + Clone,
+    //     T: Transport + Clone,
+    // {
+
+    // }
 }
 
 fn order_contains_nonce(order: &FillerOrder) -> bool {
@@ -71,7 +81,7 @@ impl FillFrom<NonceGeneratorFiller, TransactionRequestWithLiquidityMeta> for Opt
         self,
         input_order: &mut TransactionRequestWithLiquidityMeta,
     ) -> eyre::Result<()> {
-        input_order.tx_request.nonce = Some(self.expect("expected nonce"));
+        input_order.tx_request.nonce = self;
         Ok(())
     }
 }

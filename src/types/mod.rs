@@ -6,9 +6,6 @@ pub use historical_order_filters::*;
 
 pub mod fillers;
 
-mod config;
-pub use config::*;
-
 pub const CONTROLLER_V1_ADDRESS: alloy_primitives::Address =
     alloy_primitives::address!("8c7AAa1d34ea02C2CaDe2B5d073F08AC9b099635");
 

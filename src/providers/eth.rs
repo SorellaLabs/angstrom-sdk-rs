@@ -82,7 +82,11 @@ where
         &self.0
     }
 
-    pub async fn view_call<IC>(&self, contract: Address, call: IC) -> eyre::Result<IC::Return>
+    pub(crate) async fn view_call<IC>(
+        &self,
+        contract: Address,
+        call: IC,
+    ) -> eyre::Result<IC::Return>
     where
         IC: SolCall + Send,
     {
@@ -144,11 +148,7 @@ where
     }
 
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
-        let (token0, token1) = if token0 > token1 {
-            (token0, token1)
-        } else {
-            (token1, token0)
-        };
+        let (token0, token1) = sort_tokens(token0, token1);
 
         let config_store = pool_config_store(self.provider()).await?;
         let pool_config_store = config_store.get_entry(token0, token1).ok_or(eyre::eyre!(
@@ -203,6 +203,8 @@ where
         token1: Address,
         block_number: Option<u64>,
     ) -> eyre::Result<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>> {
+        let (token0, token1) = sort_tokens(token0, token1);
+
         let pool_key = self.pool_key(token0, token1).await?;
         let pool_id: PoolId = pool_key.clone().into();
 

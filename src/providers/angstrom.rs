@@ -8,8 +8,9 @@ pub struct AngstromProvider {
 }
 
 impl AngstromProvider {
-    pub fn new(client: HttpClient) -> Self {
-        Self { client }
+    pub fn new(rpc_url: impl ToString) -> eyre::Result<Self> {
+        let client = HttpClient::builder().build(rpc_url.to_string())?;
+        Ok(Self { client })
     }
 }
 

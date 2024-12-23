@@ -1,22 +1,18 @@
+use super::{AngstromFiller, FillerOrder};
 use crate::providers::{AngstromProvider, EthRpcProvider};
 use crate::types::TransactionRequestWithLiquidityMeta;
-use alloy_primitives::{Address, U256};
+use alloy_primitives::U256;
 use alloy_provider::Provider;
 use alloy_transport::Transport;
 use angstrom_types::primitive::ERC20;
 use angstrom_types::sol_bindings::grouped_orders::AllOrders;
 use angstrom_types::sol_bindings::grouped_orders::{FlashVariants, StandingVariants};
-
-use super::{AngstromFiller, FillerOrder};
+use angstrom_types::sol_bindings::RawPoolOrder;
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct TokenBalanceCheckFiller(Address);
+pub struct TokenBalanceCheckFiller;
 
 impl TokenBalanceCheckFiller {
-    pub fn new(my_address: Address) -> Self {
-        Self(my_address)
-    }
-
     async fn handle_angstrom_order<P, T>(
         &self,
         provider: &EthRpcProvider<P, T>,
@@ -55,7 +51,12 @@ impl TokenBalanceCheckFiller {
         };
 
         let user_balance_of = provider
-            .view_call(token, ERC20::balanceOfCall { _owner: self.0 })
+            .view_call(
+                token,
+                ERC20::balanceOfCall {
+                    _owner: order.from(),
+                },
+            )
             .await?
             .balance;
 
