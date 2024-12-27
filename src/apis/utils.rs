@@ -1,14 +1,12 @@
-use alloy_eips::BlockId;
-use alloy_primitives::aliases::I24;
-use alloy_primitives::I256;
+use std::cmp::Ordering;
 
+use alloy_eips::BlockId;
+use alloy_primitives::{aliases::I24, I256};
 use alloy_provider::Provider;
 use alloy_transport::Transport;
-use malachite::num::arithmetic::traits::Sign;
-use std::cmp::Ordering;
-use thiserror::Error;
-
 use angstrom_types::contract_payloads::angstrom::AngstromPoolConfigStore;
+use malachite::num::arithmetic::traits::Sign;
+use thiserror::Error;
 
 use crate::types::ANGSTROM_ADDRESS;
 
@@ -18,7 +16,7 @@ const MAX_I24: i32 = 8_388_607_i32;
 pub async fn pool_config_store<P, T>(provider: &P) -> eyre::Result<AngstromPoolConfigStore>
 where
     P: Provider<T>,
-    T: Transport + Clone,
+    T: Transport + Clone
 {
     AngstromPoolConfigStore::load_from_chain(ANGSTROM_ADDRESS, BlockId::latest(), provider)
         .await
@@ -48,5 +46,5 @@ pub enum ConversionError {
     #[error("overflow from i32 to i24 {0:?}")]
     OverflowErrorI24(i32),
     #[error("overflow from I256 to I128 {0:?}")]
-    OverflowErrorI28(I256),
+    OverflowErrorI28(I256)
 }

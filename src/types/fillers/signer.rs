@@ -1,23 +1,21 @@
 use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
-
 use alloy_transport::Transport;
 use angstrom_types::{
     primitive::ANGSTROM_DOMAIN,
     sol_bindings::{
         grouped_orders::{AllOrders, FlashVariants, StandingVariants},
-        rpc_orders::{OmitOrderMeta, OrderMeta},
-    },
+        rpc_orders::{OmitOrderMeta, OrderMeta}
+    }
 };
 use pade::PadeEncode;
 
+use super::{AngstromFiller, FillFrom, FillerOrder};
 use crate::{
     providers::{AngstromProvider, EthRpcProvider},
-    types::TransactionRequestWithLiquidityMeta,
+    types::TransactionRequestWithLiquidityMeta
 };
-
-use super::{AngstromFiller, FillFrom, FillerOrder};
 
 pub struct SignerFiller<S>(S);
 
@@ -30,9 +28,9 @@ impl<S: Signer + SignerSync> SignerFiller<S> {
         let hash = order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
         let sig = self.0.sign_hash_sync(&hash)?;
         Ok(OrderMeta {
-            isEcdsa: true,
-            from: self.0.address(),
-            signature: sig.pade_encode().into(),
+            isEcdsa:   true,
+            from:      self.0.address(),
+            signature: sig.pade_encode().into()
         })
     }
 }
@@ -44,11 +42,11 @@ impl<S: Signer + SignerSync> AngstromFiller for SignerFiller<S> {
         &self,
         _: &EthRpcProvider<P, T>,
         _: &AngstromProvider,
-        order: &FillerOrder,
+        order: &FillerOrder
     ) -> eyre::Result<Self::FillOutput>
     where
         P: Provider<T> + Clone,
-        T: Transport + Clone,
+        T: Transport + Clone
     {
         let my_address = self.0.address();
 
@@ -70,7 +68,7 @@ impl<S: Signer + SignerSync> AngstromFiller for SignerFiller<S> {
                         self.sign_into_meta(exact_flash_order)?
                     }
                 },
-                AllOrders::TOB(top_of_block_order) => self.sign_into_meta(top_of_block_order)?,
+                AllOrders::TOB(top_of_block_order) => self.sign_into_meta(top_of_block_order)?
             };
             Some(om)
         } else {
@@ -120,7 +118,7 @@ impl<S: Signer + SignerSync> FillFrom<SignerFiller<S>, TransactionRequestWithLiq
 {
     fn prepare_with(
         self,
-        input_order: &mut TransactionRequestWithLiquidityMeta,
+        input_order: &mut TransactionRequestWithLiquidityMeta
     ) -> eyre::Result<()> {
         input_order.tx_request.from = Some(self.0);
         Ok(())

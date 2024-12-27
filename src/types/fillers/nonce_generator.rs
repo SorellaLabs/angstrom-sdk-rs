@@ -1,12 +1,13 @@
-use super::{AngstromFiller, FillFrom, FillerOrder};
-use crate::apis::node_api::AngstromNodeApi;
-use crate::providers::AngstromProvider;
-use crate::providers::EthRpcProvider;
-use crate::types::TransactionRequestWithLiquidityMeta;
 use alloy_provider::Provider;
 use alloy_transport::Transport;
-use angstrom_types::sol_bindings::grouped_orders::AllOrders;
-use angstrom_types::sol_bindings::grouped_orders::StandingVariants;
+use angstrom_types::sol_bindings::grouped_orders::{AllOrders, StandingVariants};
+
+use super::{AngstromFiller, FillFrom, FillerOrder};
+use crate::{
+    apis::node_api::AngstromNodeApi,
+    providers::{AngstromProvider, EthRpcProvider},
+    types::TransactionRequestWithLiquidityMeta
+};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct NonceGeneratorFiller;
@@ -18,11 +19,11 @@ impl AngstromFiller for NonceGeneratorFiller {
         &self,
         provider: &EthRpcProvider<P, T>,
         angstrom_provider: &AngstromProvider,
-        order: &FillerOrder,
+        order: &FillerOrder
     ) -> eyre::Result<Self::FillOutput>
     where
         P: Provider<T> + Clone,
-        T: Transport + Clone,
+        T: Transport + Clone
     {
         if !order_contains_nonce(order) {
             return Ok(None);
@@ -69,7 +70,7 @@ impl FillFrom<NonceGeneratorFiller, AllOrders> for Option<u64> {
                     exact_standing_order.nonce = self.expect("expected nonce");
                 }
             },
-            _ => (),
+            _ => ()
         };
 
         Ok(())
@@ -79,7 +80,7 @@ impl FillFrom<NonceGeneratorFiller, AllOrders> for Option<u64> {
 impl FillFrom<NonceGeneratorFiller, TransactionRequestWithLiquidityMeta> for Option<u64> {
     fn prepare_with(
         self,
-        input_order: &mut TransactionRequestWithLiquidityMeta,
+        input_order: &mut TransactionRequestWithLiquidityMeta
     ) -> eyre::Result<()> {
         input_order.tx_request.nonce = self;
         Ok(())

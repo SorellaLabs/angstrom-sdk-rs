@@ -1,37 +1,30 @@
-use crate::apis::data_api::AngstromDataApi;
-use crate::apis::utils::pool_config_store;
-use alloy_primitives::aliases::I24;
-use alloy_primitives::aliases::U24;
-use alloy_primitives::Address;
-use alloy_primitives::FixedBytes;
-use alloy_rpc_types::BlockTransactionsKind;
-use angstrom_types::contract_bindings::angstrom::Angstrom::PoolKey;
-use angstrom_types::contract_bindings::controller_v_1::ControllerV1;
-use angstrom_types::primitive::PoolId;
-use futures::StreamExt;
-use std::marker::PhantomData;
-use std::sync::Arc;
-use uniswap_v4::uniswap::pool::EnhancedUniswapPool;
-use uniswap_v4::uniswap::pool_data_loader::DataLoader;
+use std::{marker::PhantomData, sync::Arc};
 
-use crate::types::*;
-
-use alloy_network::Ethereum;
-use alloy_network::EthereumWallet;
-use alloy_network::TxSigner;
-use alloy_primitives::PrimitiveSignature;
-use alloy_primitives::TxKind;
-use alloy_provider::fillers::FillProvider;
-use alloy_provider::fillers::JoinFill;
-use alloy_provider::fillers::WalletFiller;
-use alloy_provider::Identity;
-use alloy_provider::{Provider, RootProvider};
+use alloy_network::{Ethereum, EthereumWallet, TxSigner};
+use alloy_primitives::{
+    aliases::{I24, U24},
+    Address, FixedBytes, PrimitiveSignature, TxKind
+};
+use alloy_provider::{
+    fillers::{FillProvider, JoinFill, WalletFiller},
+    Identity, Provider, RootProvider
+};
 use alloy_rpc_client::ClientBuilder;
-use alloy_rpc_types::{TransactionInput, TransactionRequest};
-use alloy_signer::Signer;
-use alloy_signer::SignerSync;
+use alloy_rpc_types::{BlockTransactionsKind, TransactionInput, TransactionRequest};
+use alloy_signer::{Signer, SignerSync};
 use alloy_sol_types::SolCall;
 use alloy_transport::{BoxTransport, Transport};
+use angstrom_types::{
+    contract_bindings::{angstrom::Angstrom::PoolKey, controller_v_1::ControllerV1},
+    primitive::PoolId
+};
+use futures::StreamExt;
+use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
+
+use crate::{
+    apis::{data_api::AngstromDataApi, utils::pool_config_store},
+    types::*
+};
 
 pub(crate) type RpcWalletProvider<P, T> =
     FillProvider<JoinFill<Identity, WalletFiller<EthereumWallet>>, P, T, Ethereum>;
@@ -72,7 +65,7 @@ impl EthRpcProvider<RootProvider<BoxTransport>, BoxTransport> {
 impl<P, T> EthRpcProvider<P, T>
 where
     P: Provider<T> + Clone,
-    T: Transport + Clone,
+    T: Transport + Clone
 {
     pub fn new(provider: P) -> Self {
         Self(provider, PhantomData)
@@ -85,10 +78,10 @@ where
     pub(crate) async fn view_call<IC>(
         &self,
         contract: Address,
-        call: IC,
+        call: IC
     ) -> eyre::Result<IC::Return>
     where
-        IC: SolCall + Send,
+        IC: SolCall + Send
     {
         let tx = TransactionRequest {
             to: Some(TxKind::Call(contract)),
@@ -96,15 +89,12 @@ where
             ..Default::default()
         };
 
-        Ok(IC::abi_decode_returns(
-            &self.provider().call(&tx).await?,
-            true,
-        )?)
+        Ok(IC::abi_decode_returns(&self.provider().call(&tx).await?, true)?)
     }
 
     pub(crate) fn with_wallet<S>(self, signer: S) -> EthRpcProvider<RpcWalletProvider<P, T>, T>
     where
-        S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Send + Sync + 'static,
+        S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Send + Sync + 'static
     {
         let p = alloy_provider::builder::<Ethereum>()
             .wallet(EthereumWallet::new(signer))
@@ -117,7 +107,7 @@ where
 impl<P, T> AngstromDataApi for EthRpcProvider<P, T>
 where
     P: Provider<T> + Clone,
-    T: Transport + Clone,
+    T: Transport + Clone
 {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
         let partial_keys = pool_config_store(self.provider())
@@ -130,9 +120,7 @@ where
         let all_pools_call = self
             .view_call(
                 CONTROLLER_V1_ADDRESS,
-                ControllerV1::getAllPoolsCall {
-                    storeKeys: partial_keys,
-                },
+                ControllerV1::getAllPoolsCall { storeKeys: partial_keys }
             )
             .await?;
 
@@ -140,9 +128,9 @@ where
             ._0
             .into_iter()
             .map(|val| TokenPairInfo {
-                token0: val.asset0,
-                token1: val.asset1,
-                is_active: true,
+                token0:    val.asset0,
+                token1:    val.asset1,
+                is_active: true
             })
             .collect())
     }
@@ -151,31 +139,28 @@ where
         let (token0, token1) = sort_tokens(token0, token1);
 
         let config_store = pool_config_store(self.provider()).await?;
-        let pool_config_store = config_store.get_entry(token0, token1).ok_or(eyre::eyre!(
-            "no config store entry for tokens {token0:?} - {token1:?}"
-        ))?;
+        let pool_config_store = config_store
+            .get_entry(token0, token1)
+            .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
 
         Ok(PoolKey {
-            currency0: token0,
-            currency1: token1,
-            fee: U24::from(pool_config_store.fee_in_e6),
+            currency0:   token0,
+            currency1:   token1,
+            fee:         U24::from(pool_config_store.fee_in_e6),
             tickSpacing: I24::unchecked_from(pool_config_store.tick_spacing),
-            hooks: ANGSTROM_ADDRESS,
+            hooks:       ANGSTROM_ADDRESS
         })
     }
 
     async fn historical_orders(
         &self,
-        filter: &HistoricalOrdersFilter,
+        filter: &HistoricalOrdersFilter
     ) -> eyre::Result<Vec<HistoricalOrders>> {
         let pool_stores = &AngstromPoolTokenIndexToPair::new_with_tokens(self, filter).await?;
 
         let start_block = filter.from_block.unwrap_or(ANGSTROM_DEPLOYED_BLOCK);
-        let end_block = if let Some(e) = filter.to_block {
-            e
-        } else {
-            self.0.get_block_number().await?
-        };
+        let end_block =
+            if let Some(e) = filter.to_block { e } else { self.0.get_block_number().await? };
 
         let mut block_stream = futures::stream::iter(start_block..end_block)
             .map(|bn| async move {
@@ -201,7 +186,7 @@ where
         &self,
         token0: Address,
         token1: Address,
-        block_number: Option<u64>,
+        block_number: Option<u64>
     ) -> eyre::Result<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>> {
         let (token0, token1) = sort_tokens(token0, token1);
 
@@ -228,9 +213,8 @@ mod tests {
 
     use alloy_primitives::address;
 
-    use crate::test_utils::spawn_ws_provider;
-
     use super::*;
+    use crate::test_utils::spawn_ws_provider;
 
     #[tokio::test]
     async fn test_all_token_pairs() {
@@ -253,11 +237,11 @@ mod tests {
 
         let pool_key = provider.pool_key(token0, token1).await.unwrap();
         let expected_pool_key = PoolKey {
-            currency0: token0,
-            currency1: token1,
-            fee: U24::ZERO,
+            currency0:   token0,
+            currency1:   token1,
+            fee:         U24::ZERO,
             tickSpacing: I24::unchecked_from(60),
-            hooks: ANGSTROM_ADDRESS,
+            hooks:       ANGSTROM_ADDRESS
         };
 
         assert_eq!(pool_key, expected_pool_key);

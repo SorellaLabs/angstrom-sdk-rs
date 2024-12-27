@@ -1,9 +1,6 @@
 use alloy_primitives::Address;
-use angstrom_types::contract_bindings::angstrom::Angstrom::PoolKey;
-use angstrom_types::primitive::PoolId;
-
-use uniswap_v4::uniswap::pool::EnhancedUniswapPool;
-use uniswap_v4::uniswap::pool_data_loader::DataLoader;
+use angstrom_types::{contract_bindings::angstrom::Angstrom::PoolKey, primitive::PoolId};
+use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
 use crate::types::*;
 
@@ -18,13 +15,13 @@ pub trait AngstromDataApi {
 
     async fn historical_orders(
         &self,
-        filter: &HistoricalOrdersFilter,
+        filter: &HistoricalOrdersFilter
     ) -> eyre::Result<Vec<HistoricalOrders>>;
 
     async fn pool_data(
         &self,
         token0: Address,
         token1: Address,
-        block_number: Option<u64>,
+        block_number: Option<u64>
     ) -> eyre::Result<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>>;
 }

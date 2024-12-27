@@ -4,7 +4,7 @@ use crate::apis::{node_api::AngstromNodeApi, order_builder::AngstromOrderBuilder
 
 #[derive(Debug, Clone)]
 pub struct AngstromProvider {
-    client: HttpClient,
+    client: HttpClient
 }
 
 impl AngstromProvider {

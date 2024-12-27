@@ -7,20 +7,19 @@ use alloy_rpc_types::Block;
 use alloy_transport::Transport;
 use angstrom_types::{
     contract_payloads::angstrom::{AngstromBundle, TopOfBlockOrder, UserOrder},
-    primitive::PoolId,
+    primitive::PoolId
 };
 use pade::PadeDecode;
 
-use crate::{apis::utils::pool_config_store, providers::EthRpcProvider};
-
 use super::PoolMetadata;
+use crate::{apis::utils::pool_config_store, providers::EthRpcProvider};
 
 #[derive(Debug, Default, Clone)]
 pub struct HistoricalOrdersFilter {
-    pub order_kinds: HashSet<OrderKind>,
+    pub order_kinds:   HashSet<OrderKind>,
     pub order_filters: HashSet<OrderFilter>,
-    pub from_block: Option<u64>,
-    pub to_block: Option<u64>,
+    pub from_block:    Option<u64>,
+    pub to_block:      Option<u64>
 }
 
 impl HistoricalOrdersFilter {
@@ -61,7 +60,7 @@ impl HistoricalOrdersFilter {
     pub fn filter_block(
         &self,
         block: Block,
-        pool_stores: &AngstromPoolTokenIndexToPair,
+        pool_stores: &AngstromPoolTokenIndexToPair
     ) -> Vec<HistoricalOrders> {
         block
             .transactions
@@ -77,7 +76,7 @@ impl HistoricalOrdersFilter {
     fn apply_kinds(
         &self,
         bundle: AngstromBundle,
-        pool_stores: &AngstromPoolTokenIndexToPair,
+        pool_stores: &AngstromPoolTokenIndexToPair
     ) -> Vec<HistoricalOrders> {
         let mut all_orders = Vec::new();
 
@@ -106,7 +105,7 @@ impl HistoricalOrdersFilter {
     fn apply_filter_tob(
         &self,
         order: &TopOfBlockOrder,
-        pool_stores: &AngstromPoolTokenIndexToPair,
+        pool_stores: &AngstromPoolTokenIndexToPair
     ) -> bool {
         if self.order_filters.contains(&OrderFilter::None) {
             return true;
@@ -127,14 +126,14 @@ impl HistoricalOrdersFilter {
                     false
                 }
             }
-            OrderFilter::None => unreachable!(),
+            OrderFilter::None => unreachable!()
         })
     }
 
     fn apply_filter_user(
         &self,
         order: &UserOrder,
-        pool_stores: &AngstromPoolTokenIndexToPair,
+        pool_stores: &AngstromPoolTokenIndexToPair
     ) -> bool {
         if self.order_filters.contains(&OrderFilter::None) {
             return true;
@@ -155,7 +154,7 @@ impl HistoricalOrdersFilter {
                     false
                 }
             }
-            OrderFilter::None => unreachable!(),
+            OrderFilter::None => unreachable!()
         })
     }
 }
@@ -164,14 +163,14 @@ impl HistoricalOrdersFilter {
 pub enum OrderKind {
     TOB,
     User,
-    None,
+    None
 }
 
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
 pub enum OrderFilter {
     ByPoolId(PoolId),
     ByTokens(Address, Address),
-    None,
+    None
 }
 
 impl OrderFilter {
@@ -187,7 +186,7 @@ impl OrderFilter {
 #[derive(Debug)]
 pub enum HistoricalOrders {
     TOB(TopOfBlockOrder),
-    User(UserOrder),
+    User(UserOrder)
 }
 
 #[derive(Debug)]
@@ -196,11 +195,11 @@ pub(crate) struct AngstromPoolTokenIndexToPair(HashMap<u16, PoolMetadata>);
 impl AngstromPoolTokenIndexToPair {
     pub(crate) async fn new_with_tokens<P, T>(
         provider: &EthRpcProvider<P, T>,
-        filter: &HistoricalOrdersFilter,
+        filter: &HistoricalOrdersFilter
     ) -> eyre::Result<Self>
     where
         P: Provider<T> + Clone,
-        T: Transport + Clone,
+        T: Transport + Clone
     {
         let token_pairs = filter
             .order_filters

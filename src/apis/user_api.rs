@@ -7,6 +7,6 @@ pub trait AngstromUserApi {
         &self,
         user_address: Address,
         token0: Address,
-        token1: Address,
+        token1: Address
     ) -> eyre::Result<()>;
 }

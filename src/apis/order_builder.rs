@@ -1,6 +1,6 @@
 use alloy_primitives::{
     aliases::{I24, U40},
-    Address, TxKind, U256,
+    Address, TxKind, U256
 };
 use alloy_rpc_types::{TransactionInput, TransactionRequest};
 use alloy_sol_types::SolCall;
@@ -8,8 +8,8 @@ use angstrom_types::{
     contract_bindings::pool_gate::PoolGate,
     sol_bindings::rpc_orders::{
         ExactFlashOrder, ExactStandingOrder, PartialFlashOrder, PartialStandingOrder,
-        TopOfBlockOrder,
-    },
+        TopOfBlockOrder
+    }
 };
 
 use crate::types::{TransactionRequestWithLiquidityMeta, POOL_GATE_ADDRESS};
@@ -22,7 +22,7 @@ pub trait AngstromOrderBuilder {
         tick_upper: i32,
         liquidity: U256,
         max_fee_per_gas: Option<u128>,
-        max_priority_fee_per_gas: Option<u128>,
+        max_priority_fee_per_gas: Option<u128>
     ) -> TransactionRequestWithLiquidityMeta {
         let call = PoolGate::addLiquidityCall {
             asset0: token0,
@@ -30,7 +30,7 @@ pub trait AngstromOrderBuilder {
             tickLower: I24::unchecked_from(tick_lower),
             tickUpper: I24::unchecked_from(tick_upper),
             liquidity,
-            salt: Default::default(),
+            salt: Default::default()
         };
 
         let tx = TransactionRequest {
@@ -51,7 +51,7 @@ pub trait AngstromOrderBuilder {
         tick_upper: i32,
         liquidity: U256,
         max_fee_per_gas: Option<u128>,
-        max_priority_fee_per_gas: Option<u128>,
+        max_priority_fee_per_gas: Option<u128>
     ) -> TransactionRequestWithLiquidityMeta {
         let call = PoolGate::removeLiquidityCall {
             asset0: token0,
@@ -59,7 +59,7 @@ pub trait AngstromOrderBuilder {
             tickLower: I24::unchecked_from(tick_lower),
             tickUpper: I24::unchecked_from(tick_upper),
             liquidity,
-            salt: Default::default(),
+            salt: Default::default()
         };
 
         let tx = TransactionRequest {
@@ -79,7 +79,7 @@ pub trait AngstromOrderBuilder {
         quantity_in: u128,
         quantity_out: u128,
         max_gas_asset0: u128,
-        valid_for_block: u64,
+        valid_for_block: u64
     ) -> TopOfBlockOrder {
         TopOfBlockOrder {
             asset_in,
@@ -99,7 +99,7 @@ pub trait AngstromOrderBuilder {
         max_amount_in: u128,
         min_price: U256,
         max_extra_fee_asset0: Option<u128>,
-        deadline: Option<u64>,
+        deadline: Option<u64>
     ) -> PartialStandingOrder {
         PartialStandingOrder {
             asset_in,
@@ -120,7 +120,7 @@ pub trait AngstromOrderBuilder {
         amount: u128,
         min_price: U256,
         max_extra_fee_asset0: Option<u128>,
-        deadline: Option<u64>,
+        deadline: Option<u64>
     ) -> ExactStandingOrder {
         ExactStandingOrder {
             asset_in,
@@ -141,7 +141,7 @@ pub trait AngstromOrderBuilder {
         max_amount_in: u128,
         min_price: U256,
         max_extra_fee_asset0: Option<u128>,
-        valid_for_block: u64,
+        valid_for_block: u64
     ) -> PartialFlashOrder {
         PartialFlashOrder {
             asset_in,
@@ -162,7 +162,7 @@ pub trait AngstromOrderBuilder {
         amount: u128,
         min_price: U256,
         max_extra_fee_asset0: Option<u128>,
-        valid_for_block: u64,
+        valid_for_block: u64
     ) -> ExactFlashOrder {
         ExactFlashOrder {
             asset_in,

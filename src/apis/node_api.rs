@@ -1,14 +1,17 @@
+use std::collections::HashSet;
+
 use alloy_primitives::{Address, B256};
-use angstrom_rpc::api::{GasEstimateResponse, OrderApiClient};
-use angstrom_rpc::types::{
-    OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult,
+use angstrom_rpc::{
+    api::{GasEstimateResponse, OrderApiClient},
+    types::{OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult}
 };
-use angstrom_types::orders::{CancelOrderRequest, OrderLocation, OrderStatus};
-use angstrom_types::primitive::PoolId;
-use angstrom_types::sol_bindings::grouped_orders::AllOrders;
+use angstrom_types::{
+    orders::{CancelOrderRequest, OrderLocation, OrderStatus},
+    primitive::PoolId,
+    sol_bindings::grouped_orders::AllOrders
+};
 use futures::{Stream, StreamExt, TryStreamExt};
 use jsonrpsee_http_client::HttpClient;
-use std::collections::HashSet;
 use validation::order::OrderPoolNewOrderResult;
 
 pub trait AngstromNodeApi {
@@ -42,7 +45,7 @@ pub trait AngstromNodeApi {
     async fn orders_by_pool_id(
         &self,
         pool_id: PoolId,
-        location: OrderLocation,
+        location: OrderLocation
     ) -> eyre::Result<Vec<AllOrders>> {
         let provider = self.rpc_provider();
         Ok(provider.orders_by_pool_id(pool_id, location).await?)
@@ -51,7 +54,7 @@ pub trait AngstromNodeApi {
     async fn subscribe_orders(
         &self,
         kind: HashSet<OrderSubscriptionKind>,
-        filters: HashSet<OrderSubscriptionFilter>,
+        filters: HashSet<OrderSubscriptionFilter>
     ) -> eyre::Result<impl Stream<Item = eyre::Result<OrderSubscriptionResult>>> {
         let provider = self.rpc_provider();
 
@@ -64,7 +67,7 @@ pub trait AngstromNodeApi {
 
     async fn send_orders(
         &self,
-        orders: Vec<AllOrders>,
+        orders: Vec<AllOrders>
     ) -> eyre::Result<Vec<OrderPoolNewOrderResult>> {
         let provider = self.rpc_provider();
         Ok(provider.send_orders(orders).await?)
@@ -82,7 +85,7 @@ pub trait AngstromNodeApi {
 
     async fn estimate_gas_of_orders(
         &self,
-        orders: Vec<AllOrders>,
+        orders: Vec<AllOrders>
     ) -> eyre::Result<Vec<GasEstimateResponse>> {
         let provider = self.rpc_provider();
         Ok(provider.estimate_gas_of_orders(orders).await?)
@@ -90,7 +93,7 @@ pub trait AngstromNodeApi {
 
     async fn status_of_orders(
         &self,
-        order_hashes: Vec<B256>,
+        order_hashes: Vec<B256>
     ) -> eyre::Result<Vec<Option<OrderStatus>>> {
         let provider = self.rpc_provider();
         Ok(provider.status_of_orders(order_hashes).await?)
@@ -98,7 +101,7 @@ pub trait AngstromNodeApi {
 
     async fn orders_by_pool_ids(
         &self,
-        pool_ids_with_location: Vec<(PoolId, OrderLocation)>,
+        pool_ids_with_location: Vec<(PoolId, OrderLocation)>
     ) -> eyre::Result<Vec<AllOrders>> {
         let provider = self.rpc_provider();
         Ok(provider.orders_by_pool_ids(pool_ids_with_location).await?)
@@ -113,18 +116,19 @@ mod tests {
     use alloy_primitives::U256;
     use alloy_provider::Provider;
     use alloy_transport::Transport;
-    use angstrom_types::sol_bindings::RawPoolOrder;
     use angstrom_types::sol_bindings::{
         grouped_orders::{FlashVariants, GroupedVanillaOrder},
         rpc_orders::TopOfBlockOrder,
+        RawPoolOrder
     };
     use testing_tools::order_generator::GeneratedPoolOrders;
 
-    use crate::apis::data_api::AngstromDataApi;
-    use crate::providers::{AngstromProvider, EthRpcProvider};
-    use crate::test_utils::{make_generator, spawn_angstrom_provider, spawn_ws_provider};
-
     use super::*;
+    use crate::{
+        apis::data_api::AngstromDataApi,
+        providers::{AngstromProvider, EthRpcProvider},
+        test_utils::{make_generator, spawn_angstrom_provider, spawn_ws_provider}
+    };
 
     fn get_flash_order(orders: &[GeneratedPoolOrders]) -> FlashVariants {
         orders
@@ -132,7 +136,7 @@ mod tests {
             .flat_map(|book| book.book.clone())
             .filter_map(|order| match order {
                 GroupedVanillaOrder::KillOrFill(or) => Some(or.clone()),
-                _ => None,
+                _ => None
             })
             .next()
             .unwrap()
@@ -143,18 +147,18 @@ mod tests {
     }
 
     struct AllOrdersSent {
-        tob: AllOrders,
-        user: AllOrders,
+        tob:  AllOrders,
+        user: AllOrders
     }
 
     impl AllOrdersSent {
         async fn send_orders<P, T>(
             eth_provider: &EthRpcProvider<P, T>,
-            angstrom_provider: &AngstromProvider,
+            angstrom_provider: &AngstromProvider
         ) -> eyre::Result<Self>
         where
             P: Provider<T> + Clone,
-            T: Transport + Clone,
+            T: Transport + Clone
         {
             let generator = make_generator(&eth_provider).await.unwrap();
             let orders = generator.generate_orders();
@@ -173,10 +177,7 @@ mod tests {
                 .unwrap();
             assert!(user_order_sent.is_valid());
 
-            Ok(Self {
-                tob: tob_order,
-                user: user_order,
-            })
+            Ok(Self { tob: tob_order, user: user_order })
         }
     }
 
@@ -223,9 +224,9 @@ mod tests {
 
         let canceled_tob_order = angstrom_provider
             .cancel_order(CancelOrderRequest {
-                signature: orders.tob.order_signature().unwrap(),
+                signature:    orders.tob.order_signature().unwrap(),
                 user_address: orders.tob.from(),
-                order_id: orders.tob.order_hash(),
+                order_id:     orders.tob.order_hash()
             })
             .await
             .unwrap();
@@ -233,9 +234,9 @@ mod tests {
 
         let canceled_user_orders = angstrom_provider
             .cancel_order(CancelOrderRequest {
-                signature: orders.user.order_signature().unwrap(),
+                signature:    orders.user.order_signature().unwrap(),
                 user_address: orders.user.from(),
-                order_id: orders.user.order_hash(),
+                order_id:     orders.user.order_hash()
             })
             .await
             .unwrap();
@@ -252,22 +253,13 @@ mod tests {
 
         let tob_order = AllOrders::TOB(get_tob_order(&orders));
         let tob_order_gas_estimation = angstrom_provider.estimate_gas(tob_order).await.unwrap();
-        assert_eq!(
-            tob_order_gas_estimation,
-            GasEstimateResponse {
-                gas_units: 0,
-                gas: U256::ZERO
-            }
-        );
+        assert_eq!(tob_order_gas_estimation, GasEstimateResponse { gas_units: 0, gas: U256::ZERO });
 
         let user_order = AllOrders::Flash(get_flash_order(&orders));
         let user_order_gas_estimation = angstrom_provider.estimate_gas(user_order).await.unwrap();
         assert_eq!(
             user_order_gas_estimation,
-            GasEstimateResponse {
-                gas_units: 0,
-                gas: U256::ZERO
-            }
+            GasEstimateResponse { gas_units: 0, gas: U256::ZERO }
         );
     }
 

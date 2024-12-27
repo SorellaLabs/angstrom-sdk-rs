@@ -1,14 +1,16 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock}
+};
+
+use alloy_provider::{Provider, RootProvider};
+use alloy_transport::{BoxTransport, Transport};
+use testing_tools::order_generator::OrderGenerator;
 
 use crate::{
     apis::data_api::AngstromDataApi,
-    providers::{AngstromProvider, EthRpcProvider},
+    providers::{AngstromProvider, EthRpcProvider}
 };
-use alloy_provider::{Provider, RootProvider};
-use alloy_transport::{BoxTransport, Transport};
-use std::sync::Arc;
-use std::sync::RwLock;
-use testing_tools::order_generator::OrderGenerator;
 
 pub async fn spawn_ws_provider(
 ) -> eyre::Result<EthRpcProvider<RootProvider<BoxTransport>, BoxTransport>> {
@@ -28,7 +30,7 @@ pub async fn spawn_angstrom_provider() -> eyre::Result<AngstromProvider> {
 pub async fn make_generator<P, T>(provider: &EthRpcProvider<P, T>) -> eyre::Result<OrderGenerator>
 where
     P: Provider<T> + Clone,
-    T: Transport + Clone,
+    T: Transport + Clone
 {
     let block_number = provider.provider().get_block_number().await?;
     let pairs = provider.all_token_pairs().await?;
