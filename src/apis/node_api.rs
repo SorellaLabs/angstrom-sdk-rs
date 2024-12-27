@@ -115,7 +115,6 @@ mod tests {
 
     use alloy_primitives::U256;
     use alloy_provider::Provider;
-    use alloy_transport::Transport;
     use angstrom_types::sol_bindings::{
         grouped_orders::{FlashVariants, GroupedVanillaOrder},
         rpc_orders::TopOfBlockOrder,
@@ -143,7 +142,7 @@ mod tests {
     }
 
     fn get_tob_order(orders: &[GeneratedPoolOrders]) -> TopOfBlockOrder {
-        orders.first().clone().unwrap().tob.clone()
+        orders.first().unwrap().tob.clone()
     }
 
     struct AllOrdersSent {
@@ -152,15 +151,14 @@ mod tests {
     }
 
     impl AllOrdersSent {
-        async fn send_orders<P, T>(
-            eth_provider: &EthRpcProvider<P, T>,
+        async fn send_orders<P>(
+            eth_provider: &EthRpcProvider<P>,
             angstrom_provider: &AngstromProvider
         ) -> eyre::Result<Self>
         where
-            P: Provider<T> + Clone,
-            T: Transport + Clone
+            P: Provider + Clone
         {
-            let generator = make_generator(&eth_provider).await.unwrap();
+            let generator = make_generator(eth_provider).await.unwrap();
             let orders = generator.generate_orders();
 
             let tob_order = AllOrders::TOB(get_tob_order(&orders));

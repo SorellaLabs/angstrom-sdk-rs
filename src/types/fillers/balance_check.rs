@@ -1,6 +1,5 @@
 use alloy_primitives::U256;
 use alloy_provider::Provider;
-use alloy_transport::Transport;
 use angstrom_types::{
     primitive::ERC20,
     sol_bindings::{
@@ -19,14 +18,13 @@ use crate::{
 pub struct TokenBalanceCheckFiller;
 
 impl TokenBalanceCheckFiller {
-    async fn handle_angstrom_order<P, T>(
+    async fn handle_angstrom_order<P>(
         &self,
-        provider: &EthRpcProvider<P, T>,
+        provider: &EthRpcProvider<P>,
         order: &AllOrders
     ) -> eyre::Result<()>
     where
-        P: Provider<T> + Clone,
-        T: Transport + Clone
+        P: Provider + Clone
     {
         let (token, amt) = match order {
             AllOrders::Standing(standing_variants) => match standing_variants {
@@ -71,14 +69,13 @@ impl TokenBalanceCheckFiller {
         Ok(())
     }
 
-    async fn handle_liquidity_order<P, T>(
+    async fn handle_liquidity_order<P>(
         &self,
-        provider: &EthRpcProvider<P, T>,
+        provider: &EthRpcProvider<P>,
         order: &TransactionRequestWithLiquidityMeta
     ) -> eyre::Result<()>
     where
-        P: Provider<T> + Clone,
-        T: Transport + Clone
+        P: Provider + Clone
     {
         // todo!();
         Ok(())
@@ -88,15 +85,14 @@ impl TokenBalanceCheckFiller {
 impl AngstromFiller for TokenBalanceCheckFiller {
     type FillOutput = ();
 
-    async fn prepare<P, T>(
+    async fn prepare<P>(
         &self,
-        provider: &EthRpcProvider<P, T>,
+        provider: &EthRpcProvider<P>,
         _: &AngstromProvider,
         order: &FillerOrder
     ) -> eyre::Result<Self::FillOutput>
     where
-        P: Provider<T> + Clone,
-        T: Transport + Clone
+        P: Provider + Clone
     {
         match order {
             FillerOrder::AngstromOrder(angstrom_order) => {

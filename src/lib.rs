@@ -12,7 +12,6 @@ use alloy_network::TxSigner;
 use alloy_primitives::{Address, PrimitiveSignature};
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
-use alloy_transport::Transport;
 use angstrom_rpc::api::GasEstimateResponse;
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey, primitive::PoolId,
@@ -33,35 +32,32 @@ use validation::order::OrderPoolNewOrderResult;
 
 use crate::apis::{data_api::AngstromDataApi, node_api::AngstromNodeApi};
 
-pub struct AngstromApi<P, T, F = ()>
+pub struct AngstromApi<P, F = ()>
 where
-    P: Provider<T> + Clone,
-    T: Transport + Clone
+    P: Provider + Clone
 {
-    pub eth_provider: EthRpcProvider<P, T>,
+    pub eth_provider: EthRpcProvider<P>,
     pub angstrom:     AngstromProvider,
     filler:           F
 }
 
-impl<P, T> AngstromApi<P, T>
+impl<P> AngstromApi<P>
 where
-    P: Provider<T> + Clone,
-    T: Transport + Clone
+    P: Provider + Clone
 {
-    pub fn new(eth_provider: EthRpcProvider<P, T>, angstrom: AngstromProvider) -> Self {
+    pub fn new(eth_provider: EthRpcProvider<P>, angstrom: AngstromProvider) -> Self {
         Self { eth_provider, angstrom, filler: () }
     }
 }
 
-impl<P, T, F> AngstromApi<P, T, F>
+impl<P, F> AngstromApi<P, F>
 where
-    P: Provider<T> + Clone,
-    T: Transport + Clone,
+    P: Provider + Clone,
     F: FillWrapper
 {
     pub fn with_nonce_generator_filler(
         self
-    ) -> AngstromApi<P, T, AngstromFillProvider<F, NonceGeneratorFiller>> {
+    ) -> AngstromApi<P, AngstromFillProvider<F, NonceGeneratorFiller>> {
         AngstromApi {
             eth_provider: self.eth_provider,
             angstrom:     self.angstrom,
@@ -71,7 +67,7 @@ where
 
     pub fn with_token_balance_filler(
         self
-    ) -> AngstromApi<P, T, AngstromFillProvider<F, TokenBalanceCheckFiller>> {
+    ) -> AngstromApi<P, AngstromFillProvider<F, TokenBalanceCheckFiller>> {
         AngstromApi {
             eth_provider: self.eth_provider,
             angstrom:     self.angstrom,
@@ -82,7 +78,7 @@ where
     pub fn with_signer_filler<S>(
         self,
         signer: S
-    ) -> AngstromApi<RpcWalletProvider<P, T>, T, AngstromFillProvider<F, SignerFiller<S>>>
+    ) -> AngstromApi<RpcWalletProvider<P>, AngstromFillProvider<F, SignerFiller<S>>>
     where
         S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Clone + Send + Sync + 'static,
         SignerFiller<S>: AngstromFiller
@@ -99,7 +95,6 @@ where
         signer: S
     ) -> AngstromApi<
         P,
-        T,
         AngstromFillProvider<
             AngstromFillProvider<
                 AngstromFillProvider<F, NonceGeneratorFiller>,
@@ -111,8 +106,7 @@ where
     where
         S: Signer + SignerSync + Send,
         SignerFiller<S>: AngstromFiller,
-        P: Provider<T> + Clone,
-        T: Transport + Clone
+        P: Provider + Clone
     {
         AngstromApi {
             eth_provider: self.eth_provider,
@@ -126,10 +120,9 @@ where
     }
 }
 
-impl<P, T, F> AngstromNodeApi for AngstromApi<P, T, F>
+impl<P, F> AngstromNodeApi for AngstromApi<P, F>
 where
-    P: Provider<T> + Clone,
-    T: Transport + Clone,
+    P: Provider + Clone,
     F: FillWrapper
 {
     fn rpc_provider(&self) -> HttpClient {
@@ -196,10 +189,9 @@ where
     }
 }
 
-impl<P, T, F> AngstromDataApi for AngstromApi<P, T, F>
+impl<P, F> AngstromDataApi for AngstromApi<P, F>
 where
-    P: Provider<T> + Clone,
-    T: Transport + Clone,
+    P: Provider + Clone,
     F: FillWrapper
 {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
@@ -229,10 +221,9 @@ where
     }
 }
 
-impl<P, T, F> AngstromOrderBuilder for AngstromApi<P, T, F>
+impl<P, F> AngstromOrderBuilder for AngstromApi<P, F>
 where
-    P: Provider<T> + Clone,
-    T: Transport + Clone,
+    P: Provider + Clone,
     F: FillWrapper
 {
 }

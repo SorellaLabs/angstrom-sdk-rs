@@ -4,7 +4,7 @@ use std::{
 };
 
 use alloy_provider::{Provider, RootProvider};
-use alloy_transport::{BoxTransport, Transport};
+use alloy_transport::BoxTransport;
 use testing_tools::order_generator::OrderGenerator;
 
 use crate::{
@@ -12,25 +12,23 @@ use crate::{
     providers::{AngstromProvider, EthRpcProvider}
 };
 
-pub async fn spawn_ws_provider(
-) -> eyre::Result<EthRpcProvider<RootProvider<BoxTransport>, BoxTransport>> {
+pub async fn spawn_ws_provider() -> eyre::Result<EthRpcProvider<RootProvider<BoxTransport>>> {
     dotenv::dotenv().ok();
     let ws_url = std::env::var("ETH_WS_URL").expect("ETH_WS_URL not found in .env");
 
-    Ok(EthRpcProvider::new_ws(ws_url).await?)
+    EthRpcProvider::new(&ws_url).await
 }
 
 pub async fn spawn_angstrom_provider() -> eyre::Result<AngstromProvider> {
     dotenv::dotenv().ok();
     let http_url = std::env::var("ANGSTROM_HTTP_URL").expect("ANGSTROM_HTTP_URL not found in .env");
 
-    Ok(AngstromProvider::new(http_url)?)
+    AngstromProvider::new(http_url)
 }
 
-pub async fn make_generator<P, T>(provider: &EthRpcProvider<P, T>) -> eyre::Result<OrderGenerator>
+pub async fn make_generator<P>(provider: &EthRpcProvider<P>) -> eyre::Result<OrderGenerator>
 where
-    P: Provider<T> + Clone,
-    T: Transport + Clone
+    P: Provider + Clone
 {
     let block_number = provider.provider().get_block_number().await?;
     let pairs = provider.all_token_pairs().await?;

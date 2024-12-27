@@ -1,5 +1,4 @@
 use alloy_provider::Provider;
-use alloy_transport::Transport;
 use angstrom_types::sol_bindings::grouped_orders::AllOrders;
 
 use super::{AngstromFiller, FillFrom, FillerOrder};
@@ -20,15 +19,14 @@ impl ChainIdFiller {
 impl AngstromFiller for ChainIdFiller {
     type FillOutput = Option<u64>;
 
-    async fn prepare<P, T>(
+    async fn prepare<P>(
         &self,
-        _: &EthRpcProvider<P, T>,
+        _: &EthRpcProvider<P>,
         _: &AngstromProvider,
         order: &FillerOrder
     ) -> eyre::Result<Self::FillOutput>
     where
-        P: Provider<T> + Clone,
-        T: Transport + Clone
+        P: Provider + Clone
     {
         Ok(matches!(order, FillerOrder::RegularOrder(_)).then_some(self.0))
     }

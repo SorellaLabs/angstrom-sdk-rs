@@ -1,5 +1,4 @@
 use alloy_provider::Provider;
-use alloy_transport::Transport;
 use angstrom_types::sol_bindings::grouped_orders::{AllOrders, StandingVariants};
 
 use super::{AngstromFiller, FillFrom, FillerOrder};
@@ -15,15 +14,14 @@ pub struct NonceGeneratorFiller;
 impl AngstromFiller for NonceGeneratorFiller {
     type FillOutput = Option<u64>;
 
-    async fn prepare<P, T>(
+    async fn prepare<P>(
         &self,
-        provider: &EthRpcProvider<P, T>,
+        provider: &EthRpcProvider<P>,
         angstrom_provider: &AngstromProvider,
         order: &FillerOrder
     ) -> eyre::Result<Self::FillOutput>
     where
-        P: Provider<T> + Clone,
-        T: Transport + Clone
+        P: Provider + Clone
     {
         if !order_contains_nonce(order) {
             return Ok(None);
@@ -61,16 +59,15 @@ fn order_contains_nonce(order: &FillerOrder) -> bool {
 
 impl FillFrom<NonceGeneratorFiller, AllOrders> for Option<u64> {
     fn prepare_with(self, input_order: &mut AllOrders) -> eyre::Result<()> {
-        match input_order {
-            AllOrders::Standing(standing_variants) => match standing_variants {
+        if let AllOrders::Standing(standing_variants) = input_order {
+            match standing_variants {
                 StandingVariants::Partial(partial_standing_order) => {
                     partial_standing_order.nonce = self.expect("expected nonce");
                 }
                 StandingVariants::Exact(exact_standing_order) => {
                     exact_standing_order.nonce = self.expect("expected nonce");
                 }
-            },
-            _ => ()
+            }
         };
 
         Ok(())

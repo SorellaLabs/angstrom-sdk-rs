@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, sync::Arc};
+use std::sync::Arc;
 
 use alloy_network::{Ethereum, EthereumWallet, TxSigner};
 use alloy_primitives::{
@@ -9,11 +9,10 @@ use alloy_provider::{
     fillers::{FillProvider, JoinFill, WalletFiller},
     Identity, Provider, RootProvider
 };
-use alloy_rpc_client::ClientBuilder;
 use alloy_rpc_types::{BlockTransactionsKind, TransactionInput, TransactionRequest};
 use alloy_signer::{Signer, SignerSync};
 use alloy_sol_types::SolCall;
-use alloy_transport::{BoxTransport, Transport};
+use alloy_transport::BoxTransport;
 use angstrom_types::{
     contract_bindings::{angstrom::Angstrom::PoolKey, controller_v_1::ControllerV1},
     primitive::PoolId
@@ -26,51 +25,26 @@ use crate::{
     types::*
 };
 
-pub(crate) type RpcWalletProvider<P, T> =
-    FillProvider<JoinFill<Identity, WalletFiller<EthereumWallet>>, P, T, Ethereum>;
+pub(crate) type RpcWalletProvider<P> =
+    FillProvider<JoinFill<Identity, WalletFiller<EthereumWallet>>, P, BoxTransport, Ethereum>;
 
 #[derive(Debug, Clone)]
 #[repr(transparent)]
-pub struct EthRpcProvider<P, T>(P, PhantomData<T>)
+pub struct EthRpcProvider<P>(P)
 where
-    P: Provider<T> + Clone,
-    T: Transport + Clone;
+    P: Provider + Clone;
 
-impl EthRpcProvider<RootProvider<BoxTransport>, BoxTransport> {
-    pub fn new_http(http_url: impl ToString) -> eyre::Result<Self> {
-        let builder = ClientBuilder::default().http(http_url.to_string().parse()?);
-        let provider = RootProvider::new(builder).boxed();
-        Ok(Self(provider, PhantomData))
-    }
-
-    #[cfg(feature = "ws")]
-    pub async fn new_ws(ws_url: impl ToString) -> eyre::Result<Self> {
-        let builder = ClientBuilder::default()
-            .ws(alloy_provider::WsConnect::new(ws_url.to_string()))
-            .await?;
-        let provider = RootProvider::new(builder).boxed();
-        Ok(Self(provider, PhantomData))
-    }
-
-    #[cfg(feature = "ipc")]
-    pub async fn new_ipc(ipc_path: impl ToString) -> eyre::Result<Self> {
-        let builder = ClientBuilder::default()
-            .ipc(alloy_provider::IpcConnect::new(ipc_path.to_string()))
-            .await?;
-        let provider = RootProvider::new(builder).boxed();
-        Ok(Self(provider, PhantomData))
+impl EthRpcProvider<RootProvider<BoxTransport>> {
+    /// based on the url passed in, will auto parse to http,ws or ipc
+    pub async fn new(url: &str) -> eyre::Result<Self> {
+        Ok(Self(
+            RootProvider::<BoxTransport, _>::builder()
+                .on_builtin(url)
+                .await?
+        ))
     }
 }
-
-impl<P, T> EthRpcProvider<P, T>
-where
-    P: Provider<T> + Clone,
-    T: Transport + Clone
-{
-    pub fn new(provider: P) -> Self {
-        Self(provider, PhantomData)
-    }
-
+impl<P: Provider + Clone> EthRpcProvider<P> {
     pub fn provider(&self) -> &P {
         &self.0
     }
@@ -92,7 +66,7 @@ where
         Ok(IC::abi_decode_returns(&self.provider().call(&tx).await?, true)?)
     }
 
-    pub(crate) fn with_wallet<S>(self, signer: S) -> EthRpcProvider<RpcWalletProvider<P, T>, T>
+    pub(crate) fn with_wallet<S>(self, signer: S) -> EthRpcProvider<RpcWalletProvider<P>>
     where
         S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Send + Sync + 'static
     {
@@ -100,14 +74,13 @@ where
             .wallet(EthereumWallet::new(signer))
             .on_provider(self.0);
 
-        EthRpcProvider(p, self.1)
+        EthRpcProvider(p)
     }
 }
 
-impl<P, T> AngstromDataApi for EthRpcProvider<P, T>
+impl<P> AngstromDataApi for EthRpcProvider<P>
 where
-    P: Provider<T> + Clone,
-    T: Transport + Clone
+    P: Provider + Clone
 {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
         let partial_keys = pool_config_store(self.provider())
@@ -222,7 +195,7 @@ mod tests {
 
         let all_pairs = provider.all_token_pairs().await.unwrap();
 
-        assert!(all_pairs.len() > 0);
+        assert!(!all_pairs.is_empty());
         let first = all_pairs.first().unwrap();
 
         assert_ne!(Address::ZERO, first.token0);

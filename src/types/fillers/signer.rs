@@ -1,7 +1,6 @@
 use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
-use alloy_transport::Transport;
 use angstrom_types::{
     primitive::ANGSTROM_DOMAIN,
     sol_bindings::{
@@ -38,15 +37,14 @@ impl<S: Signer + SignerSync> SignerFiller<S> {
 impl<S: Signer + SignerSync> AngstromFiller for SignerFiller<S> {
     type FillOutput = (Address, Option<OrderMeta>);
 
-    async fn prepare<P, T>(
+    async fn prepare<P>(
         &self,
-        _: &EthRpcProvider<P, T>,
+        _: &EthRpcProvider<P>,
         _: &AngstromProvider,
         order: &FillerOrder
     ) -> eyre::Result<Self::FillOutput>
     where
-        P: Provider<T> + Clone,
-        T: Transport + Clone
+        P: Provider + Clone
     {
         let my_address = self.0.address();
 
