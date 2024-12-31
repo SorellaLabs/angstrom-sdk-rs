@@ -95,14 +95,20 @@ dotenv = "0.15"
 parking_lot = "0.12"
 itertools = "0.12.1"
 
+# neon
+neon = { version = "1", optional = true }
+angstrom-sdk-macros = { path = "./sdk-macros", optional = true }
+
 
 [dev-dependencies]
 testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", branch = "feat/sdk-connections" }
 
 
 [features]
-default = ["full"]
+default = ["full", "neon"]
 full = ["ipc", "ws"]
 
 ipc = []
 ws = []
+
+neon = ["dep:neon", "dep:angstrom-sdk-macros"]

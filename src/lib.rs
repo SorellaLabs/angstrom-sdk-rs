@@ -1,8 +1,11 @@
 #![allow(async_fn_in_trait)]
 #![allow(private_interfaces)]
 #![allow(private_bounds)]
+#![feature(associated_type_defaults)]
 
 pub mod apis;
+#[cfg(feature = "neon")]
+pub mod js_utils;
 pub mod providers;
 #[cfg(test)]
 pub mod test_utils;

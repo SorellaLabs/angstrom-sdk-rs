@@ -3,16 +3,19 @@ use alloy_primitives::{
     Address, U256
 };
 use alloy_rpc_types::TransactionRequest;
+use angstrom_sdk_macros::NeonObject;
 use angstrom_types::{
     contract_bindings::{angstrom::Angstrom::PoolKey, pool_gate::PoolGate},
     contract_payloads::angstrom::AngPoolConfigEntry,
     primitive::PoolId
 };
+use neon::object::Object;
 use serde::{Deserialize, Serialize};
 
 use super::ANGSTROM_ADDRESS;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "neon", derive(NeonObject))]
 pub struct TokenPairInfo {
     pub token0:    Address,
     pub token1:    Address,

@@ -1615,6 +1615,7 @@ dependencies = [
  "alloy-transport-ipc",
  "alloy-transport-ws",
  "angstrom-rpc",
+ "angstrom-sdk-macros",
  "angstrom-types",
  "dotenv",
  "eyre",
@@ -1626,6 +1627,7 @@ dependencies = [
  "jsonrpsee-types",
  "malachite",
  "malachite-q",
+ "neon",
  "pade",
  "pade-macro",
  "parking_lot",
@@ -1637,6 +1639,16 @@ dependencies = [
  "tokio-tungstenite",
  "uniswap-v4",
  "validation",
+]
+
+[[package]]
+name = "angstrom-sdk-macros"
+version = "0.1.0"
+dependencies = [
+ "itertools 0.13.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.90",
 ]
 
 [[package]]
@@ -5793,6 +5805,32 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "tempfile",
+]
+
+[[package]]
+name = "neon"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d75440242411c87dc39847b0e33e961ec1f10326a9d8ecf9c1ea64a3b3c13dc"
+dependencies = [
+ "getrandom",
+ "libloading",
+ "neon-macros",
+ "once_cell",
+ "semver 1.0.24",
+ "send_wrapper 0.6.0",
+ "smallvec",
+]
+
+[[package]]
+name = "neon-macros"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6813fde79b646e47e7ad75f480aa80ef76a5d9599e2717407961531169ee38b"
+dependencies = [
+ "quote",
+ "syn 2.0.90",
+ "syn-mid",
 ]
 
 [[package]]
@@ -10756,6 +10794,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "syn-mid"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b5dc35bb08dd1ca3dfb09dce91fd2d13294d6711c88897d9a9d60acf39bce049"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.90",
 ]
 
 [[package]]
