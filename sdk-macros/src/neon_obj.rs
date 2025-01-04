@@ -134,6 +134,7 @@ impl RustTypes {
         field_name: &Ident,
         with_append: Option<TokenStream>
     ) -> TokenStream {
+        let name_str = field_name.to_string();
         match self {
             RustTypes::u8
             | RustTypes::u16
@@ -148,15 +149,18 @@ impl RustTypes {
             | RustTypes::f32
             | RustTypes::f64 => {
                 quote::quote! {
-                    neon::prelude::JsNumber::new(ctx, self.#field_name #with_append as f64)
+                    let val = neon::prelude::JsNumber::new(ctx, self.#field_name as f64);
+                    obj.set(ctx, #name_str, val)?;
                 }
             }
             RustTypes::Address | RustTypes::TxHash | RustTypes::B256 => quote::quote! {
-                neon::prelude::JsString::new(ctx, format!("{:?}", self.#field_name #with_append))
+                let val = neon::prelude::JsString::new(ctx, format!("{:?}", self.#field_name #with_append));
+                    obj.set(ctx, #name_str, val)?;
             },
             RustTypes::U24 => {
                 quote::quote! {
-                    neon::prelude::JsNumber::new(ctx, self.#field_name #with_append.to::<u64>() as f64)
+                    let val = neon::prelude::JsNumber::new(ctx, self.#field_name.to::<u64>() as f64);
+                    obj.set(ctx, #name_str, val)?;
                 }
             }
             RustTypes::U256 => {
@@ -168,17 +172,20 @@ impl RustTypes {
                         neon::types::bigint::Sign::Negative
                     };
 
-                    neon::types::JsBigInt::from_digits_le(ctx, sign, this.to_base_le(10))
+                    let val = neon::types::JsBigInt::from_digits_le(ctx, sign, this.to_base_le(10));
+                    obj.set(ctx, #name_str, val)?;
                 }
             }
             RustTypes::I24 => {
                 quote::quote! {
-                    neon::prelude::JsNumber::new(ctx, TryInto::<i64>::try_into(self.#field_name #with_append).unwrap() as f64)
+                    let val = neon::prelude::JsNumber::new(ctx, TryInto::<i64>::try_into(self.#field_name #with_append).unwrap() as f64);
+                    obj.set(ctx, #name_str, val)?;
                 }
             }
             RustTypes::bool => {
                 quote::quote! {
-                    neon::prelude::JsBoolean::new(ctx, self.#field_name #with_append)
+                   let val = neon::prelude::JsBoolean::new(ctx, self.#field_name #with_append);
+                    obj.set(ctx, #name_str, val)?;
                 }
             }
             RustTypes::Option(option_val) => {
@@ -188,28 +195,26 @@ impl RustTypes {
                 quote::quote! {
                     let this = self.#field_name #with_append;
                     if this.is_none() {
-                        neon::types::JsNull::new(ctx)
+                        let val = neon::types::JsNull::new(ctx);
+                        obj.set(ctx, #name_str, val)?;
+                        //val
                     } else {
                         #inner
+                        obj.set(ctx, #name_str, val)?;
                     }
 
                 }
             }
             RustTypes::Other => {
                 quote::quote! {
-                    neon::prelude::JsObject::new(ctx, self.#field_name #with_append)
+                    self.#field_name.to_object(obj, ctx)
                 }
             }
         }
     }
 
     fn set_tokens_with_conversion(self, field_name: &Ident) -> TokenStream {
-        let conversion = self.to_conversion_token(field_name, None);
-        let name_str = field_name.to_string();
-        quote::quote! {
-            let conv = #conversion;
-            obj.set(ctx, #name_str, conv)?;
-        }
+        self.to_conversion_token(field_name, None)
     }
 }
 

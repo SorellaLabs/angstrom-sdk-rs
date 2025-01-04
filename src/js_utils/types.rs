@@ -44,8 +44,7 @@ pub struct TopOfBlockOrderNeon {
     pub gas_used_asset_0: u128,
     pub pairs_index:      u16,
     pub zero_for_1:       bool,
-    pub recipient:        Option<Address>,
-    pub signature:        Signature
+    pub recipient:        Option<Address> // pub signature:        Signature
 }
 
 impl From<TopOfBlockOrder> for TopOfBlockOrderNeon {
@@ -58,8 +57,11 @@ impl From<TopOfBlockOrder> for TopOfBlockOrderNeon {
             gas_used_asset_0: value.gas_used_asset_0,
             pairs_index:      value.pairs_index,
             zero_for_1:       value.zero_for_1,
-            recipient:        value.recipient,
-            signature:        value.signature
+            recipient:        value.recipient // signature:        value.signature
         }
     }
+}
+
+fn t() {
+    todo!();
 }
