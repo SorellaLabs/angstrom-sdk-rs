@@ -197,7 +197,6 @@ impl RustTypes {
                     if this.is_none() {
                         let val = neon::types::JsNull::new(ctx);
                         obj.set(ctx, #name_str, val)?;
-                        //val
                     } else {
                         #inner
                         obj.set(ctx, #name_str, val)?;
@@ -207,7 +206,9 @@ impl RustTypes {
             }
             RustTypes::Other => {
                 quote::quote! {
-                    self.#field_name.to_object(obj, ctx)
+                    let this_obj = ctx.empty_object();
+                    self.#field_name.to_object(this_obj, ctx)?;
+                    obj.set(ctx, #name_str, this_obj)?;
                 }
             }
         }

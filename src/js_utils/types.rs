@@ -7,8 +7,7 @@ use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
     contract_payloads::{angstrom::TopOfBlockOrder, Signature}
 };
-use neon::object::Object;
-
+use neon::{context::Context, object::Object};
 #[allow(non_snake_case)]
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
