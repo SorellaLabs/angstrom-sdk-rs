@@ -305,7 +305,7 @@ impl OrderFilter {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum HistoricalOrders {
     TOB(TopOfBlockOrder),
     User(UserOrder)

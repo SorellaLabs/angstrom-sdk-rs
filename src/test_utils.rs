@@ -6,6 +6,8 @@ use std::{
 use alloy_provider::{Provider, RootProvider};
 use alloy_transport::BoxTransport;
 use testing_tools::order_generator::OrderGenerator;
+use tokio::sync::Notify;
+use uniswap_v4::uniswap::pool_manager::{SyncedUniswapPools, TickRangeToLoad};
 
 use crate::{
     apis::data_api::AngstromDataApi,
@@ -26,7 +28,9 @@ pub async fn spawn_angstrom_provider() -> eyre::Result<AngstromProvider> {
     AngstromProvider::new(http_url)
 }
 
-pub async fn make_generator<P>(provider: &EthRpcProvider<P>) -> eyre::Result<OrderGenerator>
+pub async fn make_generator<P>(
+    provider: &EthRpcProvider<P>
+) -> eyre::Result<(OrderGenerator, tokio::sync::mpsc::Receiver<(TickRangeToLoad, Arc<Notify>)>)>
 where
     P: Provider + Clone
 {
@@ -43,7 +47,13 @@ where
     .into_iter()
     .collect::<Result<HashMap<_, _>, _>>()?;
 
-    let generator = OrderGenerator::new(Arc::new(uniswap_pools), block_number, 20..50, 0.5..0.7);
+    let (tx, rx) = tokio::sync::mpsc::channel(100);
+    let generator = OrderGenerator::new(
+        SyncedUniswapPools::new(Arc::new(uniswap_pools), tx),
+        block_number,
+        20..50,
+        0.5..0.7
+    );
 
-    Ok(generator)
+    Ok((generator, rx))
 }

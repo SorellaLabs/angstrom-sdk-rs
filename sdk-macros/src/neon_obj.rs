@@ -114,6 +114,7 @@ enum RustTypes {
     U24,
     U256,
     I24,
+    I256,
     Option(Option<Box<RustTypes>>),
     Bytes,
     Other
@@ -223,7 +224,7 @@ impl RustTypes {
                     obj.set(ctx, #name_str, val)?;
                 }
             }
-            RustTypes::U256 => {
+            RustTypes::I256 => {
                 quote::quote! {
                     let this = #field_name_dt;
                     let sign = if this.is_positive() {
@@ -232,7 +233,13 @@ impl RustTypes {
                         neon::types::bigint::Sign::Negative
                     };
 
-                    let val = neon::types::JsBigInt::from_digits_le(ctx, sign, this.to_base_le(10));
+                    let val = neon::types::JsBigInt::from_digits_le(ctx, sign, &this.to_base_le(10).collect::<Vec<_>>());
+                    obj.set(ctx, #name_str, val)?;
+                }
+            }
+            RustTypes::U256 => {
+                quote::quote! {
+                    let val = neon::types::JsBigInt::from_digits_le(ctx, neon::types::bigint::Sign::Positive, &#field_name_dt.to_base_le(10).collect::<Vec<_>>());
                     obj.set(ctx, #name_str, val)?;
                 }
             }
@@ -258,11 +265,11 @@ impl RustTypes {
                 let inner = option_val.unwrap().to_conversion_token(
                     field_name,
                     is_enum,
-                    Some(quote::quote! {.as_ref().unwrap()})
+                    Some(quote::quote! {.as_ref().unwrap().clone()})
                 );
                 quote::quote! {
-                    let this = #field_name_dt;
-                    if this.is_none() {
+                    //let this = #field_name_dt;
+                    if #field_name_dt.is_none() {
                         let val = neon::types::JsNull::new(ctx);
                         obj.set(ctx, #name_str, val)?;
                     } else {
@@ -275,7 +282,7 @@ impl RustTypes {
             RustTypes::Other => {
                 quote::quote! {
                     let this_obj = ctx.empty_object();
-                    self.#field_name.make_object(&this_obj, ctx)?;
+                    #field_name_dt.make_object(&this_obj, ctx)?;
                     obj.set(ctx, #name_str, this_obj)?;
                 }
             }
@@ -309,6 +316,7 @@ impl From<String> for RustTypes {
             "U24" => Self::U24,
             "U256" => Self::U256,
             "I24" => Self::I24,
+            "I256" => Self::I256,
             "Option" => Self::Option(None),
             "Bytes" => Self::Bytes,
             _ => Self::Other
@@ -328,7 +336,8 @@ impl NeonObjectAs {
         quote::quote! {
             impl crate::js_utils::MakeObject<#b> for #a {
                 fn make_object(&self, obj: &neon::prelude::Handle<'_, neon::prelude::JsObject>, ctx: &mut neon::prelude::TaskContext<'_>) -> neon::prelude::NeonResult<()> {
-                    let this: #b = self.clone().into();
+                    let me: Self = self.clone();
+                    let this: #b = me.into();
                     this.make_object(obj, ctx)?;
 
                     Ok(())

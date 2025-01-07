@@ -158,7 +158,7 @@ mod tests {
         where
             P: Provider + Clone
         {
-            let generator = make_generator(eth_provider).await.unwrap();
+            let (generator, rx) = make_generator(eth_provider).await.unwrap();
             let orders = generator.generate_orders();
 
             let tob_order = AllOrders::TOB(get_tob_order(&orders));
@@ -246,7 +246,7 @@ mod tests {
         let eth_provider = spawn_ws_provider().await.unwrap();
         let angstrom_provider = spawn_angstrom_provider().await.unwrap();
 
-        let generator = make_generator(&eth_provider).await.unwrap();
+        let (generator, rx) = make_generator(&eth_provider).await.unwrap();
         let orders = generator.generate_orders();
 
         let tob_order = AllOrders::TOB(get_tob_order(&orders));
