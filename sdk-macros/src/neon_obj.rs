@@ -7,7 +7,7 @@ use syn::{
 pub fn parse(item: DeriveInput) -> syn::Result<TokenStream> {
     match &item.data {
         Data::Struct(data_struct) => parse_struct(&item, data_struct),
-        Data::Enum(data_enum) => parse_struct(&item, data_enum),
+        Data::Enum(data_enum) => parse_enum(&item, data_enum),
         Data::Union(_) => unimplemented!()
     }
 }
@@ -19,7 +19,7 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
     let fields_set = data_struct.fields.iter().filter_map(|field| {
         field.ident.as_ref().map(|field_name| {
             let rust_ty = RustTypes::from_macro_type(&field.ty);
-            rust_ty.set_tokens_with_conversion(field_name)
+            rust_ty.set_tokens_with_conversion(field_name, false)
         })
     });
 
@@ -47,15 +47,23 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
         .map(|variant| {
             let variant_name = &variant.ident;
             let fields = &variant.fields;
-            let fields_set = fields.iter().filter_map(|field| {
-                field.ident.as_ref().map(|field_name| {
-                    let rust_ty = RustTypes::from_macro_type(&field.ty);
-                    rust_ty.set_tokens_with_conversion(field_name)
+            let fields_set = fields
+                .iter()
+                .filter_map(|field| {
+                    field.ident.as_ref().map(|field_name| {
+                        let rust_ty = RustTypes::from_macro_type(&field.ty);
+                        rust_ty.set_tokens_with_conversion(field_name, true)
+                    })
                 })
-            });
+                .collect::<Vec<_>>();
+
+            let field_names = fields
+                .iter()
+                .map(|field| field.ident.clone().unwrap())
+                .collect::<Vec<_>>();
 
             quote::quote! {
-                #name::#variant_name #fields => {
+                #name::#variant_name { #(#field_names),* } => {
                     #(#fields_set)*
                 }
             }
@@ -65,7 +73,8 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
     let trait_impl = quote::quote! {
         impl #impl_generics crate::js_utils::MakeObject for #name #ty_generics #where_clause {
             fn to_object(&self, obj: &neon::prelude::Handle<'_, neon::prelude::JsObject>, ctx: &mut neon::prelude::TaskContext<'_>) -> neon::prelude::NeonResult<()> {
-                match self {
+                let me: Self = self.clone();
+                match me {
                     #(#variant_tokens)*
                 };
 
@@ -103,6 +112,7 @@ enum RustTypes {
     U256,
     I24,
     Option(Option<Box<RustTypes>>),
+    Bytes,
     Other
 }
 
@@ -173,9 +183,15 @@ impl RustTypes {
     fn to_conversion_token(
         self,
         field_name: &Ident,
+        is_enum: bool,
         with_append: Option<TokenStream>
     ) -> TokenStream {
         let name_str = field_name.to_string();
+        let field_name_dt = if is_enum {
+            quote::quote! {#field_name #with_append}
+        } else {
+            quote::quote! {self.#field_name #with_append}
+        };
         match self {
             RustTypes::u8
             | RustTypes::u16
@@ -190,23 +206,23 @@ impl RustTypes {
             | RustTypes::f32
             | RustTypes::f64 => {
                 quote::quote! {
-                    let val = neon::prelude::JsNumber::new(ctx, self.#field_name as f64);
+                    let val = neon::prelude::JsNumber::new(ctx, #field_name_dt as f64);
                     obj.set(ctx, #name_str, val)?;
                 }
             }
             RustTypes::Address | RustTypes::TxHash | RustTypes::B256 => quote::quote! {
-                let val = neon::prelude::JsString::new(ctx, format!("{:?}", self.#field_name #with_append));
+                let val = neon::prelude::JsString::new(ctx, format!("{:?}", #field_name_dt));
                     obj.set(ctx, #name_str, val)?;
             },
             RustTypes::U24 => {
                 quote::quote! {
-                    let val = neon::prelude::JsNumber::new(ctx, self.#field_name.to::<u64>() as f64);
+                    let val = neon::prelude::JsNumber::new(ctx, #field_name_dt.to::<u64>() as f64);
                     obj.set(ctx, #name_str, val)?;
                 }
             }
             RustTypes::U256 => {
                 quote::quote! {
-                    let this = self.#field_name #with_append;
+                    let this = #field_name_dt;
                     let sign = if this.is_positive() {
                         neon::types::bigint::Sign::Positive
                     } else {
@@ -219,22 +235,30 @@ impl RustTypes {
             }
             RustTypes::I24 => {
                 quote::quote! {
-                    let val = neon::prelude::JsNumber::new(ctx, TryInto::<i64>::try_into(self.#field_name #with_append).unwrap() as f64);
+                    let val = neon::prelude::JsNumber::new(ctx, TryInto::<i64>::try_into(#field_name_dt).unwrap() as f64);
                     obj.set(ctx, #name_str, val)?;
                 }
             }
             RustTypes::bool => {
                 quote::quote! {
-                   let val = neon::prelude::JsBoolean::new(ctx, self.#field_name #with_append);
+                   let val = neon::prelude::JsBoolean::new(ctx, #field_name_dt);
+                    obj.set(ctx, #name_str, val)?;
+                }
+            }
+            RustTypes::Bytes => {
+                quote::quote! {
+                   let val = neon::types::JsUint8Array::from_slice(ctx, &*#field_name_dt)?;
                     obj.set(ctx, #name_str, val)?;
                 }
             }
             RustTypes::Option(option_val) => {
-                let inner = option_val
-                    .unwrap()
-                    .to_conversion_token(field_name, Some(quote::quote! {.as_ref().unwrap()}));
+                let inner = option_val.unwrap().to_conversion_token(
+                    field_name,
+                    is_enum,
+                    Some(quote::quote! {.as_ref().unwrap()})
+                );
                 quote::quote! {
-                    let this = self.#field_name #with_append;
+                    let this = #field_name_dt;
                     if this.is_none() {
                         let val = neon::types::JsNull::new(ctx);
                         obj.set(ctx, #name_str, val)?;
@@ -248,15 +272,15 @@ impl RustTypes {
             RustTypes::Other => {
                 quote::quote! {
                     let this_obj = ctx.empty_object();
-                    self.#field_name.to_object(this_obj, ctx)?;
+                    self.#field_name.to_object(&this_obj, ctx)?;
                     obj.set(ctx, #name_str, this_obj)?;
                 }
             }
         }
     }
 
-    fn set_tokens_with_conversion(self, field_name: &Ident) -> TokenStream {
-        self.to_conversion_token(field_name, None)
+    fn set_tokens_with_conversion(self, field_name: &Ident, is_enum: bool) -> TokenStream {
+        self.to_conversion_token(field_name, is_enum, None)
     }
 }
 
@@ -283,6 +307,7 @@ impl From<String> for RustTypes {
             "U256" => Self::U256,
             "I24" => Self::I24,
             "Option" => Self::Option(None),
+            "Bytes" => Self::Bytes,
             _ => Self::Other
         }
     }
