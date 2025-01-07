@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use alloy_primitives::{
     aliases::{I24, U24},
     Address, Bytes, B256, U256
@@ -8,9 +10,14 @@ use angstrom_types::{
     contract_payloads::{
         angstrom::{OrderQuantities, StandingValidation, TopOfBlockOrder, UserOrder},
         Signature
-    }
+    },
+    primitive::{PoolId, UniswapPoolRegistry}
 };
 use neon::{context::Context, object::Object};
+use uniswap_v4::uniswap::{
+    pool::TickInfo,
+    pool_data_loader::{DataLoader, PoolDataLoader}
+};
 
 use crate::types::HistoricalOrders;
 
@@ -175,5 +182,101 @@ struct StandingValidationNeon {
 impl From<StandingValidation> for StandingValidationNeon {
     fn from(value: StandingValidation) -> Self {
         StandingValidationNeon { nonce: value.nonce(), deadline: value.deadline() }
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct EnhancedUniswapPoolNeon {
+    sync_swap_with_sim:     bool,
+    initial_ticks_per_side: u16,
+    data_loader:            DataLoaderNeon,
+    token_a:                Address,
+    token_a_decimals:       u8,
+    token_b:                Address,
+    token_b_decimals:       u8,
+    liquidity:              u128,
+    liquidity_net:          i128,
+    sqrt_price:             U256,
+    fee:                    u32,
+    tick:                   i32,
+    tick_spacing:           i32,
+    tick_bitmap:            HashMap<i16, U256>,
+    ticks:                  HashMap<i32, TickInfoNeon>
+}
+
+impl From<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>> for EnhancedUniswapPoolNeon {
+    fn from(value: EnhancedUniswapPool<DataLoader<PoolId>, PoolId>) -> Self {
+        EnhancedUniswapPoolNeon {
+            sync_swap_with_sim:     value.sync_swap_with_sim(),
+            initial_ticks_per_side: value.initial_ticks_per_side(),
+            data_loader:            value.data_loader.into(),
+            token_a:                value.token_a,
+            token_a_decimals:       value.token_a_decimals,
+            token_b:                value.token_b,
+            token_b_decimals:       value.token_b_decimals,
+            liquidity:              value.liquidity,
+            liquidity_net:          value.liquidity_net,
+            sqrt_price:             value.sqrt_price,
+            fee:                    value.fee,
+            tick:                   value.tick,
+            tick_spacing:           value.tick_spacing,
+            tick_bitmap:            value.tick_bitmap,
+            ticks:                  value
+                .ticks
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect()
+        }
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct DataLoaderNeon {
+    address:       PoolId,
+    pool_registry: Option<UniswapPoolRegistryNeon>,
+    pool_manager:  Option<Address>
+}
+
+impl From<DataLoader<PoolId>> for DataLoaderNeon {
+    fn from(value: DataLoader<PoolId>) -> Self {
+        DataLoaderNeon {
+            address:       value.address(),
+            pool_manager:  value.pool_manager_opt(),
+            pool_registry: value.pool_registry()
+        }
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct UniswapPoolRegistryNeon {
+    pools: HashMap<PoolId, PoolKeyNeon>
+}
+
+impl From<UniswapPoolRegistry> for UniswapPoolRegistryNeon {
+    fn from(value: UniswapPoolRegistry) -> Self {
+        UniswapPoolRegistryNeon {
+            pools: value
+                .pools()
+                .into_iter()
+                .map(|(k, v)| (k, v.into()))
+                .collect()
+        }
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct TickInfoNeon {
+    liquidity_gross: u128,
+    liquidity_net:   i128,
+    initialized:     bool
+}
+
+impl From<TickInfo> for TickInfoNeon {
+    fn from(value: TickInfo) -> Self {
+        TickInfoNeon {
+            liquidity_gross: value.liquidity_gross,
+            liquidity_net:   value.liquidity_net,
+            initialized:     value.initialized
+        }
     }
 }
