@@ -9,8 +9,6 @@ use angstrom_types::{
 };
 use neon::{context::Context, object::Object};
 
-use super::MakeObject;
-
 #[allow(non_snake_case)]
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]

@@ -46,6 +46,7 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
         .iter()
         .map(|variant| {
             let variant_name = &variant.ident;
+            let variant_name_str = variant_name.to_string().to_lowercase();
             let fields = &variant.fields;
             let fields_set = fields
                 .iter()
@@ -64,6 +65,8 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
 
             quote::quote! {
                 #name::#variant_name { #(#field_names),* } => {
+                    let val = neon::prelude::JsString::new(ctx, #variant_name_str.to_string());
+                    obj.set(ctx, "variant_name", val)?;
                     #(#fields_set)*
                 }
             }
@@ -212,7 +215,7 @@ impl RustTypes {
             }
             RustTypes::Address | RustTypes::TxHash | RustTypes::B256 => quote::quote! {
                 let val = neon::prelude::JsString::new(ctx, format!("{:?}", #field_name_dt));
-                    obj.set(ctx, #name_str, val)?;
+                obj.set(ctx, #name_str, val)?;
             },
             RustTypes::U24 => {
                 quote::quote! {
