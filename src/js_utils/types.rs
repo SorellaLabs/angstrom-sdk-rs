@@ -14,12 +14,12 @@ use super::MakeObject;
 #[allow(non_snake_case)]
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
-pub struct PoolKeyNeon {
-    pub currency0:   Address,
-    pub currency1:   Address,
-    pub fee:         U24,
-    pub tickSpacing: I24,
-    pub hooks:       Address
+struct PoolKeyNeon {
+    currency0:   Address,
+    currency1:   Address,
+    fee:         U24,
+    tickSpacing: I24,
+    hooks:       Address
 }
 
 impl From<PoolKey> for PoolKeyNeon {
@@ -38,16 +38,16 @@ neon_object_as!(PoolKey, PoolKeyNeon);
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
-pub struct TopOfBlockOrderNeon {
-    pub use_internal:     bool,
-    pub quantity_in:      u128,
-    pub quantity_out:     u128,
-    pub max_gas_asset_0:  u128,
-    pub gas_used_asset_0: u128,
-    pub pairs_index:      u16,
-    pub zero_for_1:       bool,
-    pub recipient:        Option<Address>,
-    pub signature:        SignatureNeon
+struct TopOfBlockOrderNeon {
+    use_internal:     bool,
+    quantity_in:      u128,
+    quantity_out:     u128,
+    max_gas_asset_0:  u128,
+    gas_used_asset_0: u128,
+    pairs_index:      u16,
+    zero_for_1:       bool,
+    recipient:        Option<Address>,
+    signature:        SignatureNeon
 }
 
 impl From<TopOfBlockOrder> for TopOfBlockOrderNeon {
@@ -66,9 +66,11 @@ impl From<TopOfBlockOrder> for TopOfBlockOrderNeon {
     }
 }
 
+neon_object_as!(TopOfBlockOrder, TopOfBlockOrderNeon);
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
-pub enum SignatureNeon {
+enum SignatureNeon {
     Contract { from: Address, signature: Bytes },
     Ecdsa { v: u8, r: B256, s: B256 }
 }
