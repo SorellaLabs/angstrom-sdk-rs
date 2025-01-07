@@ -14,7 +14,7 @@ use super::MakeObject;
 #[allow(non_snake_case)]
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
-struct PoolKeyNeon {
+pub struct PoolKeyNeon {
     currency0:   Address,
     currency1:   Address,
     fee:         U24,
@@ -38,7 +38,7 @@ neon_object_as!(PoolKey, PoolKeyNeon);
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
-struct TopOfBlockOrderNeon {
+pub struct TopOfBlockOrderNeon {
     use_internal:     bool,
     quantity_in:      u128,
     quantity_out:     u128,
