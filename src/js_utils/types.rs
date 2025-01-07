@@ -8,6 +8,8 @@ use angstrom_types::{
     contract_payloads::{angstrom::TopOfBlockOrder, Signature}
 };
 use neon::{context::Context, object::Object};
+
+use super::MakeObject;
 #[allow(non_snake_case)]
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
@@ -65,4 +67,13 @@ impl From<TopOfBlockOrder> for TopOfBlockOrderNeon {
 
 fn t() {
     todo!();
+}
+
+
+impl MakeObject for Signature {
+    type MacroedType = Self;
+
+    fn to_object(&self, obj: &neon::prelude::Handle<'_, neon::prelude::JsObject>, ctx: &mut neon::prelude::TaskContext<'_>) -> neon::prelude::NeonResult<()> {
+        todo!()
+    }
 }
