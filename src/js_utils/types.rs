@@ -1,6 +1,6 @@
 use alloy_primitives::{
     aliases::{I24, U24},
-    Address
+    Address, FixedBytes
 };
 use angstrom_sdk_macros::{neon_object_as, NeonObject};
 use angstrom_types::{
@@ -65,15 +65,34 @@ impl From<TopOfBlockOrder> for TopOfBlockOrderNeon {
     }
 }
 
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "neon", derive(NeonObject))]
+pub enum SignatureNeon {
+    Contract { from: Address, signature: Bytes },
+    Ecdsa { v: u8, r: FixedBytes<32>, s: FixedBytes<32> }
+}
+
+impl From<Signature> for SignatureNeon {
+    fn from(value: Signature) -> Self {
+        match value {
+            Signature::Contract { from, signature } => Self::Contract { from, signature },
+            Signature::Ecdsa { v, r, s } => Self::Ecdsa { v, r, s }
+        }
+    }
+}
+
 fn t() {
     todo!();
 }
 
-
 impl MakeObject for Signature {
     type MacroedType = Self;
 
-    fn to_object(&self, obj: &neon::prelude::Handle<'_, neon::prelude::JsObject>, ctx: &mut neon::prelude::TaskContext<'_>) -> neon::prelude::NeonResult<()> {
+    fn to_object(
+        &self,
+        obj: &neon::prelude::Handle<'_, neon::prelude::JsObject>,
+        ctx: &mut neon::prelude::TaskContext<'_>
+    ) -> neon::prelude::NeonResult<()> {
         todo!()
     }
 }

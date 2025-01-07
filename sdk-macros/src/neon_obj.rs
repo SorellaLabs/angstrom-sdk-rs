@@ -1,13 +1,13 @@
 use proc_macro2::TokenStream;
 use syn::{
-    parse::Parse, Data, DataStruct, DeriveInput, GenericArgument, Ident, PathArguments,
+    parse::Parse, Data, DataEnum, DataStruct, DeriveInput, GenericArgument, Ident, PathArguments,
     PathSegment, Token, Type
 };
 
 pub fn parse(item: DeriveInput) -> syn::Result<TokenStream> {
     match &item.data {
         Data::Struct(data_struct) => parse_struct(&item, data_struct),
-        Data::Enum(_) => unimplemented!(),
+        Data::Enum(data_enum) => parse_struct(&item, data_enum),
         Data::Union(_) => unimplemented!()
     }
 }
@@ -27,6 +27,47 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
         impl #impl_generics crate::js_utils::MakeObject for #name #ty_generics #where_clause {
             fn to_object(&self, obj: &neon::prelude::Handle<'_, neon::prelude::JsObject>, ctx: &mut neon::prelude::TaskContext<'_>) -> neon::prelude::NeonResult<()> {
                 #(#fields_set)*
+
+                Ok(())
+
+            }
+        }
+    };
+
+    Ok(trait_impl)
+}
+
+fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStream> {
+    let name = &item.ident;
+    let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
+
+    let variant_tokens = data_enum
+        .variants
+        .iter()
+        .map(|variant| {
+            let variant_name = &variant.ident;
+            let fields = &variant.fields;
+            let fields_set = fields.iter().filter_map(|field| {
+                field.ident.as_ref().map(|field_name| {
+                    let rust_ty = RustTypes::from_macro_type(&field.ty);
+                    rust_ty.set_tokens_with_conversion(field_name)
+                })
+            });
+
+            quote::quote! {
+                #name::#variant_name #fields => {
+                    #(#fields_set)*
+                }
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let trait_impl = quote::quote! {
+        impl #impl_generics crate::js_utils::MakeObject for #name #ty_generics #where_clause {
+            fn to_object(&self, obj: &neon::prelude::Handle<'_, neon::prelude::JsObject>, ctx: &mut neon::prelude::TaskContext<'_>) -> neon::prelude::NeonResult<()> {
+                match self {
+                    #(#variant_tokens)*
+                };
 
                 Ok(())
 
