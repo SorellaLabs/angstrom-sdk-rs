@@ -81,7 +81,3 @@ impl From<Signature> for SignatureNeon {
         }
     }
 }
-
-fn t() {
-    todo!();
-}

@@ -1,9 +1,7 @@
-use angstrom_types::contract_bindings::angstrom::Angstrom::PoolKey;
 use neon::{
-    object::Object,
     prelude::{Handle, TaskContext},
     result::NeonResult,
-    types::{JsNumber, JsObject, JsString}
+    types::JsObject
 };
 
 mod types;
@@ -15,5 +13,5 @@ where
 {
     type MacroedType = S;
 
-    fn to_object(&self, obj: &Handle<'_, JsObject>, ctx: &mut TaskContext<'_>) -> NeonResult<()>;
+    fn make_object(&self, obj: &Handle<'_, JsObject>, ctx: &mut TaskContext<'_>) -> NeonResult<()>;
 }
