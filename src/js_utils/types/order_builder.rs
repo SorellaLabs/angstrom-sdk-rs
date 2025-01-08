@@ -14,10 +14,14 @@ use angstrom_sdk_macros::{neon_object_as, NeonObject};
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
     contract_payloads::{
-        angstrom::{OrderQuantities, StandingValidation, TopOfBlockOrder, UserOrder},
+        angstrom::{OrderQuantities, StandingValidation, UserOrder},
         Signature
     },
-    primitive::{PoolId, UniswapPoolRegistry}
+    primitive::{PoolId, UniswapPoolRegistry},
+    sol_bindings::rpc_orders::{
+        ExactFlashOrder, ExactStandingOrder, PartialFlashOrder, PartialStandingOrder,
+        TopOfBlockOrder
+    }
 };
 use neon::object::Object;
 use uniswap_v4::uniswap::{
@@ -26,7 +30,10 @@ use uniswap_v4::uniswap::{
 };
 
 use crate::{
-    apis::order_builder::add_liquidity,
+    apis::order_builder::{
+        add_liquidity, exact_flash_order, exact_standing_order, partial_flash_order,
+        partial_standing_order, remove_liquidity, top_of_block_order
+    },
     types::{HistoricalOrders, TransactionRequestWithLiquidityMeta}
 };
 
@@ -51,6 +58,154 @@ impl OrderBuilderAddLiquidityArgs {
             self.liquidity,
             self.max_fee_per_gas,
             self.max_priority_fee_per_gas
+        )
+    }
+}
+
+#[derive(Debug, Clone, NeonObject)]
+pub struct OrderBuilderRemoveLiquidityArgs {
+    token0:                   Address,
+    token1:                   Address,
+    tick_lower:               i32,
+    tick_upper:               i32,
+    liquidity:                U256,
+    max_fee_per_gas:          Option<u128>,
+    max_priority_fee_per_gas: Option<u128>
+}
+
+impl OrderBuilderAddLiquidityArgs {
+    pub fn remove_liquidity(self) -> TransactionRequestWithLiquidityMeta {
+        remove_liquidity(
+            self.token0,
+            self.token1,
+            self.tick_lower,
+            self.tick_upper,
+            self.liquidity,
+            self.max_fee_per_gas,
+            self.max_priority_fee_per_gas
+        )
+    }
+}
+
+#[derive(Debug, Clone, NeonObject)]
+pub struct OrderBuilderTopOfBlockOrderArgs {
+    asset_in:        Address,
+    asset_out:       Address,
+    quantity_in:     u128,
+    quantity_out:    u128,
+    max_gas_asset0:  u128,
+    valid_for_block: u64
+}
+
+impl OrderBuilderTopOfBlockOrderArgs {
+    pub fn top_of_block_order(self) -> TopOfBlockOrder {
+        top_of_block_order(
+            self.asset_in,
+            self.asset_out,
+            self.quantity_in,
+            self.quantity_out,
+            self.max_gas_asset0,
+            self.valid_for_block
+        )
+    }
+}
+
+#[derive(Debug, Clone, NeonObject)]
+pub struct OrderBuilderPartialStandingOrderArgs {
+    asset_in:             Address,
+    asset_out:            Address,
+    min_amount_in:        u128,
+    max_amount_in:        u128,
+    min_price:            U256,
+    max_extra_fee_asset0: Option<u128>,
+    deadline:             Option<u64>
+}
+
+impl OrderBuilderPartialStandingOrderArgs {
+    pub fn partial_standing_order(self) -> PartialStandingOrder {
+        partial_standing_order(
+            self.asset_in,
+            self.asset_out,
+            self.min_amount_in,
+            self.max_amount_in,
+            self.min_price,
+            self.max_extra_fee_asset0,
+            self.deadline
+        )
+    }
+}
+
+#[derive(Debug, Clone, NeonObject)]
+pub struct OrderBuilderExactStandingOrderArgs {
+    asset_in:             Address,
+    asset_out:            Address,
+    exact_in:             bool,
+    amount:               u128,
+    min_price:            U256,
+    max_extra_fee_asset0: Option<u128>,
+    deadline:             Option<u64>
+}
+
+impl OrderBuilderExactStandingOrderArgs {
+    pub fn exact_standing_order(self) -> ExactStandingOrder {
+        exact_standing_order(
+            self.asset_in,
+            self.asset_out,
+            self.exact_in,
+            self.amount,
+            self.min_price,
+            self.max_extra_fee_asset0,
+            self.deadline
+        )
+    }
+}
+
+#[derive(Debug, Clone, NeonObject)]
+pub struct OrderBuilderPartialFlashOrderArgs {
+    asset_in:             Address,
+    asset_out:            Address,
+    min_amount_in:        u128,
+    max_amount_in:        u128,
+    min_price:            U256,
+    max_extra_fee_asset0: Option<u128>,
+    valid_for_block:      u64
+}
+
+impl OrderBuilderPartialFlashOrderArgs {
+    pub fn partial_flash_order(self) -> PartialFlashOrder {
+        partial_flash_order(
+            self.asset_in,
+            self.asset_out,
+            self.min_amount_in,
+            self.max_amount_in,
+            self.min_price,
+            self.max_extra_fee_asset0,
+            self.valid_for_block
+        )
+    }
+}
+
+#[derive(Debug, Clone, NeonObject)]
+pub struct OrderBuilderExactFlashOrderArgs {
+    asset_in:             Address,
+    asset_out:            Address,
+    exact_in:             bool,
+    amount:               u128,
+    min_price:            U256,
+    max_extra_fee_asset0: Option<u128>,
+    valid_for_block:      u64
+}
+
+impl OrderBuilderExactFlashOrderArgs {
+    pub fn exact_flash_order(self) -> ExactFlashOrder {
+        exact_flash_order(
+            self.asset_in,
+            self.asset_out,
+            self.exact_in,
+            self.amount,
+            self.min_price,
+            self.max_extra_fee_asset0,
+            self.valid_for_block
         )
     }
 }
