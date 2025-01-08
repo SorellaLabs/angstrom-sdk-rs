@@ -324,7 +324,41 @@ impl<A: AsNeonValue + Eq + Hash + Clone> AsNeonValue for HashSet<A> {
     }
 }
 
-fn t() {
-    // let this =JsNumber::new(cx, x);
-    // U256::from_limbs_slice(slice)
+///
+///
+///
+///
+///
+///
+/// MACRO THIS FOR TUPLES!!!
+impl<A: AsNeonValue, B: AsNeonValue> AsNeonValue for (A, B) {
+    type NeonValue = JsObject;
+
+    fn as_neon_value<'a>(
+        &self,
+        cx: &mut TaskContext<'a>
+    ) -> NeonResult<Handle<'a, Self::NeonValue>> {
+        let obj = cx.empty_object();
+
+        let val0 = self.0.as_neon_value(cx)?;
+        obj.set(cx, 0, val0)?;
+
+        let val1 = self.1.as_neon_value(cx)?;
+        obj.set(cx, 1, val1)?;
+
+        Ok(obj)
+    }
+
+    fn from_neon_value<'a, C: Context<'a>>(
+        value: Handle<'a, Self::NeonValue>,
+        cx: &mut C
+    ) -> NeonResult<Self>
+    where
+        Self: Sized
+    {
+        let val0 = value.get::<<A as AsNeonValue>::NeonValue, _, _>(cx, 0)?;
+        let val1 = value.get::<<B as AsNeonValue>::NeonValue, _, _>(cx, 1)?;
+
+        Ok((A::from_neon_value(val0, cx)?, B::from_neon_value(val1, cx)?))
+    }
 }
