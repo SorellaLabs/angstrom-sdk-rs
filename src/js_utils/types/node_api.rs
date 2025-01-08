@@ -2,15 +2,14 @@ use std::collections::HashMap;
 
 use alloy_primitives::{
     aliases::{I24, U24, U40},
-    Address, Bytes, B256, U256
+    Address, Bytes, PrimitiveSignature, B256, U256
 };
+use alloy_signer::Signature;
 use angstrom_sdk_macros::{neon_object_as, NeonObject};
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
-    contract_payloads::{
-        angstrom::{OrderQuantities, StandingValidation, UserOrder},
-        Signature
-    },
+    contract_payloads::angstrom::{OrderQuantities, StandingValidation, UserOrder},
+    orders::CancelOrderRequest,
     primitive::{PoolId, UniswapPoolRegistry},
     sol_bindings::{
         grouped_orders::{AllOrders, FlashVariants, StandingVariants},
@@ -29,8 +28,7 @@ use validation::order::OrderPoolNewOrderResult;
 
 use crate::types::HistoricalOrders;
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 pub enum AllOrdersNeon {
     Standing { order: StandingVariantsNeon },
     Flash { order: FlashVariantsNeon },
@@ -65,8 +63,7 @@ impl Into<AllOrders> for AllOrdersNeon {
 
 neon_object_as!(AllOrders, AllOrdersNeon);
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 enum StandingVariantsNeon {
     Partial { order: PartialStandingOrderNeon },
     Exact { order: ExactStandingOrderNeon }
@@ -90,8 +87,7 @@ impl Into<StandingVariants> for StandingVariantsNeon {
     }
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 struct PartialStandingOrderNeon {
     ref_id:               u32,
     min_amount_in:        u128,
@@ -148,8 +144,7 @@ impl Into<PartialStandingOrder> for PartialStandingOrderNeon {
     }
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 struct ExactStandingOrderNeon {
     ref_id:               u32,
     exact_in:             bool,
@@ -206,8 +201,7 @@ impl Into<ExactStandingOrder> for ExactStandingOrderNeon {
     }
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 enum FlashVariantsNeon {
     Partial { order: PartialFlashOrderNeon },
     Exact { order: ExactFlashOrderNeon }
@@ -231,8 +225,7 @@ impl Into<FlashVariants> for FlashVariantsNeon {
     }
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 struct PartialFlashOrderNeon {
     ref_id:               u32,
     min_amount_in:        u128,
@@ -286,8 +279,7 @@ impl Into<PartialFlashOrder> for PartialFlashOrderNeon {
     }
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 struct ExactFlashOrderNeon {
     ref_id:               u32,
     exact_in:             bool,
@@ -341,8 +333,7 @@ impl Into<ExactFlashOrder> for ExactFlashOrderNeon {
     }
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 struct TopOfBlockOrderSolBindingsNeon {
     quantity_in:     u128,
     quantity_out:    u128,
@@ -388,8 +379,7 @@ impl Into<TopOfBlockOrder> for TopOfBlockOrderSolBindingsNeon {
 }
 
 #[allow(non_snake_case)]
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 struct OrderMetaNeon {
     isEcdsa:   bool,
     from:      Address,
@@ -408,8 +398,7 @@ impl Into<OrderMeta> for OrderMetaNeon {
     }
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 pub enum OrderPoolNewOrderResultNeon {
     Valid,
     Invalid,
@@ -442,3 +431,51 @@ impl Into<OrderPoolNewOrderResult> for OrderPoolNewOrderResultNeon {
 }
 
 neon_object_as!(OrderPoolNewOrderResult, OrderPoolNewOrderResultNeon);
+
+#[derive(Debug, Clone, NeonObject)]
+pub struct CancelOrderRequestNeon {
+    signature:    PrimitiveSignatureNeon,
+    user_address: Address,
+    order_id:     B256
+}
+
+impl From<CancelOrderRequest> for CancelOrderRequestNeon {
+    fn from(value: CancelOrderRequest) -> Self {
+        Self {
+            signature:    value.signature.into(),
+            user_address: value.user_address,
+            order_id:     value.order_id
+        }
+    }
+}
+
+impl Into<CancelOrderRequest> for CancelOrderRequestNeon {
+    fn into(self) -> CancelOrderRequest {
+        CancelOrderRequest {
+            signature:    self.signature.into(),
+            user_address: self.user_address,
+            order_id:     self.order_id
+        }
+    }
+}
+
+neon_object_as!(CancelOrderRequest, CancelOrderRequestNeon);
+
+#[derive(Debug, Clone, NeonObject)]
+struct PrimitiveSignatureNeon {
+    y_parity: bool,
+    r:        U256,
+    s:        U256
+}
+
+impl From<PrimitiveSignature> for PrimitiveSignatureNeon {
+    fn from(value: PrimitiveSignature) -> Self {
+        Self { y_parity: value.v(), r: value.r(), s: value.s() }
+    }
+}
+
+impl Into<PrimitiveSignature> for PrimitiveSignatureNeon {
+    fn into(self) -> PrimitiveSignature {
+        PrimitiveSignature::new(self.r, self.s, self.y_parity)
+    }
+}
