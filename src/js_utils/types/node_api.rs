@@ -89,7 +89,7 @@ impl Into<StandingVariants> for StandingVariantsNeon {
 }
 
 #[derive(Debug, Clone, NeonObject)]
-struct PartialStandingOrderNeon {
+pub struct PartialStandingOrderNeon {
     ref_id:               u32,
     min_amount_in:        u128,
     max_amount_in:        u128,
@@ -145,8 +145,10 @@ impl Into<PartialStandingOrder> for PartialStandingOrderNeon {
     }
 }
 
+neon_object_as!(PartialStandingOrder, PartialStandingOrderNeon);
+
 #[derive(Debug, Clone, NeonObject)]
-struct ExactStandingOrderNeon {
+pub struct ExactStandingOrderNeon {
     ref_id:               u32,
     exact_in:             bool,
     amount:               u128,
@@ -202,6 +204,8 @@ impl Into<ExactStandingOrder> for ExactStandingOrderNeon {
     }
 }
 
+neon_object_as!(ExactStandingOrder, ExactStandingOrderNeon);
+
 #[derive(Debug, Clone, NeonObject)]
 enum FlashVariantsNeon {
     Partial { order: PartialFlashOrderNeon },
@@ -227,7 +231,7 @@ impl Into<FlashVariants> for FlashVariantsNeon {
 }
 
 #[derive(Debug, Clone, NeonObject)]
-struct PartialFlashOrderNeon {
+pub struct PartialFlashOrderNeon {
     ref_id:               u32,
     min_amount_in:        u128,
     max_amount_in:        u128,
@@ -280,8 +284,10 @@ impl Into<PartialFlashOrder> for PartialFlashOrderNeon {
     }
 }
 
+neon_object_as!(PartialFlashOrder, PartialFlashOrderNeon);
+
 #[derive(Debug, Clone, NeonObject)]
-struct ExactFlashOrderNeon {
+pub struct ExactFlashOrderNeon {
     ref_id:               u32,
     exact_in:             bool,
     amount:               u128,
@@ -334,8 +340,10 @@ impl Into<ExactFlashOrder> for ExactFlashOrderNeon {
     }
 }
 
+neon_object_as!(ExactFlashOrder, ExactFlashOrderNeon);
+
 #[derive(Debug, Clone, NeonObject)]
-struct TopOfBlockOrderSolBindingsNeon {
+pub struct TopOfBlockOrderSolBindingsNeon {
     quantity_in:     u128,
     quantity_out:    u128,
     max_gas_asset0:  u128,
@@ -378,6 +386,8 @@ impl Into<TopOfBlockOrder> for TopOfBlockOrderSolBindingsNeon {
         }
     }
 }
+
+neon_object_as!(TopOfBlockOrder, TopOfBlockOrderSolBindingsNeon);
 
 #[allow(non_snake_case)]
 #[derive(Debug, Clone, NeonObject)]
