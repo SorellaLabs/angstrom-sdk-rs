@@ -185,6 +185,8 @@ js_value!(
     { val.value(cx) }
 );
 
+js_value!(JsString, [String], this, cx, val, { JsString::new(cx, this) }, { val.value(cx) });
+
 impl<A, B> AsNeonValue for HashMap<A, B>
 where
     A: AsNeonValue + Eq + Hash,

@@ -25,6 +25,7 @@ use uniswap_v4::uniswap::{
     pool::{EnhancedUniswapPool, TickInfo},
     pool_data_loader::{DataLoader, PoolDataLoader}
 };
+use validation::order::OrderPoolNewOrderResult;
 
 use crate::types::HistoricalOrders;
 
@@ -406,3 +407,38 @@ impl Into<OrderMeta> for OrderMetaNeon {
         OrderMeta { isEcdsa: self.isEcdsa, from: self.from, signature: self.signature }
     }
 }
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "neon", derive(NeonObject))]
+pub enum OrderPoolNewOrderResultNeon {
+    Valid,
+    Invalid,
+    TransitionedToBlock,
+    Error { error: String }
+}
+
+impl From<OrderPoolNewOrderResult> for OrderPoolNewOrderResultNeon {
+    fn from(value: OrderPoolNewOrderResult) -> Self {
+        match value {
+            OrderPoolNewOrderResult::Valid => Self::Valid,
+            OrderPoolNewOrderResult::Invalid => Self::Invalid,
+            OrderPoolNewOrderResult::TransitionedToBlock => Self::TransitionedToBlock,
+            OrderPoolNewOrderResult::Error(error) => Self::Error { error }
+        }
+    }
+}
+
+impl Into<OrderPoolNewOrderResult> for OrderPoolNewOrderResultNeon {
+    fn into(self) -> OrderPoolNewOrderResult {
+        match self {
+            OrderPoolNewOrderResultNeon::Valid => OrderPoolNewOrderResult::Valid,
+            OrderPoolNewOrderResultNeon::Invalid => OrderPoolNewOrderResult::Invalid,
+            OrderPoolNewOrderResultNeon::TransitionedToBlock => {
+                OrderPoolNewOrderResult::TransitionedToBlock
+            }
+            OrderPoolNewOrderResultNeon::Error { error } => OrderPoolNewOrderResult::Error(error)
+        }
+    }
+}
+
+neon_object_as!(OrderPoolNewOrderResult, OrderPoolNewOrderResultNeon);
