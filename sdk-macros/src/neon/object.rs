@@ -36,7 +36,7 @@ impl NeonObjectAs {
         let b = self.conversion_ty;
         quote::quote! {
             impl crate::js_utils::MakeObject<#b> for #a {
-                fn make_object<'a>(&self, cx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
+                fn make_object<'a, C: neon::prelude::Context<'a>>(&self, cx: &mut C) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                     let me: Self = self.clone();
                     let this: #b = me.into();
                     Ok(this.make_object(cx)?)
@@ -53,9 +53,9 @@ impl NeonObjectAs {
             impl crate::js_utils::AsNeonValue for #a {
                 type NeonValue = <#b as crate::js_utils::AsNeonValue>::NeonValue;
 
-                fn as_neon_value<'a>(
+                fn as_neon_value<'a, C: neon::prelude::Context<'a>>(
                     &self,
-                    cx: &mut neon::prelude::TaskContext<'a>
+                    cx: &mut C
                 ) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, Self::NeonValue>> {
                     crate::js_utils::MakeObject::make_object(self, cx)
                 }

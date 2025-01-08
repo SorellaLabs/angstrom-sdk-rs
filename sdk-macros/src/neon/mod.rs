@@ -35,7 +35,7 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
 
     let trait_impl = quote::quote! {
         impl #impl_generics crate::js_utils::MakeObject for #name #ty_generics #where_clause {
-            fn make_object<'a>(&self, cx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
+            fn make_object<'a, C: neon::prelude::Context<'a>>(&self, cx: &mut C) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                 let obj = neon::context::Context::empty_object(cx);
                 #(#fields_to_set)*
                 Ok(obj)
@@ -50,9 +50,9 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
         impl #impl_generics crate::js_utils::AsNeonValue for #name #ty_generics #where_clause {
             type NeonValue = neon::prelude::JsObject;
 
-            fn as_neon_value<'a>(
+            fn as_neon_value<'a, C: neon::prelude::Context<'a>>(
                 &self,
-                cx: &mut neon::prelude::TaskContext<'a>
+                cx: &mut C
             ) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, Self::NeonValue>> {
                 crate::js_utils::MakeObject::make_object(self, cx)
             }
@@ -116,7 +116,7 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
 
     let trait_impl = quote::quote! {
         impl #impl_generics crate::js_utils::MakeObject for #name #ty_generics #where_clause {
-            fn make_object<'a>(&self, cx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
+            fn make_object<'a, C: neon::prelude::Context<'a>>(&self, cx: &mut C) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                 let obj = neon::context::Context::empty_object(cx);
                 let me: Self = self.clone();
                 match me {
@@ -136,9 +136,9 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
         impl #impl_generics crate::js_utils::AsNeonValue for #name #ty_generics #where_clause {
             type NeonValue = neon::prelude::JsObject;
 
-            fn as_neon_value<'a>(
+            fn as_neon_value<'a, C: neon::prelude::Context<'a>>(
                 &self,
-                cx: &mut neon::prelude::TaskContext<'a>
+                cx: &mut C
             ) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, Self::NeonValue>> {
                 crate::js_utils::MakeObject::make_object(self, cx)
             }

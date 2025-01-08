@@ -29,7 +29,7 @@ where
 {
     type MacroedType = S;
 
-    fn make_object<'a>(&self, cx: &mut TaskContext<'a>) -> NeonResult<Handle<'a, JsObject>>;
+    fn make_object<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<Handle<'a, JsObject>>;
 
     fn decode_fn_param(cx: &mut FunctionContext<'_>, param_idx: usize) -> NeonResult<Self>;
 }
@@ -37,9 +37,9 @@ where
 pub trait AsNeonValue {
     type NeonValue: Value;
 
-    fn as_neon_value<'a>(
+    fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut TaskContext<'a>
+        cx: &mut C
     ) -> NeonResult<Handle<'a, Self::NeonValue>>;
 
     fn from_neon_value<'a, C: Context<'a>>(
@@ -56,7 +56,7 @@ macro_rules! js_value {
             impl AsNeonValue for $val {
                 type NeonValue = $js_val;
 
-                fn as_neon_value<'a>(&self, cx: &mut TaskContext<'a>) -> NeonResult<Handle<'a, Self::NeonValue>> {
+                fn as_neon_value<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<Handle<'a, Self::NeonValue>> {
                     let $self_ident = self;
                     let $cx_ident = cx;
                     Ok($conversion_to)
@@ -79,7 +79,7 @@ macro_rules! js_value {
             impl AsNeonValue for $val {
                 type NeonValue = $js_val;
 
-                fn as_neon_value<'a>(&self, cx: &mut TaskContext<'a>) -> NeonResult<Handle<'a, Self::NeonValue>> {
+                fn as_neon_value<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<Handle<'a, Self::NeonValue>> {
                     let $self_ident = self;
                     let $cx_ident = cx;
                     Ok($conversion_to)
@@ -196,9 +196,9 @@ where
 {
     type NeonValue = JsArray;
 
-    fn as_neon_value<'a>(
+    fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut TaskContext<'a>
+        cx: &mut C
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         let res = cx.empty_array();
 
@@ -245,9 +245,9 @@ where
 impl<A: AsNeonValue> AsNeonValue for Option<A> {
     type NeonValue = JsValue;
 
-    fn as_neon_value<'a>(
+    fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut TaskContext<'a>
+        cx: &mut C
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         if let Some(val) = self.as_ref() {
             Ok(val.as_neon_value(cx)?.as_value(cx))
@@ -274,9 +274,9 @@ impl<A: AsNeonValue> AsNeonValue for Option<A> {
 impl<A: AsNeonValue> AsNeonValue for Vec<A> {
     type NeonValue = JsArray;
 
-    fn as_neon_value<'a>(
+    fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut TaskContext<'a>
+        cx: &mut C
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         let arr = cx.empty_array();
         for (i, val) in self.iter().enumerate() {
@@ -304,9 +304,9 @@ impl<A: AsNeonValue> AsNeonValue for Vec<A> {
 impl<A: AsNeonValue + Eq + Hash + Clone> AsNeonValue for HashSet<A> {
     type NeonValue = JsArray;
 
-    fn as_neon_value<'a>(
+    fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut TaskContext<'a>
+        cx: &mut C
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         self.into_iter()
             .map(Clone::clone)
@@ -336,9 +336,9 @@ impl<A: AsNeonValue + Eq + Hash + Clone> AsNeonValue for HashSet<A> {
 impl<A: AsNeonValue, B: AsNeonValue> AsNeonValue for (A, B) {
     type NeonValue = JsObject;
 
-    fn as_neon_value<'a>(
+    fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut TaskContext<'a>
+        cx: &mut C
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         let obj = cx.empty_object();
 
@@ -368,9 +368,9 @@ impl<A: AsNeonValue, B: AsNeonValue> AsNeonValue for (A, B) {
 impl AsNeonValue for () {
     type NeonValue = JsObject;
 
-    fn as_neon_value<'a>(
+    fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut TaskContext<'a>
+        cx: &mut C
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         Ok(cx.empty_object())
     }
@@ -394,9 +394,9 @@ include in declarative macro later - was lazy
 impl AsNeonValue for FixedBytes<48> {
     type NeonValue = JsString;
 
-    fn as_neon_value<'a>(
+    fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut TaskContext<'a>
+        cx: &mut C
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         Ok(JsString::new(cx, format!("{:?}", self)))
     }
@@ -416,9 +416,9 @@ impl AsNeonValue for FixedBytes<48> {
 impl AsNeonValue for FixedBytes<BYTES_PER_BLOB> {
     type NeonValue = JsString;
 
-    fn as_neon_value<'a>(
+    fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut TaskContext<'a>
+        cx: &mut C
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         Ok(JsString::new(cx, format!("{:?}", self)))
     }
