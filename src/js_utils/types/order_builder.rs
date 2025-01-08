@@ -113,7 +113,6 @@ struct TransactionRequestNeon {
     authorization_list: Option<Vec<SignedAuthorizationNeon>>
 }
 
-// TransactionRequest conversions
 impl From<TransactionRequest> for TransactionRequestNeon {
     fn from(value: TransactionRequest) -> Self {
         Self {

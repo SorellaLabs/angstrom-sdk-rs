@@ -20,6 +20,7 @@ use neon::{
 };
 
 mod types;
+pub use types::OrderBuilderAddLiquidityArgs;
 
 pub trait MakeObject<S = Self>
 where
