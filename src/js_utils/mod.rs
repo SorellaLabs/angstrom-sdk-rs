@@ -362,3 +362,24 @@ impl<A: AsNeonValue, B: AsNeonValue> AsNeonValue for (A, B) {
         Ok((A::from_neon_value(val0, cx)?, B::from_neon_value(val1, cx)?))
     }
 }
+
+impl AsNeonValue for () {
+    type NeonValue = JsObject;
+
+    fn as_neon_value<'a>(
+        &self,
+        cx: &mut TaskContext<'a>
+    ) -> NeonResult<Handle<'a, Self::NeonValue>> {
+        Ok(cx.empty_object())
+    }
+
+    fn from_neon_value<'a, C: Context<'a>>(
+        _: Handle<'a, Self::NeonValue>,
+        _: &mut C
+    ) -> NeonResult<Self>
+    where
+        Self: Sized
+    {
+        Ok(())
+    }
+}
