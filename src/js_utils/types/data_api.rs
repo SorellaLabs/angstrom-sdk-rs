@@ -86,7 +86,7 @@ impl Into<HistoricalOrders> for HistoricalOrdersNeon {
 neon_object_as!(HistoricalOrders, HistoricalOrdersNeon);
 
 #[derive(Debug, Clone, NeonObject)]
-struct TopOfBlockOrderNeon {
+pub struct TopOfBlockOrderNeon {
     use_internal:     bool,
     quantity_in:      u128,
     quantity_out:     u128,
@@ -133,7 +133,7 @@ impl Into<TopOfBlockOrder> for TopOfBlockOrderNeon {
 neon_object_as!(TopOfBlockOrder, TopOfBlockOrderNeon);
 
 #[derive(Debug, Clone, NeonObject)]
-struct UserOrderNeon {
+pub struct UserOrderNeon {
     ref_id:               u32,
     use_internal:         bool,
     pair_index:           u16,

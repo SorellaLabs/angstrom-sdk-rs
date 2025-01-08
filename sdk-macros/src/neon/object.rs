@@ -49,6 +49,27 @@ impl NeonObjectAs {
                     Ok(this.into())
                 }
             }
+
+            impl crate::js_utils::AsNeonValue for #a {
+                type NeonValue = <#b as crate::js_utils::AsNeonValue>::NeonValue;
+
+                fn as_neon_value<'a>(
+                    &self,
+                    cx: &mut neon::prelude::TaskContext<'a>
+                ) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, Self::NeonValue>> {
+                    crate::js_utils::MakeObject::make_object(self, cx)
+                }
+
+                fn from_neon_value<'a, C: neon::prelude::Context<'a>>(
+                    value: neon::prelude::Handle<'a, Self::NeonValue>,
+                    cx: &mut C
+                ) -> neon::prelude::NeonResult<Self>
+                where
+                    Self: Sized {
+                        let this = <#b as crate::js_utils::AsNeonValue>::from_neon_value(value, cx)?;
+                        Ok(this.into())
+                    }
+            }
         }
     }
 }
