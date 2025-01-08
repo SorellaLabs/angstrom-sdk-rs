@@ -13,7 +13,7 @@ use angstrom_types::{
     },
     primitive::{PoolId, UniswapPoolRegistry}
 };
-use neon::{context::Context, object::Object};
+use neon::object::Object;
 use uniswap_v4::uniswap::{
     pool::{EnhancedUniswapPool, TickInfo},
     pool_data_loader::{DataLoader, PoolDataLoader}

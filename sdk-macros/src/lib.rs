@@ -1,13 +1,14 @@
-mod neon_obj;
+mod neon;
 
-use neon_obj::NeonObjectAs;
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
+
+use crate::neon::object::NeonObjectAs;
 
 #[proc_macro_derive(NeonObject)]
 pub fn neon_object(raw: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(raw as DeriveInput);
-    neon_obj::parse(input)
+    neon::parse(input)
         .unwrap_or_else(syn::Error::into_compile_error)
         .into()
 }

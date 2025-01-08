@@ -210,14 +210,6 @@ impl HistoricalOrdersFilter {
             to_block
         })
     }
-
-    /*
-
-        pub order_kinds:   HashSet<OrderKind>,
-    pub order_filters: HashSet<OrderFilter>,
-    pub from_block:    Option<u64>,
-    pub to_block:      Option<u64>
-     */
 }
 
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
