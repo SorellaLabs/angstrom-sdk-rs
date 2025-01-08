@@ -1,8 +1,29 @@
 use proc_macro2::{Span, TokenStream};
 use syn::{
-    parse::Parse, Data, DataEnum, DataStruct, DeriveInput, GenericArgument, Ident, Path,
+    parse::Parse, Data, DataEnum, DataStruct, DeriveInput, Field, GenericArgument, Ident, Path,
     PathArguments, PathSegment, Token, Type, TypePath
 };
+
+pub(super) fn field_to_neon_value(field: &Field) -> Option<TokenStream> {
+    field.ident.as_ref().map(|field_name| {
+        let name_str = field_name.to_string();
+        quote::quote! {
+            let val = crate::js_utils::AsNeonValue::as_neon_value(self, cx)?;
+            obj.set(cx, #name_str, val)?;
+        }
+    })
+}
+
+pub(super) fn field_from_neon_value(field: &Field) -> Option<TokenStream> {
+    field.ident.as_ref().map(|field_name| {
+        let field_name_str = field_name.to_string();
+        let field_ty = &field.ty;
+        quote::quote! {
+            let field_name_obj = value.get::<<#field_ty as crate::js_utils::AsNeonValue>::NeonValue, _, _>(cx, #field_name_str)?;
+            let #field_name = crate::js_utils::AsNeonValue::from_neon_value(field_name_obj, cx)?;
+        }
+    })
+}
 
 pub struct NeonObjectAs {
     to_impl_ty:    Type,
@@ -15,15 +36,17 @@ impl NeonObjectAs {
         let b = self.conversion_ty;
         quote::quote! {
             impl crate::js_utils::MakeObject<#b> for #a {
-                fn make_object<'a>(&self, ctx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
+                fn make_object<'a>(&self, cx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                     let me: Self = self.clone();
                     let this: #b = me.into();
-                    Ok(this.make_object(ctx)?)
+                    Ok(this.make_object(cx)?)
 
                 }
 
-                fn decode_fn_param(cx: &mut neon::prelude::FunctionContext<'_>, param_idx: usize) -> eyre::Result<Self> {
-                    todo!()
+                fn decode_fn_param(cx: &mut neon::prelude::FunctionContext<'_>, param_idx: usize) -> neon::prelude::NeonResult<Self> {
+                    let obj = cx.argument::<neon::prelude::JsObject>(param_idx)?;
+                    let this = <#b as crate::js_utils::AsNeonValue>::from_neon_value(obj, cx)?;
+                    Ok(this.into())
                 }
             }
         }

@@ -19,7 +19,7 @@ mod types;
 
 pub trait MakeObject<S = Self>
 where
-    S: From<Self> + Clone,
+    S: From<Self> + Into<Self> + AsNeonValue + Clone,
     Self: Sized
 {
     type MacroedType = S;
@@ -37,9 +37,9 @@ pub trait AsNeonValue {
         cx: &mut TaskContext<'a>
     ) -> NeonResult<Handle<'a, Self::NeonValue>>;
 
-    fn from_neon_value(
-        value: Handle<'_, Self::NeonValue>,
-        cx: &mut TaskContext<'_>
+    fn from_neon_value<'a, C: Context<'a>>(
+        value: Handle<'a, Self::NeonValue>,
+        cx: &mut C
     ) -> NeonResult<Self>
     where
         Self: Sized;
@@ -57,7 +57,7 @@ macro_rules! js_value {
                     Ok($conversion_to)
                 }
 
-                fn from_neon_value(value: Handle<'_, Self::NeonValue>, cx: &mut TaskContext<'_>) -> NeonResult<Self>
+                fn from_neon_value<'a, C: Context<'a>>(value: Handle<'_, Self::NeonValue>, cx: &mut C) -> NeonResult<Self>
                 where
                     Self: Sized {
                         let $from_val_ident = value;
@@ -80,7 +80,7 @@ macro_rules! js_value {
                     Ok($conversion_to)
                 }
 
-                fn from_neon_value(value: Handle<'_, Self::NeonValue>, cx: &mut TaskContext<'_>) -> NeonResult<Self>
+                fn from_neon_value<'a, C: Context<'a>>(value: Handle<'_, Self::NeonValue>, cx: &mut C) -> NeonResult<Self>
                 where
                     Self: Sized {
                         let $from_val_ident = value;
@@ -206,9 +206,9 @@ where
         Ok(res)
     }
 
-    fn from_neon_value(
-        value: Handle<'_, Self::NeonValue>,
-        cx: &mut TaskContext<'_>
+    fn from_neon_value<'a, C: Context<'a>>(
+        value: Handle<'a, Self::NeonValue>,
+        cx: &mut C
     ) -> NeonResult<Self>
     where
         Self: Sized
@@ -249,9 +249,9 @@ impl<A: AsNeonValue> AsNeonValue for Option<A> {
         }
     }
 
-    fn from_neon_value(
-        value: Handle<'_, Self::NeonValue>,
-        cx: &mut TaskContext<'_>
+    fn from_neon_value<'a, C: Context<'a>>(
+        value: Handle<'a, Self::NeonValue>,
+        cx: &mut C
     ) -> NeonResult<Self>
     where
         Self: Sized

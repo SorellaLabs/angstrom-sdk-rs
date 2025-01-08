@@ -44,6 +44,18 @@ impl From<PoolKey> for PoolKeyNeon {
     }
 }
 
+impl Into<PoolKey> for PoolKeyNeon {
+    fn into(self) -> PoolKey {
+        PoolKey {
+            currency0:   self.currency0,
+            currency1:   self.currency1,
+            fee:         self.fee,
+            tickSpacing: self.tickSpacing,
+            hooks:       self.hooks
+        }
+    }
+}
+
 neon_object_as!(PoolKey, PoolKeyNeon);
 
 #[derive(Debug, Clone)]
@@ -60,6 +72,15 @@ impl From<HistoricalOrders> for HistoricalOrdersNeon {
                 Self::TOB { order: top_of_block_order.into() }
             }
             HistoricalOrders::User(user_order) => Self::User { order: user_order.into() }
+        }
+    }
+}
+
+impl Into<HistoricalOrders> for HistoricalOrdersNeon {
+    fn into(self) -> HistoricalOrders {
+        match self {
+            Self::TOB { order } => HistoricalOrders::TOB(order.into()),
+            Self::User { order } => HistoricalOrders::User(order.into())
         }
     }
 }
@@ -92,6 +113,22 @@ impl From<TopOfBlockOrder> for TopOfBlockOrderNeon {
             zero_for_1:       value.zero_for_1,
             recipient:        value.recipient,
             signature:        value.signature.into()
+        }
+    }
+}
+
+impl Into<TopOfBlockOrder> for TopOfBlockOrderNeon {
+    fn into(self) -> TopOfBlockOrder {
+        TopOfBlockOrder {
+            use_internal:     self.use_internal,
+            quantity_in:      self.quantity_in,
+            quantity_out:     self.quantity_out,
+            max_gas_asset_0:  self.max_gas_asset_0,
+            gas_used_asset_0: self.gas_used_asset_0,
+            pairs_index:      self.pairs_index,
+            zero_for_1:       self.zero_for_1,
+            recipient:        self.recipient,
+            signature:        self.signature.into()
         }
     }
 }
@@ -136,6 +173,26 @@ impl From<UserOrder> for UserOrderNeon {
     }
 }
 
+impl Into<UserOrder> for UserOrderNeon {
+    fn into(self) -> UserOrder {
+        UserOrder {
+            ref_id:               self.ref_id,
+            recipient:            self.recipient,
+            signature:            self.signature.into(),
+            use_internal:         self.use_internal,
+            pair_index:           self.pair_index,
+            min_price:            self.min_price,
+            hook_data:            self.hook_data,
+            zero_for_one:         self.zero_for_one,
+            standing_validation:  self.standing_validation.map(Into::into),
+            order_quantities:     self.order_quantities.into(),
+            max_extra_fee_asset0: self.max_extra_fee_asset0,
+            extra_fee_asset0:     self.extra_fee_asset0,
+            exact_in:             self.exact_in
+        }
+    }
+}
+
 neon_object_as!(UserOrder, UserOrderNeon);
 
 #[derive(Debug, Clone)]
@@ -150,6 +207,15 @@ impl From<Signature> for SignatureNeon {
         match value {
             Signature::Contract { from, signature } => Self::Contract { from, signature },
             Signature::Ecdsa { v, r, s } => Self::Ecdsa { v, r, s }
+        }
+    }
+}
+
+impl Into<Signature> for SignatureNeon {
+    fn into(self) -> Signature {
+        match self {
+            Self::Contract { from, signature } => Signature::Contract { from, signature },
+            Self::Ecdsa { v, r, s } => Signature::Ecdsa { v, r, s }
         }
     }
 }
@@ -172,6 +238,17 @@ impl From<OrderQuantities> for OrderQuantitiesNeon {
     }
 }
 
+impl Into<OrderQuantities> for OrderQuantitiesNeon {
+    fn into(self) -> OrderQuantities {
+        match self {
+            Self::Exact { quantity } => OrderQuantities::Exact { quantity },
+            Self::Partial { min_quantity_in, max_quantity_in, filled_quantity } => {
+                OrderQuantities::Partial { min_quantity_in, max_quantity_in, filled_quantity }
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
 struct StandingValidationNeon {
@@ -182,6 +259,12 @@ struct StandingValidationNeon {
 impl From<StandingValidation> for StandingValidationNeon {
     fn from(value: StandingValidation) -> Self {
         StandingValidationNeon { nonce: value.nonce(), deadline: value.deadline() }
+    }
+}
+
+impl Into<StandingValidation> for StandingValidationNeon {
+    fn into(self) -> StandingValidation {
+        StandingValidation::new(self.nonce, self.deadline)
     }
 }
 
@@ -231,6 +314,29 @@ impl From<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>> for EnhancedUniswapPo
     }
 }
 
+impl Into<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>> for EnhancedUniswapPoolNeon {
+    fn into(self) -> EnhancedUniswapPool<DataLoader<PoolId>, PoolId> {
+        let mut pool =
+            EnhancedUniswapPool::new(self.data_loader.into(), self.initial_ticks_per_side);
+        pool.set_sim_swap_sync(self.sync_swap_with_sim);
+
+        pool.token_a = self.token_a;
+        pool.token_a_decimals = self.token_a_decimals;
+        pool.token_b = self.token_b;
+        pool.token_b_decimals = self.token_b_decimals;
+        pool.liquidity = self.liquidity;
+        pool.liquidity_net = self.liquidity_net;
+        pool.sqrt_price = self.sqrt_price;
+        pool.fee = self.fee;
+        pool.tick = self.tick;
+        pool.tick_spacing = self.tick_spacing;
+        pool.tick_bitmap = self.tick_bitmap;
+        pool.ticks = self.ticks.into_iter().map(|(k, v)| (k, v.into())).collect();
+
+        pool
+    }
+}
+
 neon_object_as!(EnhancedUniswapPool<DataLoader<PoolId>, PoolId>, EnhancedUniswapPoolNeon);
 
 #[derive(Clone, Default)]
@@ -247,6 +353,16 @@ impl From<DataLoader<PoolId>> for DataLoaderNeon {
             address:       value.address(),
             pool_manager:  value.pool_manager_opt(),
             pool_registry: value.pool_registry().map(Into::into)
+        }
+    }
+}
+
+impl Into<DataLoader<PoolId>> for DataLoaderNeon {
+    fn into(self) -> DataLoader<PoolId> {
+        if let Some((reg, man)) = self.pool_registry.zip(self.pool_manager) {
+            DataLoader::new_with_registry(self.address, reg.into(), man)
+        } else {
+            panic!("pool_registry and pool_manager cannot be none");
         }
     }
 }
@@ -269,6 +385,17 @@ impl From<UniswapPoolRegistry> for UniswapPoolRegistryNeon {
     }
 }
 
+impl Into<UniswapPoolRegistry> for UniswapPoolRegistryNeon {
+    fn into(self) -> UniswapPoolRegistry {
+        UniswapPoolRegistry::from(
+            self.pools
+                .into_iter()
+                .map(|(_, v)| v.into())
+                .collect::<Vec<_>>()
+        )
+    }
+}
+
 #[derive(Clone, Default)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
 pub struct TickInfoNeon {
@@ -283,6 +410,16 @@ impl From<TickInfo> for TickInfoNeon {
             liquidity_gross: value.liquidity_gross,
             liquidity_net:   value.liquidity_net,
             initialized:     value.initialized
+        }
+    }
+}
+
+impl Into<TickInfo> for TickInfoNeon {
+    fn into(self) -> TickInfo {
+        TickInfo {
+            liquidity_gross: self.liquidity_gross,
+            liquidity_net:   self.liquidity_net,
+            initialized:     self.initialized
         }
     }
 }

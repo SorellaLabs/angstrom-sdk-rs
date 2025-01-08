@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use alloy_primitives::{
-    aliases::{I24, U24},
+    aliases::{I24, U24, U40},
     Address, Bytes, B256, U256
 };
 use angstrom_sdk_macros::{neon_object_as, NeonObject};
@@ -52,6 +52,16 @@ impl From<AllOrders> for AllOrdersNeon {
     }
 }
 
+impl Into<AllOrders> for AllOrdersNeon {
+    fn into(self) -> AllOrders {
+        match self {
+            Self::Standing { order } => AllOrders::Standing(order.into()),
+            Self::Flash { order } => AllOrders::Flash(order.into()),
+            Self::TOB { order } => AllOrders::TOB(order.into())
+        }
+    }
+}
+
 neon_object_as!(AllOrders, AllOrdersNeon);
 
 #[derive(Debug, Clone)]
@@ -66,6 +76,15 @@ impl From<StandingVariants> for StandingVariantsNeon {
         match value {
             StandingVariants::Partial(order) => Self::Partial { order: order.into() },
             StandingVariants::Exact(order) => Self::Exact { order: order.into() }
+        }
+    }
+}
+
+impl Into<StandingVariants> for StandingVariantsNeon {
+    fn into(self) -> StandingVariants {
+        match self {
+            Self::Partial { order } => StandingVariants::Partial(order.into()),
+            Self::Exact { order } => StandingVariants::Exact(order.into())
         }
     }
 }
@@ -108,6 +127,26 @@ impl From<PartialStandingOrder> for PartialStandingOrderNeon {
     }
 }
 
+impl Into<PartialStandingOrder> for PartialStandingOrderNeon {
+    fn into(self) -> PartialStandingOrder {
+        PartialStandingOrder {
+            ref_id:               self.ref_id,
+            min_amount_in:        self.min_amount_in,
+            max_amount_in:        self.max_amount_in,
+            max_extra_fee_asset0: self.max_extra_fee_asset0,
+            min_price:            self.min_price,
+            use_internal:         self.use_internal,
+            asset_in:             self.asset_in,
+            asset_out:            self.asset_out,
+            recipient:            self.recipient,
+            hook_data:            self.hook_data,
+            nonce:                self.nonce,
+            deadline:             U40::from(self.deadline),
+            meta:                 self.meta.into()
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
 struct ExactStandingOrderNeon {
@@ -146,6 +185,26 @@ impl From<ExactStandingOrder> for ExactStandingOrderNeon {
     }
 }
 
+impl Into<ExactStandingOrder> for ExactStandingOrderNeon {
+    fn into(self) -> ExactStandingOrder {
+        ExactStandingOrder {
+            ref_id:               self.ref_id,
+            max_extra_fee_asset0: self.max_extra_fee_asset0,
+            min_price:            self.min_price,
+            use_internal:         self.use_internal,
+            asset_in:             self.asset_in,
+            asset_out:            self.asset_out,
+            recipient:            self.recipient,
+            hook_data:            self.hook_data,
+            nonce:                self.nonce,
+            deadline:             U40::from(self.deadline),
+            meta:                 self.meta.into(),
+            exact_in:             self.exact_in,
+            amount:               self.amount
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
 enum FlashVariantsNeon {
@@ -158,6 +217,15 @@ impl From<FlashVariants> for FlashVariantsNeon {
         match value {
             FlashVariants::Partial(order) => Self::Partial { order: order.into() },
             FlashVariants::Exact(order) => Self::Exact { order: order.into() }
+        }
+    }
+}
+
+impl Into<FlashVariants> for FlashVariantsNeon {
+    fn into(self) -> FlashVariants {
+        match self {
+            Self::Partial { order } => FlashVariants::Partial(order.into()),
+            Self::Exact { order } => FlashVariants::Exact(order.into())
         }
     }
 }
@@ -198,6 +266,25 @@ impl From<PartialFlashOrder> for PartialFlashOrderNeon {
     }
 }
 
+impl Into<PartialFlashOrder> for PartialFlashOrderNeon {
+    fn into(self) -> PartialFlashOrder {
+        PartialFlashOrder {
+            ref_id:               self.ref_id,
+            min_amount_in:        self.min_amount_in,
+            max_amount_in:        self.max_amount_in,
+            max_extra_fee_asset0: self.max_extra_fee_asset0,
+            min_price:            self.min_price,
+            use_internal:         self.use_internal,
+            asset_in:             self.asset_in,
+            asset_out:            self.asset_out,
+            recipient:            self.recipient,
+            hook_data:            self.hook_data,
+            valid_for_block:      self.valid_for_block,
+            meta:                 self.meta.into()
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
 struct ExactFlashOrderNeon {
@@ -234,6 +321,25 @@ impl From<ExactFlashOrder> for ExactFlashOrderNeon {
     }
 }
 
+impl Into<ExactFlashOrder> for ExactFlashOrderNeon {
+    fn into(self) -> ExactFlashOrder {
+        ExactFlashOrder {
+            ref_id:               self.ref_id,
+            max_extra_fee_asset0: self.max_extra_fee_asset0,
+            min_price:            self.min_price,
+            use_internal:         self.use_internal,
+            asset_in:             self.asset_in,
+            asset_out:            self.asset_out,
+            recipient:            self.recipient,
+            hook_data:            self.hook_data,
+            valid_for_block:      self.valid_for_block,
+            meta:                 self.meta.into(),
+            exact_in:             self.exact_in,
+            amount:               self.amount
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
 struct TopOfBlockOrderSolBindingsNeon {
@@ -264,6 +370,22 @@ impl From<TopOfBlockOrder> for TopOfBlockOrderSolBindingsNeon {
     }
 }
 
+impl Into<TopOfBlockOrder> for TopOfBlockOrderSolBindingsNeon {
+    fn into(self) -> TopOfBlockOrder {
+        TopOfBlockOrder {
+            quantity_in:     self.quantity_in,
+            quantity_out:    self.quantity_out,
+            max_gas_asset0:  self.max_gas_asset0,
+            use_internal:    self.use_internal,
+            asset_in:        self.asset_in,
+            asset_out:       self.asset_out,
+            recipient:       self.recipient,
+            valid_for_block: self.valid_for_block,
+            meta:            self.meta.into()
+        }
+    }
+}
+
 #[allow(non_snake_case)]
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
@@ -276,5 +398,11 @@ struct OrderMetaNeon {
 impl From<OrderMeta> for OrderMetaNeon {
     fn from(value: OrderMeta) -> Self {
         Self { isEcdsa: value.isEcdsa, from: value.from, signature: value.signature }
+    }
+}
+
+impl Into<OrderMeta> for OrderMetaNeon {
+    fn into(self) -> OrderMeta {
+        OrderMeta { isEcdsa: self.isEcdsa, from: self.from, signature: self.signature }
     }
 }
