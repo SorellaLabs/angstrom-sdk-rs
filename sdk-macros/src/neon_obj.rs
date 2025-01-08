@@ -1,7 +1,7 @@
 use proc_macro2::{Span, TokenStream};
 use syn::{
-    parse::Parse, Data, DataEnum, DataStruct, DeriveInput, GenericArgument, Ident, PathArguments,
-    PathSegment, Token, Type
+    parse::Parse, Data, DataEnum, DataStruct, DeriveInput, GenericArgument, Ident, Path,
+    PathArguments, PathSegment, Token, Type, TypePath
 };
 
 pub fn parse(item: DeriveInput) -> syn::Result<TokenStream> {
@@ -221,7 +221,7 @@ impl RustTypes {
             | RustTypes::f32
             | RustTypes::f64 => {
                 quote::quote! {
-                    let val = neon::prelude::JsNumber::new(ctx, #field_name_dt as f64);
+                    let val = neon::prelude::JsNumber::new(ctx, #field_name_dt.clone() as f64);
                     #obj_name.set(ctx, #name_str, val)?;
                 }
             }
@@ -294,7 +294,7 @@ impl RustTypes {
             RustTypes::HashMap(option_val) => {
                 let (inner0_ty, inner1_ty) = option_val.unwrap();
                 let (key, val) =
-                    (Ident::new("1", Span::call_site()), Ident::new("0", Span::call_site()));
+                    (Ident::new("key", Span::call_site()), Ident::new("value", Span::call_site()));
 
                 let inner0 = inner0_ty.to_conversion_token(
                     &key,
@@ -310,9 +310,9 @@ impl RustTypes {
                 );
 
                 quote::quote! {
-                    let res = a.empty_array();
-                    for (i, (key, val)) in #field_name_dt.iter().enumerate() {
-                        let inner_obj = a.empty_object();
+                    let res = ctx.empty_array();
+                    for (i, (key, value)) in #field_name_dt.iter().enumerate() {
+                        let inner_obj = ctx.empty_object();
                         #inner0;
                         #inner1;
                         res.set(ctx, i as u32, inner_obj)?;
@@ -366,8 +366,8 @@ impl From<String> for RustTypes {
 }
 
 pub struct NeonObjectAs {
-    to_impl_ty:    Ident,
-    conversion_ty: Ident
+    to_impl_ty:    Type,
+    conversion_ty: Type
 }
 
 impl NeonObjectAs {
@@ -390,6 +390,7 @@ impl NeonObjectAs {
 impl Parse for NeonObjectAs {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
         let to_impl_ty = input.parse()?;
+
         input.parse::<Token![,]>()?;
         let conversion_ty = input.parse()?;
 
