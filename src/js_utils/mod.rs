@@ -305,7 +305,7 @@ impl<A: AsNeonValue + Eq + Hash + Clone> AsNeonValue for HashSet<A> {
         cx: &mut TaskContext<'a>
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         self.into_iter()
-            .clone()
+            .map(Clone::clone)
             .collect::<Vec<_>>()
             .as_neon_value(cx)
     }
