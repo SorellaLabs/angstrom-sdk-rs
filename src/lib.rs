@@ -21,7 +21,7 @@ use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey, primitive::PoolId,
     sol_bindings::grouped_orders::AllOrders
 };
-use apis::{order_builder::AngstromOrderBuilder, user_api::AngstromUserApi};
+use apis::user_api::AngstromUserApi;
 use jsonrpsee_http_client::HttpClient;
 use providers::{AngstromProvider, EthRpcProvider, RpcWalletProvider};
 use types::{
@@ -223,13 +223,6 @@ where
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
         self.eth_provider.pool_key(token0, token1).await
     }
-}
-
-impl<P, F> AngstromOrderBuilder for AngstromApi<P, F>
-where
-    P: Provider + Clone,
-    F: FillWrapper
-{
 }
 
 impl<P, F> AngstromUserApi for AngstromApi<P, F>

@@ -1,6 +1,6 @@
 use jsonrpsee_http_client::HttpClient;
 
-use crate::apis::{node_api::AngstromNodeApi, order_builder::AngstromOrderBuilder};
+use crate::apis::node_api::AngstromNodeApi;
 
 #[derive(Debug, Clone)]
 pub struct AngstromProvider {
@@ -19,5 +19,3 @@ impl AngstromNodeApi for AngstromProvider {
         self.client.clone()
     }
 }
-
-impl AngstromOrderBuilder for AngstromProvider {}
