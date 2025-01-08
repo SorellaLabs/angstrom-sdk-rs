@@ -68,7 +68,7 @@ neon_object_as!(HistoricalOrders, HistoricalOrdersNeon);
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
-pub struct TopOfBlockOrderNeon {
+struct TopOfBlockOrderNeon {
     use_internal:     bool,
     quantity_in:      u128,
     quantity_out:     u128,
@@ -100,7 +100,7 @@ neon_object_as!(TopOfBlockOrder, TopOfBlockOrderNeon);
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
-pub struct UserOrderNeon {
+struct UserOrderNeon {
     ref_id:               u32,
     use_internal:         bool,
     pair_index:           u16,
