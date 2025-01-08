@@ -25,7 +25,7 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
 
     let trait_impl = quote::quote! {
         impl #impl_generics crate::js_utils::MakeObject for #name #ty_generics #where_clause {
-            fn make_object<'a>(self, ctx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
+            fn make_object<'a>(&self, ctx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                 let obj = neon::context::Context::empty_object(ctx);
                 #(#fields_set)*
                 Ok(obj)
@@ -74,7 +74,7 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
 
     let trait_impl = quote::quote! {
         impl #impl_generics crate::js_utils::MakeObject for #name #ty_generics #where_clause {
-            fn make_object<'a>(self, ctx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
+            fn make_object<'a>(&self, ctx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                 let obj = neon::context::Context::empty_object(ctx);
                 let me: Self = self.clone();
                 match me {
@@ -376,7 +376,7 @@ impl NeonObjectAs {
         let b = self.conversion_ty;
         quote::quote! {
             impl crate::js_utils::MakeObject<#b> for #a {
-                fn make_object<'a>(self, ctx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
+                fn make_object<'a>(&self, ctx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                     let me: Self = self.clone();
                     let this: #b = me.into();
                     Ok(this.make_object(ctx)?)
