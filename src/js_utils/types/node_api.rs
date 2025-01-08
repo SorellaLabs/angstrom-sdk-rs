@@ -5,11 +5,12 @@ use alloy_primitives::{
     Address, Bytes, PrimitiveSignature, B256, U256
 };
 use alloy_signer::Signature;
+use angstrom_rpc::api::GasEstimateResponse;
 use angstrom_sdk_macros::{neon_object_as, NeonObject};
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
     contract_payloads::angstrom::{OrderQuantities, StandingValidation, UserOrder},
-    orders::CancelOrderRequest,
+    orders::{CancelOrderRequest, OrderLocation, OrderStatus},
     primitive::{PoolId, UniswapPoolRegistry},
     sol_bindings::{
         grouped_orders::{AllOrders, FlashVariants, StandingVariants},
@@ -412,7 +413,7 @@ impl From<OrderPoolNewOrderResult> for OrderPoolNewOrderResultNeon {
             OrderPoolNewOrderResult::Valid => Self::Valid,
             OrderPoolNewOrderResult::Invalid => Self::Invalid,
             OrderPoolNewOrderResult::TransitionedToBlock => Self::TransitionedToBlock,
-            OrderPoolNewOrderResult::Error(error) => Self::Error { error }
+            OrderPoolNewOrderResult::Error(error) => OrderPoolNewOrderResultNeon::Error { error }
         }
     }
 }
@@ -479,3 +480,78 @@ impl Into<PrimitiveSignature> for PrimitiveSignatureNeon {
         PrimitiveSignature::new(self.r, self.s, self.y_parity)
     }
 }
+
+#[derive(Debug, Clone, NeonObject)]
+pub struct GasEstimateResponseNeon {
+    gas_units: u64,
+    gas:       U256
+}
+
+impl From<GasEstimateResponse> for GasEstimateResponseNeon {
+    fn from(value: GasEstimateResponse) -> Self {
+        Self { gas: value.gas, gas_units: value.gas_units }
+    }
+}
+
+impl Into<GasEstimateResponse> for GasEstimateResponseNeon {
+    fn into(self) -> GasEstimateResponse {
+        GasEstimateResponse { gas: self.gas, gas_units: self.gas_units }
+    }
+}
+
+neon_object_as!(GasEstimateResponse, GasEstimateResponseNeon);
+
+#[derive(Debug, Clone, NeonObject)]
+pub enum OrderStatusNeon {
+    Blocked,
+    Filled,
+    Pending
+}
+
+impl From<OrderStatus> for OrderStatusNeon {
+    fn from(value: OrderStatus) -> Self {
+        match value {
+            OrderStatus::Blocked => Self::Blocked,
+            OrderStatus::Filled => Self::Filled,
+            OrderStatus::Pending => Self::Pending
+        }
+    }
+}
+
+impl Into<OrderStatus> for OrderStatusNeon {
+    fn into(self) -> OrderStatus {
+        match self {
+            OrderStatusNeon::Blocked => OrderStatus::Blocked,
+            OrderStatusNeon::Filled => OrderStatus::Filled,
+            OrderStatusNeon::Pending => OrderStatus::Pending
+        }
+    }
+}
+
+neon_object_as!(OrderStatus, OrderStatusNeon);
+
+#[derive(Debug, Clone, NeonObject)]
+pub enum OrderLocationNeon {
+    Limit,
+    Searcher
+}
+
+impl From<OrderLocation> for OrderLocationNeon {
+    fn from(value: OrderLocation) -> Self {
+        match value {
+            OrderLocation::Limit => Self::Limit,
+            OrderLocation::Searcher => Self::Searcher
+        }
+    }
+}
+
+impl Into<OrderLocation> for OrderLocationNeon {
+    fn into(self) -> OrderLocation {
+        match self {
+            OrderLocationNeon::Searcher => OrderLocation::Searcher,
+            OrderLocationNeon::Limit => OrderLocation::Limit
+        }
+    }
+}
+
+neon_object_as!(OrderLocation, OrderLocationNeon);
