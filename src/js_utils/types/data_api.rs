@@ -22,8 +22,7 @@ use uniswap_v4::uniswap::{
 use crate::types::HistoricalOrders;
 
 #[allow(non_snake_case)]
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 pub struct PoolKeyNeon {
     currency0:   Address,
     currency1:   Address,
@@ -58,8 +57,7 @@ impl Into<PoolKey> for PoolKeyNeon {
 
 neon_object_as!(PoolKey, PoolKeyNeon);
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 pub enum HistoricalOrdersNeon {
     TOB { order: TopOfBlockOrderNeon },
     User { order: UserOrderNeon }
@@ -87,8 +85,7 @@ impl Into<HistoricalOrders> for HistoricalOrdersNeon {
 
 neon_object_as!(HistoricalOrders, HistoricalOrdersNeon);
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 struct TopOfBlockOrderNeon {
     use_internal:     bool,
     quantity_in:      u128,
@@ -135,8 +132,7 @@ impl Into<TopOfBlockOrder> for TopOfBlockOrderNeon {
 
 neon_object_as!(TopOfBlockOrder, TopOfBlockOrderNeon);
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 struct UserOrderNeon {
     ref_id:               u32,
     use_internal:         bool,
@@ -195,8 +191,7 @@ impl Into<UserOrder> for UserOrderNeon {
 
 neon_object_as!(UserOrder, UserOrderNeon);
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 enum SignatureNeon {
     Contract { from: Address, signature: Bytes },
     Ecdsa { v: u8, r: B256, s: B256 }
@@ -220,8 +215,7 @@ impl Into<Signature> for SignatureNeon {
     }
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 enum OrderQuantitiesNeon {
     Exact { quantity: u128 },
     Partial { min_quantity_in: u128, max_quantity_in: u128, filled_quantity: u128 }
@@ -249,8 +243,7 @@ impl Into<OrderQuantities> for OrderQuantitiesNeon {
     }
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[derive(Debug, Clone, NeonObject)]
 struct StandingValidationNeon {
     nonce:    u64,
     deadline: u64

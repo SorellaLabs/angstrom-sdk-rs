@@ -2,6 +2,7 @@
 #![allow(private_interfaces)]
 #![allow(private_bounds)]
 #![feature(associated_type_defaults)]
+#![feature(result_flattening)]
 
 pub mod apis;
 #[cfg(feature = "neon")]

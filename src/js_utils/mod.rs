@@ -1,4 +1,7 @@
-use std::{collections::HashMap, hash::Hash};
+use std::{
+    collections::{HashMap, HashSet},
+    hash::Hash
+};
 
 use alloy_primitives::{
     aliases::{I24, U24},
@@ -261,6 +264,61 @@ impl<A: AsNeonValue> AsNeonValue for Option<A> {
         } else {
             Ok(None)
         }
+    }
+}
+
+impl<A: AsNeonValue> AsNeonValue for Vec<A> {
+    type NeonValue = JsArray;
+
+    fn as_neon_value<'a>(
+        &self,
+        cx: &mut TaskContext<'a>
+    ) -> NeonResult<Handle<'a, Self::NeonValue>> {
+        let arr = cx.empty_array();
+        for (i, val) in self.iter().enumerate() {
+            let obj = val.as_neon_value(cx)?;
+            arr.set(cx, i as u32, obj)?;
+        }
+        Ok(arr)
+    }
+
+    fn from_neon_value<'a, C: Context<'a>>(
+        value: Handle<'a, Self::NeonValue>,
+        cx: &mut C
+    ) -> NeonResult<Self>
+    where
+        Self: Sized
+    {
+        value
+            .to_vec(cx)?
+            .into_iter()
+            .map(|val| Ok(A::from_neon_value(val.downcast_or_throw(cx)?, cx)).flatten())
+            .collect::<Result<Vec<_>, _>>()
+    }
+}
+
+impl<A: AsNeonValue + Eq + Hash + Clone> AsNeonValue for HashSet<A> {
+    type NeonValue = JsArray;
+
+    fn as_neon_value<'a>(
+        &self,
+        cx: &mut TaskContext<'a>
+    ) -> NeonResult<Handle<'a, Self::NeonValue>> {
+        self.into_iter()
+            .clone()
+            .collect::<Vec<_>>()
+            .as_neon_value(cx)
+    }
+
+    fn from_neon_value<'a, C: Context<'a>>(
+        value: Handle<'a, Self::NeonValue>,
+        cx: &mut C
+    ) -> NeonResult<Self>
+    where
+        Self: Sized
+    {
+        let vec_vals: Vec<A> = Vec::<A>::from_neon_value(value, cx)?;
+        Ok(HashSet::from_iter(vec_vals))
     }
 }
 
