@@ -9,6 +9,7 @@ use angstrom_types::{
     contract_payloads::angstrom::AngPoolConfigEntry,
     primitive::PoolId
 };
+#[cfg(feature = "neon")]
 use neon::object::Object;
 use serde::{Deserialize, Serialize};
 

@@ -13,5 +13,5 @@ where
 {
     type MacroedType = S;
 
-    fn make_object(&self, obj: &Handle<'_, JsObject>, ctx: &mut TaskContext<'_>) -> NeonResult<()>;
+    fn make_object<'a>(self, ctx: &mut TaskContext<'a>) -> NeonResult<Handle<'a, JsObject>>;
 }

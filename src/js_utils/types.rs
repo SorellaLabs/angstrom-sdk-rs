@@ -15,7 +15,7 @@ use angstrom_types::{
 };
 use neon::{context::Context, object::Object};
 use uniswap_v4::uniswap::{
-    pool::TickInfo,
+    pool::{EnhancedUniswapPool, TickInfo},
     pool_data_loader::{DataLoader, PoolDataLoader}
 };
 
@@ -207,7 +207,7 @@ pub struct EnhancedUniswapPoolNeon {
 impl From<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>> for EnhancedUniswapPoolNeon {
     fn from(value: EnhancedUniswapPool<DataLoader<PoolId>, PoolId>) -> Self {
         EnhancedUniswapPoolNeon {
-            sync_swap_with_sim:     value.sync_swap_with_sim(),
+            sync_swap_with_sim:     value.is_sync_swap_with_sim(),
             initial_ticks_per_side: value.initial_ticks_per_side(),
             data_loader:            value.data_loader.into(),
             token_a:                value.token_a,
@@ -242,7 +242,7 @@ impl From<DataLoader<PoolId>> for DataLoaderNeon {
         DataLoaderNeon {
             address:       value.address(),
             pool_manager:  value.pool_manager_opt(),
-            pool_registry: value.pool_registry()
+            pool_registry: value.pool_registry().map(Into::into)
         }
     }
 }

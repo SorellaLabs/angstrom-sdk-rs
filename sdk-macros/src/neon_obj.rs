@@ -25,11 +25,10 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
 
     let trait_impl = quote::quote! {
         impl #impl_generics crate::js_utils::MakeObject for #name #ty_generics #where_clause {
-            fn make_object(&self, obj: &neon::prelude::Handle<'_, neon::prelude::JsObject>, ctx: &mut neon::prelude::TaskContext<'_>) -> neon::prelude::NeonResult<()> {
+            fn make_object<'a>(self, ctx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
+                let obj = neon::context::Context::empty_object(ctx);
                 #(#fields_set)*
-
-                Ok(())
-
+                Ok(obj)
             }
         }
     };
@@ -75,13 +74,14 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
 
     let trait_impl = quote::quote! {
         impl #impl_generics crate::js_utils::MakeObject for #name #ty_generics #where_clause {
-            fn make_object(&self, obj: &neon::prelude::Handle<'_, neon::prelude::JsObject>, ctx: &mut neon::prelude::TaskContext<'_>) -> neon::prelude::NeonResult<()> {
+            fn make_object<'a>(self, ctx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
+                let obj = neon::context::Context::empty_object(ctx);
                 let me: Self = self.clone();
                 match me {
                     #(#variant_tokens)*
                 };
 
-                Ok(())
+                Ok(obj)
 
             }
         }
@@ -322,8 +322,7 @@ impl RustTypes {
             }
             RustTypes::Other => {
                 quote::quote! {
-                    let this_obj = ctx.empty_object();
-                    #field_name_dt.make_object(&this_obj, ctx)?;
+                    let this_obj = #field_name_dt.make_object(ctx)?;
                     #obj_name.set(ctx, #name_str, this_obj)?;
                 }
             }
@@ -377,12 +376,10 @@ impl NeonObjectAs {
         let b = self.conversion_ty;
         quote::quote! {
             impl crate::js_utils::MakeObject<#b> for #a {
-                fn make_object(&self, obj: &neon::prelude::Handle<'_, neon::prelude::JsObject>, ctx: &mut neon::prelude::TaskContext<'_>) -> neon::prelude::NeonResult<()> {
+                fn make_object<'a>(self, ctx: &mut neon::prelude::TaskContext<'a>) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                     let me: Self = self.clone();
                     let this: #b = me.into();
-                    this.make_object(obj, ctx)?;
-
-                    Ok(())
+                    Ok(this.make_object(ctx)?)
 
                 }
             }
