@@ -3,9 +3,10 @@ use std::{
     hash::Hash
 };
 
+use alloy_eips::eip4844::BYTES_PER_BLOB;
 use alloy_primitives::{
     aliases::{I24, U24},
-    Address, Bytes, TxHash, B256, I256, U256
+    Address, Bytes, FixedBytes, TxHash, B256, I256, U256
 };
 use angstrom_types::primitive::PoolId;
 use neon::{
@@ -381,5 +382,56 @@ impl AsNeonValue for () {
         Self: Sized
     {
         Ok(())
+    }
+}
+
+/*
+
+include in declarative macro later - was lazy
+*/
+
+impl AsNeonValue for FixedBytes<48> {
+    type NeonValue = JsString;
+
+    fn as_neon_value<'a>(
+        &self,
+        cx: &mut TaskContext<'a>
+    ) -> NeonResult<Handle<'a, Self::NeonValue>> {
+        Ok(JsString::new(cx, format!("{:?}", self)))
+    }
+
+    fn from_neon_value<'a, C: Context<'a>>(
+        value: Handle<'a, Self::NeonValue>,
+        cx: &mut C
+    ) -> NeonResult<Self>
+    where
+        Self: Sized
+    {
+        let str_val = value.value(cx);
+        Ok(str_val.parse().expect("could not parse FixedBytes<48>"))
+    }
+}
+
+impl AsNeonValue for FixedBytes<BYTES_PER_BLOB> {
+    type NeonValue = JsString;
+
+    fn as_neon_value<'a>(
+        &self,
+        cx: &mut TaskContext<'a>
+    ) -> NeonResult<Handle<'a, Self::NeonValue>> {
+        Ok(JsString::new(cx, format!("{:?}", self)))
+    }
+
+    fn from_neon_value<'a, C: Context<'a>>(
+        value: Handle<'a, Self::NeonValue>,
+        cx: &mut C
+    ) -> NeonResult<Self>
+    where
+        Self: Sized
+    {
+        let str_val = value.value(cx);
+        Ok(str_val
+            .parse()
+            .expect("could not parse FixedBytes<BYTES_PER_BLOB>"))
     }
 }

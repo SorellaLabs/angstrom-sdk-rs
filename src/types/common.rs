@@ -56,7 +56,6 @@ impl PoolMetadata {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
 pub struct TransactionRequestWithLiquidityMeta {
     pub tx_request: TransactionRequest,
     pub tokens:     (Address, Address),
