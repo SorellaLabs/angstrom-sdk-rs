@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, hash::Hash};
 
 use alloy_primitives::{
     aliases::{I24, U24},
@@ -10,8 +10,8 @@ use neon::{
     prelude::{Context, FunctionContext, Handle, TaskContext},
     result::{NeonResult, Throw},
     types::{
-        JsArray, JsBigInt, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsUint8Array, JsValue,
-        Value
+        buffer::TypedArray, JsArray, JsBigInt, JsBoolean, JsNull, JsNumber, JsObject, JsString,
+        JsUint8Array, JsValue, Value
     }
 };
 
@@ -24,9 +24,9 @@ where
 {
     type MacroedType = S;
 
-    fn make_object<'a>(&self, ctx: &mut TaskContext<'a>) -> NeonResult<Handle<'a, JsObject>>;
+    fn make_object<'a>(&self, cx: &mut TaskContext<'a>) -> NeonResult<Handle<'a, JsObject>>;
 
-    fn decode_fn_param(cx: &mut FunctionContext<'_>, param_idx: usize) -> eyre::Result<Self>;
+    fn decode_fn_param(cx: &mut FunctionContext<'_>, param_idx: usize) -> NeonResult<Self>;
 }
 
 pub trait AsNeonValue {
@@ -34,82 +34,204 @@ pub trait AsNeonValue {
 
     fn as_neon_value<'a>(
         &self,
-        ctx: &mut TaskContext<'a>
+        cx: &mut TaskContext<'a>
     ) -> NeonResult<Handle<'a, Self::NeonValue>>;
+
+    fn from_neon_value(
+        value: Handle<'_, Self::NeonValue>,
+        cx: &mut TaskContext<'_>
+    ) -> NeonResult<Self>
+    where
+        Self: Sized;
 }
 
 macro_rules! js_value {
-    ($js_val:ident, [$($val:ident),*], $val_ident:ident, $ctx_ident:ident, $conversion:block) => {
+    ($js_val:ident, [$($val:ident),*], $self_ident:ident, $cx_ident:ident, $from_val_ident:ident, $conversion_to:block, $conversion_from:block) => {
         $(
             impl AsNeonValue for $val {
                 type NeonValue = $js_val;
 
-                fn as_neon_value<'a>(&self, ctx: &mut TaskContext<'a>) -> NeonResult<Handle<'a, Self::NeonValue>> {
-                    let $val_ident = self;
-                    let $ctx_ident = ctx;
-                    Ok($conversion)
+                fn as_neon_value<'a>(&self, cx: &mut TaskContext<'a>) -> NeonResult<Handle<'a, Self::NeonValue>> {
+                    let $self_ident = self;
+                    let $cx_ident = cx;
+                    Ok($conversion_to)
+                }
+
+                fn from_neon_value(value: Handle<'_, Self::NeonValue>, cx: &mut TaskContext<'_>) -> NeonResult<Self>
+                where
+                    Self: Sized {
+                        let $from_val_ident = value;
+                        let $cx_ident = cx;
+                        let res = $conversion_from as $val;
+                        Ok(res)
+                }
+            }
+        )*
+    };
+
+    (FromStr | $js_val:ident, [$($val:ident),*], $self_ident:ident, $cx_ident:ident, $from_val_ident:ident, $conversion_to:block, $conversion_from:block) => {
+        $(
+            impl AsNeonValue for $val {
+                type NeonValue = $js_val;
+
+                fn as_neon_value<'a>(&self, cx: &mut TaskContext<'a>) -> NeonResult<Handle<'a, Self::NeonValue>> {
+                    let $self_ident = self;
+                    let $cx_ident = cx;
+                    Ok($conversion_to)
+                }
+
+                fn from_neon_value(value: Handle<'_, Self::NeonValue>, cx: &mut TaskContext<'_>) -> NeonResult<Self>
+                where
+                    Self: Sized {
+                        let $from_val_ident = value;
+                        let $cx_ident = cx;
+                        let res: $val = std::str::FromStr::from_str(&$conversion_from).expect(&format!("'{}' could not be cast from a string", $conversion_from));
+                        Ok(res)
                 }
             }
         )*
     };
 }
 
-js_value!(JsNumber, [u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, f32, f64], this, ctx, {
-    JsNumber::new(ctx, *this as f64)
+js_value!(
+    JsNumber,
+    [u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, f32, f64],
+    this,
+    cx,
+    val,
+    { JsNumber::new(cx, *this as f64) },
+    { val.value(cx) }
+);
+
+js_value!(JsNumber, [U24], this, cx, val, { JsNumber::new(cx, this.to::<u64>() as f64) }, {
+    U24::from(val.value(cx) as u64)
 });
 
-js_value!(JsNumber, [U24], this, ctx, { JsNumber::new(ctx, this.to::<u64>() as f64) });
+js_value!(
+    JsNumber,
+    [I24],
+    this,
+    cx,
+    val,
+    { JsNumber::new(cx, TryInto::<i32>::try_into(*this).unwrap() as f64) },
+    { I24::try_from(val.value(cx) as i32).unwrap() }
+);
 
-js_value!(JsNumber, [I24], this, ctx, {
-    JsNumber::new(ctx, TryInto::<i32>::try_into(*this).unwrap() as f64)
+js_value!(
+    JsBigInt,
+    [U256],
+    this,
+    cx,
+    val,
+    {
+        JsBigInt::from_digits_le(
+            cx,
+            neon::types::bigint::Sign::Positive,
+            &this.to_base_le(10).collect::<Vec<_>>()
+        )
+    },
+    { U256::from_limbs_slice(&val.to_digits_le(cx).1) }
+);
+
+js_value!(
+    JsBigInt,
+    [I256],
+    this,
+    cx,
+    val,
+    {
+        let sign = if this.is_positive() {
+            neon::types::bigint::Sign::Positive
+        } else {
+            neon::types::bigint::Sign::Negative
+        };
+
+        JsBigInt::from_digits_le(cx, sign, this.as_limbs())
+    },
+    {
+        let (sign, bytes) = val.to_digits_le(cx);
+        if matches!(sign, neon::types::bigint::Sign::Positive) {
+            I256::checked_from_sign_and_abs(
+                alloy_primitives::Sign::Positive,
+                U256::from_limbs_slice(&bytes)
+            )
+            .expect("I256 value could not be read")
+        } else {
+            I256::checked_from_sign_and_abs(
+                alloy_primitives::Sign::Negative,
+                U256::from_limbs_slice(&bytes)
+            )
+            .expect("I256 value could not be read")
+        }
+    }
+);
+
+js_value!(JsUint8Array, [Bytes], this, cx, val, { JsUint8Array::from_slice(cx, &&*this)? }, {
+    Bytes::copy_from_slice(&val.as_slice(cx).into_iter().copied().collect::<Vec<_>>())
 });
 
-js_value!(JsBigInt, [U256], this, ctx, {
-    JsBigInt::from_digits_le(
-        ctx,
-        neon::types::bigint::Sign::Positive,
-        &this.to_base_le(10).collect::<Vec<_>>()
-    )
-});
+js_value!(JsBoolean, [bool], this, cx, val, { JsBoolean::new(cx, *this) }, { val.value(cx) });
 
-js_value!(JsBigInt, [I256], this, ctx, {
-    let sign = if this.is_positive() {
-        neon::types::bigint::Sign::Positive
-    } else {
-        neon::types::bigint::Sign::Negative
-    };
-
-    JsBigInt::from_digits_le(ctx, sign, this.as_limbs())
-});
-
-js_value!(JsUint8Array, [Bytes], this, ctx, { JsUint8Array::from_slice(ctx, &&*this)? });
-
-js_value!(JsBoolean, [bool], this, ctx, { JsBoolean::new(ctx, *this) });
-
-js_value!(JsString, [Address, B256], this, ctx, { JsString::new(ctx, format!("{:?}", this)) });
+js_value!(
+    FromStr | JsString,
+    [Address, B256],
+    this,
+    cx,
+    val,
+    { JsString::new(cx, format!("{:?}", this)) },
+    { val.value(cx) }
+);
 
 impl<A, B> AsNeonValue for HashMap<A, B>
 where
-    A: AsNeonValue,
+    A: AsNeonValue + Eq + Hash,
     B: AsNeonValue
 {
     type NeonValue = JsArray;
 
     fn as_neon_value<'a>(
         &self,
-        ctx: &mut TaskContext<'a>
+        cx: &mut TaskContext<'a>
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
-        let res = ctx.empty_array();
+        let res = cx.empty_array();
 
         for (i, (key, val)) in self.iter().enumerate() {
-            let inner_obj = ctx.empty_object();
-            let key_cast = key.as_neon_value(ctx)?;
-            inner_obj.set(ctx, "key", key_cast)?;
-            let val_cast = val.as_neon_value(ctx)?;
-            inner_obj.set(ctx, "val", val_cast)?;
-            res.set(ctx, i as u32, inner_obj)?;
+            let inner_obj = cx.empty_object();
+            let key_cast = key.as_neon_value(cx)?;
+            inner_obj.set(cx, "key", key_cast)?;
+            let val_cast = val.as_neon_value(cx)?;
+            inner_obj.set(cx, "val", val_cast)?;
+            res.set(cx, i as u32, inner_obj)?;
         }
         Ok(res)
+    }
+
+    fn from_neon_value(
+        value: Handle<'_, Self::NeonValue>,
+        cx: &mut TaskContext<'_>
+    ) -> NeonResult<Self>
+    where
+        Self: Sized
+    {
+        Ok(value
+            .to_vec(cx)?
+            .into_iter()
+            .map(|val| {
+                val.downcast_or_throw::<JsObject, _>(cx).map(|obj| {
+                    let key_obj = obj.get::<<A as AsNeonValue>::NeonValue, _, _>(cx, "key")?;
+                    let key = A::from_neon_value(key_obj, cx)?;
+
+                    let val_obj = obj.get::<<B as AsNeonValue>::NeonValue, _, _>(cx, "val")?;
+                    let val = B::from_neon_value(val_obj, cx)?;
+
+                    Ok::<_, Throw>((key, val))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .collect())
     }
 }
 
@@ -118,16 +240,31 @@ impl<A: AsNeonValue> AsNeonValue for Option<A> {
 
     fn as_neon_value<'a>(
         &self,
-        ctx: &mut TaskContext<'a>
+        cx: &mut TaskContext<'a>
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         if let Some(val) = self.as_ref() {
-            Ok(val.as_neon_value(ctx)?.as_value(ctx))
+            Ok(val.as_neon_value(cx)?.as_value(cx))
         } else {
-            Ok(JsNull::new(ctx).as_value(ctx))
+            Ok(JsNull::new(cx).as_value(cx))
+        }
+    }
+
+    fn from_neon_value(
+        value: Handle<'_, Self::NeonValue>,
+        cx: &mut TaskContext<'_>
+    ) -> NeonResult<Self>
+    where
+        Self: Sized
+    {
+        if let Ok(val) = value.downcast::<<A as AsNeonValue>::NeonValue, _>(cx) {
+            A::from_neon_value(val, cx).map(Some)
+        } else {
+            Ok(None)
         }
     }
 }
 
 fn t() {
-    let this = I256::default();
+    // let this =JsNumber::new(cx, x);
+    // U256::from_limbs_slice(slice)
 }

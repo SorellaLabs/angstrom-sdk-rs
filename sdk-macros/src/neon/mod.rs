@@ -38,7 +38,8 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
             }
 
             fn decode_fn_param(cx: &mut neon::prelude::FunctionContext<'_>, param_idx: usize) -> eyre::Result<Self> {
-                todo!()
+                let obj = cx.argument::<neon::prelude::JsObject>(param_idx)?;
+                <Self as crate::js_utils::AsNeonValue>::from_neon_value(obj, cx)
             }
         }
 
@@ -51,6 +52,15 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
             ) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, Self::NeonValue>> {
                 crate::js_utils::MakeObject::make_object(self, ctx)
             }
+
+            fn from_neon_value(
+                value: neon::prelude::Handle<'_, Self::NeonValue>,
+                cx: &mut neon::prelude::TaskContext<'_>
+            ) -> NeonResult<Self>
+            where
+                Self: Sized {
+                    todo!();
+                }
         }
 
     };
@@ -111,7 +121,8 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
             }
 
             fn decode_fn_param(cx: &mut neon::prelude::FunctionContext<'_>, param_idx: usize) -> eyre::Result<Self> {
-                todo!()
+                let obj = cx.argument::<neon::prelude::JsObject>(param_idx)?;
+                <Self as crate::js_utils::AsNeonValue>::from_neon_value(obj, cx)
             }
         }
 
@@ -124,6 +135,15 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
             ) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, Self::NeonValue>> {
                 crate::js_utils::MakeObject::make_object(self, ctx)
             }
+
+            fn from_neon_value(
+                value: neon::prelude::Handle<'_, Self::NeonValue>,
+                cx: &mut neon::prelude::TaskContext<'_>
+            ) -> NeonResult<Self>
+            where
+                Self: Sized {
+                    todo!();
+                }
         }
     };
 
