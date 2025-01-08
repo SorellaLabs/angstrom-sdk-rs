@@ -73,7 +73,7 @@ pub struct OrderBuilderRemoveLiquidityArgs {
     max_priority_fee_per_gas: Option<u128>
 }
 
-impl OrderBuilderAddLiquidityArgs {
+impl OrderBuilderRemoveLiquidityArgs {
     pub fn remove_liquidity(self) -> TransactionRequestWithLiquidityMeta {
         remove_liquidity(
             self.token0,
