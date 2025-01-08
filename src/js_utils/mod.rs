@@ -20,7 +20,12 @@ use neon::{
 };
 
 mod types;
-pub use types::OrderBuilderAddLiquidityArgs;
+pub use types::{
+    OrderBuilderAddLiquidityArgs, OrderBuilderExactFlashOrderArgs,
+    OrderBuilderExactStandingOrderArgs, OrderBuilderPartialFlashOrderArgs,
+    OrderBuilderPartialStandingOrderArgs, OrderBuilderRemoveLiquidityArgs,
+    OrderBuilderTopOfBlockOrderArgs
+};
 
 pub trait MakeObject<S = Self>
 where
