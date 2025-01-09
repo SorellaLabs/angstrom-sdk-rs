@@ -6,12 +6,11 @@ use std::{
 use alloy_eips::eip4844::BYTES_PER_BLOB;
 use alloy_primitives::{
     aliases::{I24, U24},
-    Address, Bytes, FixedBytes, TxHash, B256, I256, U256
+    Address, Bytes, FixedBytes, B256, I256, U256
 };
-use angstrom_types::primitive::PoolId;
 use neon::{
     object::Object,
-    prelude::{Context, FunctionContext, Handle, TaskContext},
+    prelude::{Context, FunctionContext, Handle},
     result::{NeonResult, Throw},
     types::{
         buffer::TypedArray, JsArray, JsBigInt, JsBoolean, JsNull, JsNumber, JsObject, JsString,

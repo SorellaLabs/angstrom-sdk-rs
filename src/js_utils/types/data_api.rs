@@ -21,7 +21,6 @@ use uniswap_v4::uniswap::{
 
 use crate::types::HistoricalOrders;
 
-#[allow(non_snake_case)]
 #[derive(Debug, Clone, NeonObject)]
 pub struct PoolKeyNeon {
     currency0:   Address,

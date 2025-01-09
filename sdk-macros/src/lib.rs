@@ -3,7 +3,7 @@ mod neon;
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
-use crate::neon::object::NeonObjectAs;
+use crate::neon::NeonObjectAs;
 
 #[proc_macro_derive(NeonObject)]
 pub fn neon_object(raw: proc_macro::TokenStream) -> proc_macro::TokenStream {
