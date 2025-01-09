@@ -24,7 +24,7 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
     let (fields_to_set, fields_from_set): (Vec<_>, Vec<_>) = data_struct
         .fields
         .iter()
-        .filter_map(|field| field_to_neon_value(field).zip(field_from_neon_value(field)))
+        .filter_map(|field| field_to_neon_value(field, false).zip(field_from_neon_value(field)))
         .unzip();
 
     let field_names = data_struct
@@ -88,7 +88,9 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
             let fields = &variant.fields;
             let (fields_to_set, fields_from_set): (Vec<_>, Vec<_>) = fields
                 .iter()
-                .filter_map(|field| field_to_neon_value(field).zip(field_from_neon_value(field)))
+                .filter_map(|field| {
+                    field_to_neon_value(field, true).zip(field_from_neon_value(field))
+                })
                 .unzip();
 
             let field_names = fields

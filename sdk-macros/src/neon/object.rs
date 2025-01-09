@@ -4,11 +4,16 @@ use syn::{
     PathArguments, PathSegment, Token, Type, TypePath
 };
 
-pub(super) fn field_to_neon_value(field: &Field) -> Option<TokenStream> {
+pub(super) fn field_to_neon_value(field: &Field, is_enum: bool) -> Option<TokenStream> {
     field.ident.as_ref().map(|field_name| {
         let name_str = field_name.to_string();
+        let field_ident = if is_enum {
+            quote::quote! {#field_name}
+        } else {
+            quote::quote! {self.#field_name}
+        };
         quote::quote! {
-            let val = crate::js_utils::AsNeonValue::as_neon_value(#field_name, cx)?;
+            let val = crate::js_utils::AsNeonValue::as_neon_value(&#field_ident, cx)?;
             obj.set(cx, #name_str, val)?;
         }
     })
