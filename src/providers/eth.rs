@@ -127,8 +127,9 @@ where
 
     async fn historical_orders(
         &self,
-        filter: &HistoricalOrdersFilter
+        filter: HistoricalOrdersFilter
     ) -> eyre::Result<Vec<HistoricalOrders>> {
+        let filter = &filter;
         let pool_stores = &AngstromPoolTokenIndexToPair::new_with_tokens(self, filter).await?;
 
         let start_block = filter.from_block.unwrap_or(ANGSTROM_DEPLOYED_BLOCK);

@@ -15,7 +15,7 @@ pub trait AngstromDataApi {
 
     async fn historical_orders(
         &self,
-        filter: &HistoricalOrdersFilter
+        filter: HistoricalOrdersFilter
     ) -> eyre::Result<Vec<HistoricalOrders>>;
 
     async fn pool_data(
