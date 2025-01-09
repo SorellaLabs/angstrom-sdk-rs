@@ -8,7 +8,7 @@ pub(super) fn field_to_neon_value(field: &Field) -> Option<TokenStream> {
     field.ident.as_ref().map(|field_name| {
         let name_str = field_name.to_string();
         quote::quote! {
-            let val = crate::js_utils::AsNeonValue::as_neon_value(self, cx)?;
+            let val = crate::js_utils::AsNeonValue::as_neon_value(#field_name, cx)?;
             obj.set(cx, #name_str, val)?;
         }
     })
