@@ -26,16 +26,11 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
         .collect::<Vec<_>>();
 
     let trait_impl = quote::quote! {
-        impl #impl_generics crate::js_utils::MakeObject for #name #ty_generics #where_clause {
+        impl #impl_generics crate::js_utils::MakeNeonObject for #name #ty_generics #where_clause {
             fn make_object<'a, C: neon::prelude::Context<'a>>(&self, cx: &mut C) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                 let obj = neon::context::Context::empty_object(cx);
                 #(#fields_to_set)*
                 Ok(obj)
-            }
-
-            fn decode_fn_param(cx: &mut neon::prelude::FunctionContext<'_>, param_idx: usize) -> neon::prelude::NeonResult<Self> {
-                let obj = cx.argument::<neon::prelude::JsObject>(param_idx)?;
-                <Self as crate::js_utils::AsNeonValue>::from_neon_value(obj, cx)
             }
         }
 
@@ -46,7 +41,7 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
                 &self,
                 cx: &mut C
             ) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, Self::NeonValue>> {
-                crate::js_utils::MakeObject::make_object(self, cx)
+                crate::js_utils::MakeNeonObject::make_object(self, cx)
             }
 
             fn from_neon_value<'a, C: neon::prelude::Context<'a>>(
@@ -109,7 +104,7 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
         .unzip();
 
     let trait_impl = quote::quote! {
-        impl #impl_generics crate::js_utils::MakeObject for #name #ty_generics #where_clause {
+        impl #impl_generics crate::js_utils::MakeNeonObject for #name #ty_generics #where_clause {
             fn make_object<'a, C: neon::prelude::Context<'a>>(&self, cx: &mut C) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                 let obj = neon::context::Context::empty_object(cx);
                 let me: Self = self.clone();
@@ -120,11 +115,6 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
                 Ok(obj)
 
             }
-
-            fn decode_fn_param(cx: &mut neon::prelude::FunctionContext<'_>, param_idx: usize) -> neon::prelude::NeonResult<Self> {
-                let obj = cx.argument::<neon::prelude::JsObject>(param_idx)?;
-                <Self as crate::js_utils::AsNeonValue>::from_neon_value(obj, cx)
-            }
         }
 
         impl #impl_generics crate::js_utils::AsNeonValue for #name #ty_generics #where_clause {
@@ -134,7 +124,7 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
                 &self,
                 cx: &mut C
             ) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, Self::NeonValue>> {
-                crate::js_utils::MakeObject::make_object(self, cx)
+                crate::js_utils::MakeNeonObject::make_object(self, cx)
             }
 
             fn from_neon_value<'a, C: neon::prelude::Context<'a>>(
@@ -197,18 +187,12 @@ impl NeonObjectAs {
         let a = self.to_impl_ty;
         let b = self.conversion_ty;
         quote::quote! {
-            impl crate::js_utils::MakeObject<#b> for #a {
+            impl crate::js_utils::MakeNeonObject<#b> for #a {
                 fn make_object<'a, C: neon::prelude::Context<'a>>(&self, cx: &mut C) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                     let me: Self = self.clone();
                     let this: #b = me.into();
                     Ok(this.make_object(cx)?)
 
-                }
-
-                fn decode_fn_param(cx: &mut neon::prelude::FunctionContext<'_>, param_idx: usize) -> neon::prelude::NeonResult<Self> {
-                    let obj = cx.argument::<neon::prelude::JsObject>(param_idx)?;
-                    let this = <#b as crate::js_utils::AsNeonValue>::from_neon_value(obj, cx)?;
-                    Ok(this.into())
                 }
             }
 
@@ -219,7 +203,7 @@ impl NeonObjectAs {
                     &self,
                     cx: &mut C
                 ) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, Self::NeonValue>> {
-                    crate::js_utils::MakeObject::make_object(self, cx)
+                    crate::js_utils::MakeNeonObject::make_object(self, cx)
                 }
 
                 fn from_neon_value<'a, C: neon::prelude::Context<'a>>(
@@ -231,6 +215,12 @@ impl NeonObjectAs {
                         let this = <#b as crate::js_utils::AsNeonValue>::from_neon_value(value, cx)?;
                         Ok(this.into())
                     }
+
+                fn decode_fn_param(cx: &mut neon::prelude::FunctionContext<'_>, param_idx: usize) -> neon::prelude::NeonResult<Self> {
+                    let obj = cx.argument::<neon::prelude::JsObject>(param_idx)?;
+                    let this = <#b as crate::js_utils::AsNeonValue>::from_neon_value(obj, cx)?;
+                    Ok(this.into())
+                }
             }
         }
     }

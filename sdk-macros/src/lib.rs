@@ -23,7 +23,7 @@ pub fn neon_object(raw: proc_macro::TokenStream) -> proc_macro::TokenStream {
 /// #[derive(NeonObject)] macro
 ///
 /// i.e. does:
-/// impl MakeObject<B> for A {...}
+/// impl MakeNeonObject<B> for A {...}
 ///
 /// and calls Into<B>, then sets the values of type B in the JsObject
 pub fn neon_object_as(input: TokenStream) -> TokenStream {

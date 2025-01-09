@@ -26,7 +26,7 @@ pub use types::{
     OrderBuilderTopOfBlockOrderArgs
 };
 
-pub trait MakeObject<S = Self>
+pub trait MakeNeonObject<S = Self>
 where
     S: From<Self> + Into<Self> + AsNeonValue + Clone,
     Self: Sized
@@ -34,8 +34,6 @@ where
     type MacroedType = S;
 
     fn make_object<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<Handle<'a, JsObject>>;
-
-    fn decode_fn_param(cx: &mut FunctionContext<'_>, param_idx: usize) -> NeonResult<Self>;
 }
 
 pub trait AsNeonValue {
@@ -52,6 +50,14 @@ pub trait AsNeonValue {
     ) -> NeonResult<Self>
     where
         Self: Sized;
+
+    fn decode_fn_param(cx: &mut FunctionContext<'_>, param_idx: usize) -> NeonResult<Self>
+    where
+        Self: Sized
+    {
+        let param = cx.argument::<Self::NeonValue>(param_idx)?;
+        Self::from_neon_value(param, cx)
+    }
 }
 
 macro_rules! js_value {
