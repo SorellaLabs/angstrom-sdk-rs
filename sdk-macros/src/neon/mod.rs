@@ -36,8 +36,10 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
     let trait_impl = quote::quote! {
         impl #impl_generics crate::js_utils::MakeObject for #name #ty_generics #where_clause {
             fn make_object<'a, C: neon::prelude::Context<'a>>(&self, cx: &mut C) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
+                println!("MADE SELF");
                 let obj = neon::context::Context::empty_object(cx);
                 #(#fields_to_set)*
+                println!("MADE OBJECT");
                 Ok(obj)
             }
 
