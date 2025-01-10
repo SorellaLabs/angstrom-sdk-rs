@@ -52,6 +52,10 @@ where
     pub fn new(eth_provider: EthRpcProvider<P>, angstrom: AngstromProvider) -> Self {
         Self { eth_provider, angstrom, filler: () }
     }
+
+    pub fn with_first_filler<F: FillWrapper>(self, filler: F) -> AngstromApi<P, F> {
+        AngstromApi { eth_provider: self.eth_provider, angstrom: self.angstrom, filler }
+    }
 }
 
 impl<P, F> AngstromApi<P, F>
@@ -59,6 +63,17 @@ where
     P: Provider + Clone,
     F: FillWrapper
 {
+    pub fn with_filler<F1: FillWrapper>(
+        self,
+        filler: F1
+    ) -> AngstromApi<P, AngstromFillProvider<F, F1>> {
+        AngstromApi {
+            eth_provider: self.eth_provider,
+            angstrom:     self.angstrom,
+            filler:       self.filler.wrap_with_filler(filler)
+        }
+    }
+
     pub fn with_nonce_generator_filler(
         self
     ) -> AngstromApi<P, AngstromFillProvider<F, NonceGeneratorFiller>> {
