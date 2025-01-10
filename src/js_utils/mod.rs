@@ -467,7 +467,7 @@ impl AsNeonValue for PrivateKeySigner {
         Self: Sized
     {
         let str_val = value.value(cx);
-        PrivateKeySigner::from_str(&str_val).map_err(|e| {
+        PrivateKeySigner::from_str(&str_val).or_else(|e| {
             cx.throw_error(&format!("error converting private key to PrivateKeySigner - {e:?}"))
         })
     }
