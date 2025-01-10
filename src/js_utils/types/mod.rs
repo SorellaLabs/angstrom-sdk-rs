@@ -9,3 +9,5 @@ pub use order_builder::{
     OrderBuilderPartialStandingOrderArgs, OrderBuilderRemoveLiquidityArgs,
     OrderBuilderTopOfBlockOrderArgs
 };
+mod fillers;
+pub use fillers::ClientFillerTypes;
