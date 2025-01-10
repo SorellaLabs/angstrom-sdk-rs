@@ -14,7 +14,7 @@ pub use chain_id::*;
 use super::TransactionRequestWithLiquidityMeta;
 use crate::providers::{AngstromProvider, EthRpcProvider};
 
-pub(crate) struct AngstromFillProvider<L, R> {
+pub struct AngstromFillProvider<L, R> {
     left:  L,
     right: R
 }
