@@ -20,7 +20,7 @@ use neon::{
 
 mod types;
 pub use types::{
-    OrderBuilderAddLiquidityArgs, OrderBuilderExactFlashOrderArgs,
+    ClientFillerTypes, OrderBuilderAddLiquidityArgs, OrderBuilderExactFlashOrderArgs,
     OrderBuilderExactStandingOrderArgs, OrderBuilderPartialFlashOrderArgs,
     OrderBuilderPartialStandingOrderArgs, OrderBuilderRemoveLiquidityArgs,
     OrderBuilderTopOfBlockOrderArgs

@@ -1,4 +1,5 @@
 use angstrom_sdk_macros::NeonObject;
+use neon::object::Object;
 
 #[derive(Clone, Debug, NeonObject)]
 pub struct ClientFillerTypes {
