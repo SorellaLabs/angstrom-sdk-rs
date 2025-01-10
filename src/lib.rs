@@ -36,6 +36,7 @@ use validation::order::OrderPoolNewOrderResult;
 
 use crate::apis::{data_api::AngstromDataApi, node_api::AngstromNodeApi};
 
+#[derive(Clone)]
 pub struct AngstromApi<P, F = ()>
 where
     P: Provider + Clone
@@ -55,6 +56,16 @@ where
 
     pub fn with_first_filler<F: FillWrapper>(self, filler: F) -> AngstromApi<P, F> {
         AngstromApi { eth_provider: self.eth_provider, angstrom: self.angstrom, filler }
+    }
+
+    #[cfg(feature = "neon")]
+    pub fn run_with_filler<F: FillWrapper, O>(
+        &self,
+        filler: F,
+        f: impl FnOnce(&AngstromApi<P, F>) -> O
+    ) -> O {
+        let this = self.clone().with_first_filler(filler);
+        f(&this)
     }
 }
 
