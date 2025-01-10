@@ -3,8 +3,8 @@ use neon::object::Object;
 
 #[derive(Clone, Debug, NeonObject)]
 pub struct ClientFillerTypes {
-    nonce:           bool,
-    token_balance:   bool,
-    signer:          bool,
-    signer_priv_key: String
+    pub nonce:           bool,
+    pub token_balance:   bool,
+    pub signer:          bool,
+    pub signer_priv_key: Option<String>
 }
