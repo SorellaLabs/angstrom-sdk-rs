@@ -55,8 +55,12 @@ where
     }
 
     #[cfg(feature = "neon")]
-    pub fn with_first_filler<F: FillWrapper>(self, filler: F) -> AngstromApi<P, F> {
-        AngstromApi { eth_provider: self.eth_provider, angstrom: self.angstrom, filler }
+    pub fn with_first_filler<F: FillWrapper>(&self, filler: F) -> AngstromApi<P, F> {
+        AngstromApi {
+            eth_provider: self.eth_provider.clone(),
+            angstrom: self.angstrom.clone(),
+            filler
+        }
     }
 }
 
