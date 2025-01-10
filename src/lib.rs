@@ -53,15 +53,6 @@ where
     pub fn new(eth_provider: EthRpcProvider<P>, angstrom: AngstromProvider) -> Self {
         Self { eth_provider, angstrom, filler: () }
     }
-
-    #[cfg(feature = "neon")]
-    pub fn with_first_filler<F: FillWrapper>(&self, filler: F) -> AngstromApi<P, F> {
-        AngstromApi {
-            eth_provider: self.eth_provider.clone(),
-            angstrom: self.angstrom.clone(),
-            filler
-        }
-    }
 }
 
 impl<P, F> AngstromApi<P, F>
