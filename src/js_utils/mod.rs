@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
-    hash::Hash
+    hash::Hash,
+    str::FromStr
 };
 
 use alloy_eips::eip4844::BYTES_PER_BLOB;
@@ -8,6 +9,7 @@ use alloy_primitives::{
     aliases::{I24, U24},
     Address, Bytes, FixedBytes, B256, I256, U256
 };
+use alloy_signer_local::PrivateKeySigner;
 use neon::{
     object::Object,
     prelude::{Context, FunctionContext, Handle},
@@ -444,5 +446,29 @@ impl AsNeonValue for FixedBytes<BYTES_PER_BLOB> {
         Ok(str_val
             .parse()
             .expect("could not parse FixedBytes<BYTES_PER_BLOB>"))
+    }
+}
+
+impl AsNeonValue for PrivateKeySigner {
+    type NeonValue = JsString;
+
+    fn as_neon_value<'a, C: Context<'a>>(
+        &self,
+        cx: &mut C
+    ) -> NeonResult<Handle<'a, Self::NeonValue>> {
+        unreachable!("cannot convert PrivateKeySigner to a neon object")
+    }
+
+    fn from_neon_value<'a, C: Context<'a>>(
+        value: Handle<'a, Self::NeonValue>,
+        cx: &mut C
+    ) -> NeonResult<Self>
+    where
+        Self: Sized
+    {
+        let str_val = value.value(cx);
+        PrivateKeySigner::from_str(&str_val).map_err(|e| {
+            cx.throw_error(&format!("error converting private key to PrivateKeySigner - {e:?}"))
+        })
     }
 }
