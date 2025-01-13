@@ -7,16 +7,16 @@ pub use historical_order_filters::*;
 pub mod fillers;
 
 pub const CONTROLLER_V1_ADDRESS: alloy_primitives::Address =
-    alloy_primitives::address!("D316698A0231aAE7a55621238985cb2542637155");
+    alloy_primitives::address!("35eDCfa6E26648b71DB786448BA682683d428D43");
 
 pub const ANGSTROM_ADDRESS: alloy_primitives::Address =
-    alloy_primitives::address!("D007CB9Ab0cA5b0A2EBb3Dd4F8a9DAf0D5632a80");
+    alloy_primitives::address!("3Ed25678AD59238476592C144457579e81F2EA80");
 
 pub const POOL_GATE_ADDRESS: alloy_primitives::Address =
-    alloy_primitives::address!("5B9fE8c111a5F03fe0768c102e24fdc8fe3fe5C1");
+    alloy_primitives::address!("Abcf3464781384E9aD47BdcED34e5B91Ebf6E877");
 
 pub const POOL_MANAGER_ADDRESS: alloy_primitives::Address =
-    alloy_primitives::address!("50c26EcfeeB6b38F82a2b32d4b517DB001989204");
+    alloy_primitives::address!("9b40ce40A76819B83822502DaF6Aefa63D6b8a31");
 
 pub const ANGSTROM_DEPLOYED_BLOCK: u64 = 0;
 pub const POOL_CONFIG_STORE_SLOT: u8 = 2;
