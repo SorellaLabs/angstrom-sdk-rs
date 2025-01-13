@@ -189,7 +189,6 @@ impl FromStr for OrderKind {
 }
 
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
 pub enum OrderFilter {
     ByPoolId { pool_id: PoolId },
     ByTokens { token0: Address, token1: Address },

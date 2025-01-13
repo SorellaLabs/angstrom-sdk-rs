@@ -58,17 +58,17 @@ neon_object_as!(PoolKey, PoolKeyNeon);
 
 #[derive(Debug, Clone, NeonObject)]
 pub enum HistoricalOrdersNeon {
-    TOB { order: TopOfBlockOrderNeon },
-    User { order: UserOrderNeon }
+    TOB { params: TopOfBlockOrderNeon },
+    User { params: UserOrderNeon }
 }
 
 impl From<HistoricalOrders> for HistoricalOrdersNeon {
     fn from(value: HistoricalOrders) -> Self {
         match value {
             HistoricalOrders::TOB(top_of_block_order) => {
-                Self::TOB { order: top_of_block_order.into() }
+                Self::TOB { params: top_of_block_order.into() }
             }
-            HistoricalOrders::User(user_order) => Self::User { order: user_order.into() }
+            HistoricalOrders::User(user_order) => Self::User { params: user_order.into() }
         }
     }
 }
@@ -76,8 +76,8 @@ impl From<HistoricalOrders> for HistoricalOrdersNeon {
 impl Into<HistoricalOrders> for HistoricalOrdersNeon {
     fn into(self) -> HistoricalOrders {
         match self {
-            Self::TOB { order } => HistoricalOrders::TOB(order.into()),
-            Self::User { order } => HistoricalOrders::User(order.into())
+            Self::TOB { params } => HistoricalOrders::TOB(params.into()),
+            Self::User { params } => HistoricalOrders::User(params.into())
         }
     }
 }
@@ -192,15 +192,19 @@ neon_object_as!(UserOrder, UserOrderNeon);
 
 #[derive(Debug, Clone, NeonObject)]
 enum SignatureNeon {
-    Contract { from: Address, signature: Bytes },
-    Ecdsa { v: u8, r: B256, s: B256 }
+    Contract { params: SignatureContractParamsNeon },
+    Ecdsa { params: SignatureEcdsaParamsNeon }
 }
 
 impl From<Signature> for SignatureNeon {
     fn from(value: Signature) -> Self {
         match value {
-            Signature::Contract { from, signature } => Self::Contract { from, signature },
-            Signature::Ecdsa { v, r, s } => Self::Ecdsa { v, r, s }
+            Signature::Contract { from, signature } => {
+                Self::Contract { params: SignatureContractParamsNeon { from, signature } }
+            }
+            Signature::Ecdsa { v, r, s } => {
+                Self::Ecdsa { params: SignatureEcdsaParamsNeon { v, r, s } }
+            }
         }
     }
 }
@@ -208,24 +212,49 @@ impl From<Signature> for SignatureNeon {
 impl Into<Signature> for SignatureNeon {
     fn into(self) -> Signature {
         match self {
-            Self::Contract { from, signature } => Signature::Contract { from, signature },
-            Self::Ecdsa { v, r, s } => Signature::Ecdsa { v, r, s }
+            Self::Contract { params: SignatureContractParamsNeon { from, signature } } => {
+                Signature::Contract { from, signature }
+            }
+            Self::Ecdsa { params: SignatureEcdsaParamsNeon { v, r, s } } => {
+                Signature::Ecdsa { v, r, s }
+            }
         }
     }
 }
 
 #[derive(Debug, Clone, NeonObject)]
+struct SignatureContractParamsNeon {
+    from:      Address,
+    signature: Bytes
+}
+
+#[derive(Debug, Clone, NeonObject)]
+struct SignatureEcdsaParamsNeon {
+    v: u8,
+    r: B256,
+    s: B256
+}
+
+#[derive(Debug, Clone, NeonObject)]
 enum OrderQuantitiesNeon {
-    Exact { quantity: u128 },
-    Partial { min_quantity_in: u128, max_quantity_in: u128, filled_quantity: u128 }
+    Exact { params: OrderQuantitiesExactParamsNeon },
+    Partial { params: OrderQuantitiesPartialParamsNeon }
 }
 
 impl From<OrderQuantities> for OrderQuantitiesNeon {
     fn from(value: OrderQuantities) -> Self {
         match value {
-            OrderQuantities::Exact { quantity } => Self::Exact { quantity },
+            OrderQuantities::Exact { quantity } => {
+                Self::Exact { params: OrderQuantitiesExactParamsNeon { quantity } }
+            }
             OrderQuantities::Partial { min_quantity_in, max_quantity_in, filled_quantity } => {
-                Self::Partial { min_quantity_in, max_quantity_in, filled_quantity }
+                Self::Partial {
+                    params: OrderQuantitiesPartialParamsNeon {
+                        min_quantity_in,
+                        max_quantity_in,
+                        filled_quantity
+                    }
+                }
             }
         }
     }
@@ -234,12 +263,31 @@ impl From<OrderQuantities> for OrderQuantitiesNeon {
 impl Into<OrderQuantities> for OrderQuantitiesNeon {
     fn into(self) -> OrderQuantities {
         match self {
-            Self::Exact { quantity } => OrderQuantities::Exact { quantity },
-            Self::Partial { min_quantity_in, max_quantity_in, filled_quantity } => {
-                OrderQuantities::Partial { min_quantity_in, max_quantity_in, filled_quantity }
+            Self::Exact { params: OrderQuantitiesExactParamsNeon { quantity } } => {
+                OrderQuantities::Exact { quantity }
             }
+            Self::Partial {
+                params:
+                    OrderQuantitiesPartialParamsNeon {
+                        min_quantity_in,
+                        max_quantity_in,
+                        filled_quantity
+                    }
+            } => OrderQuantities::Partial { min_quantity_in, max_quantity_in, filled_quantity }
         }
     }
+}
+
+#[derive(Debug, Clone, NeonObject)]
+struct OrderQuantitiesExactParamsNeon {
+    quantity: u128
+}
+
+#[derive(Debug, Clone, NeonObject)]
+struct OrderQuantitiesPartialParamsNeon {
+    min_quantity_in: u128,
+    max_quantity_in: u128,
+    filled_quantity: u128
 }
 
 #[derive(Debug, Clone, NeonObject)]

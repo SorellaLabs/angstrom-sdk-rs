@@ -85,6 +85,8 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
                 .map(|field| field.ident.clone().unwrap())
                 .collect::<Vec<_>>();
 
+            assert!(field_names.len() <= 1);
+
             (
                 quote::quote! {
                     #name::#variant_name { #(#field_names),* } => {

@@ -5,8 +5,12 @@ use alloy_rpc_types::{
     AccessList, AccessListItem, Authorization, TransactionInput, TransactionRequest
 };
 use angstrom_sdk_macros::{neon_object_as, NeonObject};
-use angstrom_types::sol_bindings::rpc_orders::{
-    ExactFlashOrder, ExactStandingOrder, PartialFlashOrder, PartialStandingOrder, TopOfBlockOrder
+use angstrom_types::{
+    primitive::PoolId,
+    sol_bindings::rpc_orders::{
+        ExactFlashOrder, ExactStandingOrder, PartialFlashOrder, PartialStandingOrder,
+        TopOfBlockOrder
+    }
 };
 use neon::object::Object;
 
@@ -15,7 +19,7 @@ use crate::{
         add_liquidity, exact_flash_order, exact_standing_order, partial_flash_order,
         partial_standing_order, remove_liquidity, top_of_block_order
     },
-    types::TransactionRequestWithLiquidityMeta
+    types::{OrderFilter, TransactionRequestWithLiquidityMeta}
 };
 
 #[derive(Debug, Clone, NeonObject)]
@@ -441,4 +445,52 @@ impl Into<Authorization> for AuthorizationNeon {
     fn into(self) -> Authorization {
         Authorization { chain_id: self.chain_id, address: self.address, nonce: self.nonce }
     }
+}
+
+#[derive(Debug, Clone, NeonObject)]
+pub enum OrderFilterNeon {
+    ByPoolId { params: OrderFilterByPoolIdParamsNeon },
+    ByTokens { params: OrderFilterByTokensParamsNeon },
+    None
+}
+
+impl From<OrderFilter> for OrderFilterNeon {
+    fn from(value: OrderFilter) -> Self {
+        match value {
+            OrderFilter::ByPoolId { pool_id } => {
+                Self::ByPoolId { params: OrderFilterByPoolIdParamsNeon { pool_id } }
+            }
+            OrderFilter::ByTokens { token0, token1 } => {
+                Self::ByTokens { params: OrderFilterByTokensParamsNeon { token0, token1 } }
+            }
+            OrderFilter::None => Self::None
+        }
+    }
+}
+
+impl Into<OrderFilter> for OrderFilterNeon {
+    fn into(self) -> OrderFilter {
+        match self {
+            OrderFilterNeon::ByPoolId { params: OrderFilterByPoolIdParamsNeon { pool_id } } => {
+                OrderFilter::ByPoolId { pool_id }
+            }
+            OrderFilterNeon::ByTokens {
+                params: OrderFilterByTokensParamsNeon { token0, token1 }
+            } => OrderFilter::ByTokens { token0, token1 },
+            OrderFilterNeon::None => OrderFilter::None
+        }
+    }
+}
+
+neon_object_as!(OrderFilter, OrderFilterNeon);
+
+#[derive(Debug, Clone, NeonObject)]
+struct OrderFilterByPoolIdParamsNeon {
+    pool_id: PoolId
+}
+
+#[derive(Debug, Clone, NeonObject)]
+struct OrderFilterByTokensParamsNeon {
+    token0: Address,
+    token1: Address
 }
