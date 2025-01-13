@@ -334,17 +334,17 @@ neon_object_as!(EnhancedUniswapPool<DataLoader<PoolId>, PoolId>, EnhancedUniswap
 #[derive(Clone, Default)]
 #[cfg_attr(feature = "neon", derive(NeonObject))]
 pub struct DataLoaderNeon {
-    address:       B256,
-    pool_registry: Option<UniswapPoolRegistryNeon>,
-    pool_manager:  Option<Address>
+    address_or_pool_id: B256,
+    pool_registry:      Option<UniswapPoolRegistryNeon>,
+    pool_manager:       Option<Address>
 }
 
 impl From<DataLoader<PoolId>> for DataLoaderNeon {
     fn from(value: DataLoader<PoolId>) -> Self {
         DataLoaderNeon {
-            address:       value.address(),
-            pool_manager:  value.pool_manager_opt(),
-            pool_registry: value.pool_registry().map(Into::into)
+            address_or_pool_id: value.address(),
+            pool_manager:       value.pool_manager_opt(),
+            pool_registry:      value.pool_registry().map(Into::into)
         }
     }
 }
@@ -352,7 +352,7 @@ impl From<DataLoader<PoolId>> for DataLoaderNeon {
 impl Into<DataLoader<PoolId>> for DataLoaderNeon {
     fn into(self) -> DataLoader<PoolId> {
         if let Some((reg, man)) = self.pool_registry.zip(self.pool_manager) {
-            DataLoader::new_with_registry(self.address, reg.into(), man)
+            DataLoader::new_with_registry(self.address_or_pool_id, reg.into(), man)
         } else {
             panic!("pool_registry and pool_manager cannot be none");
         }
