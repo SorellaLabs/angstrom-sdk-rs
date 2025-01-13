@@ -172,11 +172,12 @@ where
 
         let mut enhanced_uni_pool = EnhancedUniswapPool::new(data_loader, 200);
 
-        if let Some(bn) = block_number {
-            enhanced_uni_pool
-                .initialize(Some(bn), Arc::new(self.0.clone()))
-                .await?;
-        }
+        let block_number =
+            if let Some(bn) = block_number { bn } else { self.0.get_block_number().await? };
+
+        enhanced_uni_pool
+            .initialize(Some(block_number), Arc::new(self.0.clone()))
+            .await?;
 
         Ok(enhanced_uni_pool)
     }
