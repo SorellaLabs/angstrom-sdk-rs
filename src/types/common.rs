@@ -116,7 +116,7 @@ impl From<(Address, Address)> for TokensOrPoolId {
 }
 
 pub(crate) fn sort_tokens(token0: Address, token1: Address) -> (Address, Address) {
-    if token0 > token1 {
+    if token0 < token1 {
         (token0, token1)
     } else {
         (token1, token0)
