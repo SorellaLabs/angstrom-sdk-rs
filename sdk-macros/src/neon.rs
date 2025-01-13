@@ -134,7 +134,7 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
             where
                 Self: Sized {
                     let variant_name = value
-                        .get::<neon::types::JsString, _, _>(cx, "kind")?
+                        .get::<neon::types::JsString, _, _>(cx, "type")?
                         .value(cx);
 
 
