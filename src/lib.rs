@@ -218,9 +218,8 @@ where
         &self,
         filter: HistoricalOrdersFilter
     ) -> eyre::Result<Vec<HistoricalOrders>> {
-        panic!("MADE HISTORICAL ORDERS: {filter:?}");
         let orders = self.eth_provider.historical_orders(filter).await?;
-        //panic!("GOT HISTORICAL ORDERS: {orders:?}");
+        panic!("GOT HISTORICAL ORDERS: {orders:?}");
         Ok(orders)
     }
 
