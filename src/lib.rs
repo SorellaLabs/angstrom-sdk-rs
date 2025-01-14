@@ -218,7 +218,10 @@ where
         &self,
         filter: HistoricalOrdersFilter
     ) -> eyre::Result<Vec<HistoricalOrders>> {
-        self.eth_provider.historical_orders(filter).await
+        panic!("MADE HISTORICAL ORDERS: {filter:?}");
+        let orders = self.eth_provider.historical_orders(filter).await?;
+        //panic!("GOT HISTORICAL ORDERS: {orders:?}");
+        Ok(orders)
     }
 
     async fn pool_data(
