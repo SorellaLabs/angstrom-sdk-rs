@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use alloy_consensus::BlobTransactionSidecar;
 use alloy_eips::{eip4844::BYTES_PER_BLOB, eip7702::SignedAuthorization};
 use alloy_primitives::{Address, Bytes, ChainId, FixedBytes, TxKind, B256, U256};
@@ -19,7 +21,8 @@ use crate::{
         add_liquidity, exact_flash_order, exact_standing_order, partial_flash_order,
         partial_standing_order, remove_liquidity, top_of_block_order
     },
-    types::{OrderFilter, TransactionRequestWithLiquidityMeta}
+    types::{OrderFilter, OrderKind, TransactionRequestWithLiquidityMeta},
+    HistoricalOrdersFilter
 };
 
 #[derive(Debug, Clone, NeonObject)]
@@ -448,6 +451,38 @@ impl Into<Authorization> for AuthorizationNeon {
 }
 
 #[derive(Debug, Clone, NeonObject)]
+pub struct HistoricalOrdersFilterNeon {
+    pub order_kinds:   HashSet<OrderKind>,
+    pub order_filters: HashSet<OrderFilterNeon>,
+    pub from_block:    Option<u64>,
+    pub to_block:      Option<u64>
+}
+
+neon_object_as!(HistoricalOrdersFilter, HistoricalOrdersFilterNeon);
+
+impl From<HistoricalOrdersFilter> for HistoricalOrdersFilterNeon {
+    fn from(value: HistoricalOrdersFilter) -> Self {
+        HistoricalOrdersFilterNeon {
+            order_kinds:   value.order_kinds,
+            order_filters: value.order_filters.into_iter().map(Into::into).collect(),
+            from_block:    value.from_block,
+            to_block:      value.to_block
+        }
+    }
+}
+
+impl Into<HistoricalOrdersFilter> for HistoricalOrdersFilterNeon {
+    fn into(self) -> HistoricalOrdersFilter {
+        HistoricalOrdersFilter {
+            order_kinds:   self.order_kinds,
+            order_filters: self.order_filters.into_iter().map(Into::into).collect(),
+            from_block:    self.from_block,
+            to_block:      self.to_block
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, NeonObject)]
 pub enum OrderFilterNeon {
     ByPoolId { params: OrderFilterByPoolIdParamsNeon },
     ByTokens { params: OrderFilterByTokensParamsNeon },
@@ -482,14 +517,12 @@ impl Into<OrderFilter> for OrderFilterNeon {
     }
 }
 
-neon_object_as!(OrderFilter, OrderFilterNeon);
-
-#[derive(Debug, Clone, NeonObject)]
+#[derive(Debug, Clone, NeonObject, PartialEq, Eq, Hash)]
 struct OrderFilterByPoolIdParamsNeon {
     pool_id: PoolId
 }
 
-#[derive(Debug, Clone, NeonObject)]
+#[derive(Debug, Clone, NeonObject, PartialEq, Eq, Hash)]
 struct OrderFilterByTokensParamsNeon {
     token0: Address,
     token1: Address

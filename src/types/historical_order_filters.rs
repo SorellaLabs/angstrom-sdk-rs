@@ -21,7 +21,6 @@ use super::PoolMetadata;
 use crate::{apis::utils::pool_config_store, providers::EthRpcProvider};
 
 #[derive(Debug, Default, Clone)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
 pub struct HistoricalOrdersFilter {
     pub order_kinds:   HashSet<OrderKind>,
     pub order_filters: HashSet<OrderFilter>,
