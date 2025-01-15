@@ -184,8 +184,8 @@ pub(super) fn field_from_neon_value(field: &Field) -> Option<TokenStream> {
         let field_name_str = field_name.to_string();
         let field_ty = &field.ty;
         quote::quote! {
-            let field_name_obj = value.get::<<#field_ty as crate::js_utils::AsNeonValue>::NeonValue, _, _>(cx, #field_name_str)?;
-            let #field_name = crate::js_utils::AsNeonValue::from_neon_value(field_name_obj, cx)?;
+            let field_name_obj = value.get::<<#field_ty as crate::js_utils::AsNeonValue>::NeonValue, _, _>(cx, #field_name_str).expect(&format!("could not get field name {}", #field_name_str));
+            let #field_name = crate::js_utils::AsNeonValue::from_neon_value(field_name_obj, cx).expect(&format!("could not convert field name {}", #field_name_str));
         }
     })
 }
