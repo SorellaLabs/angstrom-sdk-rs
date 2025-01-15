@@ -82,10 +82,21 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
 
             let field_names = fields
                 .iter()
-                .map(|field| field.ident.clone().unwrap())
+                .map(|field| {
+                    field
+                        .ident
+                        .clone()
+                        .expect("enum cannot have unnamed parameters in their variants")
+                })
                 .collect::<Vec<_>>();
 
-            assert!(field_names.len() <= 1);
+            if field_names.len() > 1 {
+                panic!(
+                    "for parsing simplicity, enums can have 0 or 1 named params in their \
+                     variants. If there are multiple, create a struct containing the params and \
+                     set a `param` parameter as the only named param in the enum variant"
+                );
+            }
 
             (
                 quote::quote! {
@@ -173,7 +184,7 @@ pub(super) fn field_from_neon_value(field: &Field) -> Option<TokenStream> {
         let field_name_str = field_name.to_string();
         let field_ty = &field.ty;
         quote::quote! {
-            let field_name_obj = value.get::<<#field_ty as crate::js_utils::AsNeonValue>::NeonValue, _, _>(cx, #field_name_str)?;
+            let field_name_obj = value.get::<<#field_ty as crate::js_utils::AsNeonValue>::NeonValue, _, _>(cx, #field_name_str).expect(&format!("could not do {}", #field_name_str));
             let #field_name = crate::js_utils::AsNeonValue::from_neon_value(field_name_obj, cx)?;
         }
     })
