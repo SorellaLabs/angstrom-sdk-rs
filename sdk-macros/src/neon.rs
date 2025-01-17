@@ -106,8 +106,8 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
                     }
                 },
                 quote::quote! {
-                    variant_name_str => {
-                        println!("IS VARIANT: {}", variant_name_str);
+                    #variant_name_str => {
+                        println!("IS VARIANT: {}", #variant_name_str);
                         #(#fields_from_set)*
                         Ok(Self::#variant_name { #(#field_names),* })
                     }
