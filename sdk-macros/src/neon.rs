@@ -106,8 +106,8 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
                     }
                 },
                 quote::quote! {
-                    variant_name_str => {
-                        println!("IS VARIANT: {}", variant_name_str);
+                    #variant_name_str => {
+                        println!("IS VARIANT: {}", #variant_name_str);
                         #(#fields_from_set)*
                         Ok(Self::#variant_name { #(#field_names),* })
                     }
@@ -183,11 +183,11 @@ pub(super) fn field_from_neon_value(field: &Field) -> Option<TokenStream> {
     field.ident.as_ref().map(|field_name| {
         let field_name_str = field_name.to_string();
         let field_ty = &field.ty;
-        let field_ty_str = format!("{:?}", field_ty);
+        // let field_ty_str = format!("{:?}", field_ty);
         quote::quote! {
             let field_name_obj = value.get::<<#field_ty as crate::js_utils::AsNeonValue>::NeonValue, _, _>(cx, #field_name_str).expect(&format!("could not get field name {}", #field_name_str));
-            println!("converting {}: {}", #field_name_str, #field_ty_str); 
-            // println!("converting {}", #field_name_str);
+            // println!("converting {}: {}", #field_name_str, #field_ty_str); 
+            println!("converting {}", #field_name_str);
             let #field_name = crate::js_utils::AsNeonValue::from_neon_value(field_name_obj, cx).expect(&format!("could not convert field name {}", #field_name_str));
         }
     })
