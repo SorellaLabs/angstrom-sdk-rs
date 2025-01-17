@@ -58,7 +58,8 @@ impl PoolMetadata {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionRequestWithLiquidityMeta {
     pub tx_request: TransactionRequest,
-    pub tokens:     (Address, Address),
+    pub token0:     Address,
+    pub token1:     Address,
     pub tick_lower: i32,
     pub tick_upper: i32,
     pub liquidity:  U256,
@@ -72,7 +73,8 @@ impl TransactionRequestWithLiquidityMeta {
     ) -> Self {
         Self {
             tx_request,
-            tokens: (call.asset0, call.asset1),
+            token0: call.asset0,
+            token1: call.asset1,
             tick_lower: call.tickLower.try_into().unwrap(),
             tick_upper: call.tickUpper.try_into().unwrap(),
             liquidity: call.liquidity,
@@ -86,7 +88,8 @@ impl TransactionRequestWithLiquidityMeta {
     ) -> Self {
         Self {
             tx_request,
-            tokens: (call.asset0, call.asset1),
+            token0: call.asset0,
+            token1: call.asset1,
             tick_lower: call.tickLower.try_into().unwrap(),
             tick_upper: call.tickUpper.try_into().unwrap(),
             liquidity: call.liquidity,

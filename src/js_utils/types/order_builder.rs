@@ -201,7 +201,8 @@ impl OrderBuilderExactFlashOrderArgs {
 #[derive(Debug, Clone, NeonObject)]
 pub struct TransactionRequestWithLiquidityMetaNeon {
     tx_request: TransactionRequestNeon,
-    tokens:     (Address, Address),
+    token0:     Address,
+    token1:     Address,
     tick_lower: i32,
     tick_upper: i32,
     liquidity:  U256,
@@ -212,7 +213,8 @@ impl From<TransactionRequestWithLiquidityMeta> for TransactionRequestWithLiquidi
     fn from(value: TransactionRequestWithLiquidityMeta) -> Self {
         Self {
             tx_request: value.tx_request.into(),
-            tokens:     value.tokens,
+            token0:     value.token0,
+            token1:     value.token0,
             tick_lower: value.tick_lower,
             tick_upper: value.tick_upper,
             liquidity:  value.liquidity,
@@ -225,7 +227,8 @@ impl Into<TransactionRequestWithLiquidityMeta> for TransactionRequestWithLiquidi
     fn into(self) -> TransactionRequestWithLiquidityMeta {
         TransactionRequestWithLiquidityMeta {
             tx_request: self.tx_request.into(),
-            tokens:     self.tokens,
+            token0:     self.token0,
+            token1:     self.token0,
             tick_lower: self.tick_lower,
             tick_upper: self.tick_upper,
             liquidity:  self.liquidity,
