@@ -1502,7 +1502,7 @@ dependencies = [
 [[package]]
 name = "angstrom-eth"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#73c4fe6f243f0c05e8e86cca8631536d9260a066"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
@@ -1511,6 +1511,7 @@ dependencies = [
  "auto_impl",
  "futures",
  "futures-util",
+ "itertools 0.12.1",
  "pade",
  "reth-primitives",
  "reth-provider",
@@ -1545,7 +1546,7 @@ dependencies = [
 [[package]]
 name = "angstrom-metrics"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#73c4fe6f243f0c05e8e86cca8631536d9260a066"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy-primitives 0.8.15",
  "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
@@ -1627,7 +1628,7 @@ dependencies = [
 [[package]]
 name = "angstrom-network"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#73c4fe6f243f0c05e8e86cca8631536d9260a066"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "alloy-chains",
@@ -1718,7 +1719,7 @@ dependencies = [
 [[package]]
 name = "angstrom-rpc"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#73c4fe6f243f0c05e8e86cca8631536d9260a066"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy-primitives 0.8.15",
  "alloy-sol-types 0.8.15",
@@ -1868,7 +1869,7 @@ dependencies = [
 [[package]]
 name = "angstrom-types"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#73c4fe6f243f0c05e8e86cca8631536d9260a066"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "alloy-primitives 0.8.15",
@@ -1926,7 +1927,7 @@ dependencies = [
 [[package]]
 name = "angstrom-utils"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#73c4fe6f243f0c05e8e86cca8631536d9260a066"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "futures",
  "pin-project",
@@ -3101,7 +3102,7 @@ dependencies = [
 [[package]]
 name = "consensus"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#73c4fe6f243f0c05e8e86cca8631536d9260a066"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "alloy-rlp",
@@ -5741,7 +5742,7 @@ dependencies = [
 [[package]]
 name = "matching-engine"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#73c4fe6f243f0c05e8e86cca8631536d9260a066"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "alloy-primitives 0.8.15",
@@ -6511,7 +6512,7 @@ dependencies = [
 [[package]]
 name = "order-pool"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#73c4fe6f243f0c05e8e86cca8631536d9260a066"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
@@ -12021,7 +12022,7 @@ dependencies = [
 [[package]]
 name = "uniswap-v4"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#73c4fe6f243f0c05e8e86cca8631536d9260a066"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "alloy-primitives 0.8.15",
@@ -12186,7 +12187,7 @@ dependencies = [
 [[package]]
 name = "validation"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#73c4fe6f243f0c05e8e86cca8631536d9260a066"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
