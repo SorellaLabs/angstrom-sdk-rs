@@ -24,4 +24,12 @@ pub trait AngstromDataApi {
         token1: Address,
         block_number: Option<u64>
     ) -> eyre::Result<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>>;
+
+    async fn test_function_one(
+        &self,
+        filter1: OrderFilter,
+        filter2: OrderFilter
+    ) -> eyre::Result<(OrderFilter, OrderFilter)> {
+        Ok((filter1, filter2))
+    }
 }
