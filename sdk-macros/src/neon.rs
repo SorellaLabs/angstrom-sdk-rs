@@ -125,8 +125,8 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
                     }
                 },
                 quote::quote! {
-                    variant_name_str => {
-                        println!("IS VARIANT: {}", variant_name_str);
+                    #variant_name_str => {
+                        println!("IS VARIANT: {}", #variant_name_str);
                         #(#fields_from_set)*
                         Ok(Self::#variant_name { #(#field_names),* })
                     }
@@ -139,15 +139,14 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
     //     panic!("{a}\n\n{b}");
     // }
 
-    panic!(
-        "{:?}",
-        quote::quote! {#(
+    // panic!(
+    //     "{:?}",
+    //     quote::quote! {#(
 
-            #variant_from_tokens
+    //         #variant_from_tokens
 
-
-        )*}
-    );
+    //     )*}
+    // );
 
     let trait_impl = quote::quote! {
         impl #impl_generics crate::js_utils::MakeNeonObject for #name #ty_generics #where_clause {
