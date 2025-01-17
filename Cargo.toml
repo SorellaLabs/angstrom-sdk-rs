@@ -105,7 +105,7 @@ testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package =
 
 
 [features]
-default = ["full"]
+default = ["full", "neon"]
 full = ["ipc", "ws"]
 
 ipc = []
