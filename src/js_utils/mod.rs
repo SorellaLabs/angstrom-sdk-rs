@@ -147,7 +147,10 @@ js_value!(
             &this.to_base_le(10).collect::<Vec<_>>()
         )
     },
-    { U256::from_limbs_slice(&val.to_digits_le(cx).1) }
+    {
+        println!("{:?}", val);
+        U256::from_limbs_slice(&val.to_digits_le(cx).1)
+    }
 );
 
 js_value!(
