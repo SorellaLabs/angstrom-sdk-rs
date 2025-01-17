@@ -75,9 +75,8 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
             let fields = &variant.fields;
             let (fields_to_set, fields_from_set): (Vec<_>, Vec<_>) = fields
                 .iter()
-                .filter_map(|field| {
-                    field_to_neon_value(field, true).zip(field_from_neon_value(field))
-                })
+                .map(|field| field_to_neon_value(field, true).zip(field_from_neon_value(field)))
+                .map(|v| v.map(|(a, b)| (Some(a), Some(b))).unwrap_or_default())
                 .unzip();
 
             let field_names = fields
