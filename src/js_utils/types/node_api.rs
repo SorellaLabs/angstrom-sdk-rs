@@ -1,6 +1,6 @@
 use alloy_primitives::{aliases::U40, Address, Bytes, PrimitiveSignature, B256, U256};
 use angstrom_rpc::api::GasEstimateResponse;
-use angstrom_sdk_macros::{neon_object_as, NeonObject};
+use angstrom_sdk_rs_macros::{neon_object_as, NeonObject};
 use angstrom_types::{
     orders::{CancelOrderRequest, OrderLocation, OrderStatus},
     sol_bindings::{

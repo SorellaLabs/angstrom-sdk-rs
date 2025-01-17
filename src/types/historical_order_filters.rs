@@ -8,7 +8,7 @@ use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_rpc_types::Block;
 #[cfg(feature = "neon")]
-use angstrom_sdk_macros::NeonObject;
+use angstrom_sdk_rs_macros::NeonObject;
 use angstrom_types::{
     contract_payloads::angstrom::{AngstromBundle, TopOfBlockOrder, UserOrder},
     primitive::PoolId

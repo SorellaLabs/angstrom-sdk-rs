@@ -6,7 +6,7 @@ use alloy_primitives::{Address, Bytes, ChainId, FixedBytes, TxKind, B256, U256};
 use alloy_rpc_types::{
     AccessList, AccessListItem, Authorization, TransactionInput, TransactionRequest
 };
-use angstrom_sdk_macros::{neon_object_as, NeonObject};
+use angstrom_sdk_rs_macros::{neon_object_as, NeonObject};
 use angstrom_types::{
     primitive::PoolId,
     sol_bindings::rpc_orders::{

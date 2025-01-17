@@ -3,7 +3,8 @@ use alloy_primitives::{
     Address, U256
 };
 use alloy_rpc_types::TransactionRequest;
-use angstrom_sdk_macros::NeonObject;
+#[cfg(feature = "neon")]
+use angstrom_sdk_rs_macros::NeonObject;
 use angstrom_types::{
     contract_bindings::{angstrom::Angstrom::PoolKey, pool_gate::PoolGate},
     contract_payloads::angstrom::AngPoolConfigEntry,

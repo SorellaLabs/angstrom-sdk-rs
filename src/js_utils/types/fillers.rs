@@ -1,5 +1,5 @@
 use alloy_signer_local::PrivateKeySigner;
-use angstrom_sdk_macros::NeonObject;
+use angstrom_sdk_rs_macros::NeonObject;
 use neon::object::Object;
 
 #[derive(Clone, Debug, NeonObject)]

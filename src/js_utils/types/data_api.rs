@@ -4,7 +4,7 @@ use alloy_primitives::{
     aliases::{I24, U24},
     Address, Bytes, B256, U256
 };
-use angstrom_sdk_macros::{neon_object_as, NeonObject};
+use angstrom_sdk_rs_macros::{neon_object_as, NeonObject};
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
     contract_payloads::{
