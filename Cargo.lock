@@ -1442,22 +1442,22 @@ checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
 [[package]]
 name = "angstrom"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#a9c72473d73b9461bfe7678c59e3fd8a202fffa6"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "alloy-chains",
  "alloy-primitives 0.8.15",
  "alloy-rpc-types 0.7.3",
- "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-network 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-rpc 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "angstrom-eth",
+ "angstrom-metrics",
+ "angstrom-network",
+ "angstrom-rpc",
+ "angstrom-types",
  "clap",
- "consensus 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "consensus",
  "eyre",
- "matching-engine 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "matching-engine",
+ "order-pool",
  "reth",
  "reth-cli-util",
  "reth-metrics",
@@ -1474,29 +1474,9 @@ dependencies = [
  "tokio-util",
  "toml",
  "tracing",
- "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "uniswap-v4",
  "url",
- "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
-]
-
-[[package]]
-name = "angstrom-eth"
-version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#a9c72473d73b9461bfe7678c59e3fd8a202fffa6"
-dependencies = [
- "alloy 0.7.3",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "anyhow",
- "auto_impl",
- "futures",
- "futures-util",
- "pade",
- "reth-primitives",
- "reth-provider",
- "reth-tasks",
- "tokio",
- "tokio-stream",
+ "validation",
 ]
 
 [[package]]
@@ -1505,8 +1485,8 @@ version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "angstrom-types",
+ "angstrom-utils",
  "anyhow",
  "auto_impl",
  "futures",
@@ -1523,33 +1503,10 @@ dependencies = [
 [[package]]
 name = "angstrom-metrics"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#a9c72473d73b9461bfe7678c59e3fd8a202fffa6"
-dependencies = [
- "alloy-primitives 0.8.15",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "dashmap 5.5.3",
- "eyre",
- "futures",
- "hyper 0.14.32",
- "metrics 0.21.1",
- "metrics-exporter-prometheus 0.12.1",
- "metrics-process 1.0.14",
- "metrics-util 0.15.0",
- "procfs 0.16.0",
- "prometheus",
- "reth-primitives",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "angstrom-metrics"
-version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy-primitives 0.8.15",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "angstrom-types",
  "dashmap 5.5.3",
  "eyre",
  "futures",
@@ -1569,14 +1526,14 @@ dependencies = [
 [[package]]
 name = "angstrom-network"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#a9c72473d73b9461bfe7678c59e3fd8a202fffa6"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "alloy-chains",
  "alloy-rpc-types 0.7.3",
- "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "angstrom-eth",
+ "angstrom-types",
+ "angstrom-utils",
  "anyhow",
  "aquamarine 0.5.0",
  "async-trait",
@@ -1590,7 +1547,7 @@ dependencies = [
  "linked-hash-map",
  "linked_hash_set",
  "metrics 0.21.1",
- "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "order-pool",
  "parking_lot",
  "pin-project",
  "rand",
@@ -1622,86 +1579,27 @@ dependencies = [
  "tokio-stream",
  "tokio-util",
  "tracing",
- "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
-]
-
-[[package]]
-name = "angstrom-network"
-version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
-dependencies = [
- "alloy 0.7.3",
- "alloy-chains",
- "alloy-rpc-types 0.7.3",
- "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "anyhow",
- "aquamarine 0.5.0",
- "async-trait",
- "auto_impl",
- "bincode",
- "enr 0.10.0",
- "eyre",
- "futures",
- "humantime-serde",
- "k256",
- "linked-hash-map",
- "linked_hash_set",
- "metrics 0.21.1",
- "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "parking_lot",
- "pin-project",
- "rand",
- "reth",
- "reth-chainspec",
- "reth-codecs",
- "reth-discv4",
- "reth-dns-discovery",
- "reth-ecies",
- "reth-errors",
- "reth-eth-wire",
- "reth-metrics",
- "reth-net-banlist",
- "reth-network",
- "reth-network-api",
- "reth-network-p2p",
- "reth-network-peers",
- "reth-node-builder",
- "reth-primitives",
- "reth-provider",
- "reth-tasks",
- "reth-tokio-util",
- "reth-transaction-pool",
- "secp256k1 0.29.1",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tokio-util",
- "tracing",
- "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "validation",
 ]
 
 [[package]]
 name = "angstrom-rpc"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#a9c72473d73b9461bfe7678c59e3fd8a202fffa6"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy-primitives 0.8.15",
  "alloy-sol-types 0.8.15",
- "angstrom-network 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "angstrom-network",
+ "angstrom-types",
+ "angstrom-utils",
  "async-trait",
  "bincode",
- "consensus 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "consensus",
  "futures",
  "hyper 1.5.2",
  "jsonrpsee",
  "metrics 0.21.1",
- "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "order-pool",
  "reth-metrics",
  "reth-primitives",
  "reth-tasks",
@@ -1713,39 +1611,7 @@ dependencies = [
  "tower 0.4.13",
  "tower-http 0.5.2",
  "tracing",
- "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
-]
-
-[[package]]
-name = "angstrom-rpc"
-version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
-dependencies = [
- "alloy-primitives 0.8.15",
- "alloy-sol-types 0.8.15",
- "angstrom-network 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "async-trait",
- "bincode",
- "consensus 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "futures",
- "hyper 1.5.2",
- "jsonrpsee",
- "metrics 0.21.1",
- "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "reth-metrics",
- "reth-primitives",
- "reth-tasks",
- "serde",
- "serde_json",
- "strum",
- "thiserror 1.0.69",
- "tokio-stream",
- "tower 0.4.13",
- "tower-http 0.5.2",
- "tracing",
- "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "validation",
 ]
 
 [[package]]
@@ -1782,9 +1648,9 @@ dependencies = [
  "alloy-transport-http 0.7.3",
  "alloy-transport-ipc",
  "alloy-transport-ws",
- "angstrom-rpc 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "angstrom-rpc",
  "angstrom-sdk-rs-macros",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "angstrom-types",
  "dotenv",
  "eyre",
  "futures",
@@ -1805,8 +1671,8 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tokio-tungstenite",
- "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "uniswap-v4",
+ "validation",
 ]
 
 [[package]]
@@ -1817,53 +1683,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.90",
-]
-
-[[package]]
-name = "angstrom-types"
-version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#a9c72473d73b9461bfe7678c59e3fd8a202fffa6"
-dependencies = [
- "alloy 0.7.3",
- "alloy-primitives 0.8.15",
- "alloy-rlp",
- "anyhow",
- "auto_impl",
- "base64 0.22.1",
- "bincode",
- "bitmaps",
- "bytes",
- "convert_case 0.6.0",
- "dashmap 6.1.0",
- "derive_more 0.99.18",
- "eyre",
- "foldhash",
- "futures",
- "hex-literal",
- "itertools 0.12.1",
- "itertools 0.13.0",
- "k256",
- "malachite",
- "modular-bitfield",
- "num-traits",
- "open-fastrlp",
- "pade",
- "pade-macro",
- "rand",
- "reth-chainspec",
- "reth-codecs",
- "reth-network-peers",
- "reth-primitives",
- "reth-provider",
- "reth-storage-api",
- "reth-trie",
- "revm 18.0.0",
- "secp256k1 0.29.1",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tracing",
- "uniswap_v3_math",
 ]
 
 [[package]]
@@ -1911,17 +1730,6 @@ dependencies = [
  "thiserror 1.0.69",
  "tracing",
  "uniswap_v3_math",
-]
-
-[[package]]
-name = "angstrom-utils"
-version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#a9c72473d73b9461bfe7678c59e3fd8a202fffa6"
-dependencies = [
- "futures",
- "pin-project",
- "serde",
- "tokio",
 ]
 
 [[package]]
@@ -3064,52 +2872,14 @@ dependencies = [
 [[package]]
 name = "consensus"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#a9c72473d73b9461bfe7678c59e3fd8a202fffa6"
-dependencies = [
- "alloy 0.7.3",
- "alloy-rlp",
- "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-network 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "anyhow",
- "async-trait",
- "bitmaps",
- "eyre",
- "futures",
- "hex-literal",
- "itertools 0.12.1",
- "matching-engine 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "pade",
- "rayon",
- "reth-metrics",
- "reth-primitives",
- "reth-provider",
- "reth-tasks",
- "secp256k1 0.29.1",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tracing",
- "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "url",
- "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
-]
-
-[[package]]
-name = "consensus"
-version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "alloy-rlp",
- "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-network 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "angstrom-metrics",
+ "angstrom-network",
+ "angstrom-types",
+ "angstrom-utils",
  "anyhow",
  "async-trait",
  "bitmaps",
@@ -3117,8 +2887,8 @@ dependencies = [
  "futures",
  "hex-literal",
  "itertools 0.12.1",
- "matching-engine 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "matching-engine",
+ "order-pool",
  "pade",
  "rayon",
  "reth-metrics",
@@ -3132,9 +2902,9 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
- "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "uniswap-v4",
  "url",
- "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "validation",
 ]
 
 [[package]]
@@ -3260,6 +3030,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a97769d94ddab943e4510d138150169a2758b5ef3eb191a9ee688de3e23ef7b3"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "create3"
+version = "0.1.0"
+source = "git+https://github.com/AmanRaj1608/create3#09f5a6243a2ab3b5935b6b78ed1b725537e8589f"
+dependencies = [
+ "hex",
+ "rand",
+ "sha3",
 ]
 
 [[package]]
@@ -5707,47 +5487,12 @@ dependencies = [
 [[package]]
 name = "matching-engine"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#a9c72473d73b9461bfe7678c59e3fd8a202fffa6"
-dependencies = [
- "alloy 0.7.3",
- "alloy-primitives 0.8.15",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "arraydeque",
- "clap",
- "criterion",
- "eyre",
- "futures",
- "futures-util",
- "itertools 0.12.1",
- "malachite",
- "malachite-q",
- "num-bigfloat",
- "once_cell",
- "pade",
- "pade-macro",
- "rand",
- "rand_distr",
- "reth-provider",
- "reth-tasks",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "uniswap_v3_math",
- "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
-]
-
-[[package]]
-name = "matching-engine"
-version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "alloy-primitives 0.8.15",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "angstrom-types",
+ "angstrom-utils",
  "arraydeque",
  "clap",
  "criterion",
@@ -5769,9 +5514,9 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "uniswap-v4",
  "uniswap_v3_math",
- "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "validation",
 ]
 
 [[package]]
@@ -6479,46 +6224,13 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "order-pool"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#a9c72473d73b9461bfe7678c59e3fd8a202fffa6"
-dependencies = [
- "alloy 0.7.3",
- "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "aquamarine 0.5.0",
- "async-trait",
- "auto_impl",
- "bitflags 2.6.0",
- "dashmap 6.1.0",
- "eyre",
- "futures-util",
- "metrics 0.21.1",
- "parking_lot",
- "reth-metrics",
- "reth-network",
- "reth-network-peers",
- "reth-primitives",
- "reth-provider",
- "reth-tasks",
- "revm 18.0.0",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tracing",
- "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
-]
-
-[[package]]
-name = "order-pool"
-version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
- "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "angstrom-eth",
+ "angstrom-metrics",
+ "angstrom-types",
+ "angstrom-utils",
  "aquamarine 0.5.0",
  "async-trait",
  "auto_impl",
@@ -6539,7 +6251,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
- "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "validation",
 ]
 
 [[package]]
@@ -11245,7 +10957,7 @@ dependencies = [
 [[package]]
 name = "testing-tools"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#a9c72473d73b9461bfe7678c59e3fd8a202fffa6"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "alloy-chains",
@@ -11254,19 +10966,20 @@ dependencies = [
  "alloy-rpc-types 0.7.3",
  "alloy-sol-types 0.8.15",
  "angstrom",
- "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-network 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-rpc 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "angstrom-eth",
+ "angstrom-network",
+ "angstrom-rpc",
+ "angstrom-types",
+ "angstrom-utils",
  "clap",
- "consensus 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "consensus",
+ "create3",
  "enr 0.10.0",
  "eyre",
  "futures",
  "jsonrpsee",
- "matching-engine 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "matching-engine",
+ "order-pool",
  "pade",
  "parking_lot",
  "rand",
@@ -11303,9 +11016,9 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-subscriber",
- "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "uniswap-v4",
  "uniswap_v3_math",
- "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
+ "validation",
 ]
 
 [[package]]
@@ -11986,48 +11699,12 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "uniswap-v4"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#a9c72473d73b9461bfe7678c59e3fd8a202fffa6"
-dependencies = [
- "alloy 0.7.3",
- "alloy-primitives 0.8.15",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "arraydeque",
- "clap",
- "convert_case 0.6.0",
- "criterion",
- "eyre",
- "futures",
- "futures-util",
- "itertools 0.12.1",
- "itertools 0.13.0",
- "malachite",
- "malachite-q",
- "num-bigfloat",
- "once_cell",
- "pade",
- "pade-macro",
- "rand",
- "rand_distr",
- "reth-provider",
- "reth-tasks",
- "serde",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "uniswap_v3_math",
-]
-
-[[package]]
-name = "uniswap-v4"
-version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
  "alloy-primitives 0.8.15",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "angstrom-types",
+ "angstrom-utils",
  "arraydeque",
  "clap",
  "convert_case 0.6.0",
@@ -12146,54 +11823,13 @@ dependencies = [
 [[package]]
 name = "validation"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections#a9c72473d73b9461bfe7678c59e3fd8a202fffa6"
-dependencies = [
- "alloy 0.7.3",
- "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
- "anyhow",
- "async-trait",
- "auto_impl",
- "byteorder",
- "dashmap 6.1.0",
- "derive_more 0.99.18",
- "eyre",
- "futures",
- "futures-util",
- "hex-literal",
- "pade",
- "parking_lot",
- "pin-project",
- "rayon",
- "reth-db",
- "reth-errors",
- "reth-primitives",
- "reth-provider",
- "reth-revm",
- "revm 18.0.0",
- "schnellru",
- "secp256k1 0.27.0",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "toml",
- "tracing",
- "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections)",
-]
-
-[[package]]
-name = "validation"
-version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work#41d79be2119b41e9773883c7fa0d42fdde1bb4c5"
 dependencies = [
  "alloy 0.7.3",
- "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
- "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "angstrom-eth",
+ "angstrom-metrics",
+ "angstrom-types",
+ "angstrom-utils",
  "anyhow",
  "async-trait",
  "auto_impl",
@@ -12222,7 +11858,7 @@ dependencies = [
  "tokio",
  "toml",
  "tracing",
- "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=feat/sdk-connections-temp-work)",
+ "uniswap-v4",
 ]
 
 [[package]]

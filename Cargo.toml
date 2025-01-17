@@ -101,7 +101,7 @@ angstrom-sdk-rs-macros = { path = "./sdk-macros", optional = true }
 
 
 [dev-dependencies]
-testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", branch = "feat/sdk-connections" }
+testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", branch = "feat/sdk-connections-temp-work" }
 
 
 [features]
