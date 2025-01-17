@@ -140,13 +140,7 @@ js_value!(
     this,
     cx,
     val,
-    {
-        JsBigInt::from_digits_le(
-            cx,
-            neon::types::bigint::Sign::Positive,
-            &this.to_base_le(10).collect::<Vec<_>>()
-        )
-    },
+    { JsBigInt::from_digits_le(cx, neon::types::bigint::Sign::Positive, &this.to_le_bytes_vec()) },
     {
         println!("{:?}", val);
         U256::from_limbs_slice(&val.to_digits_le(cx).1)
