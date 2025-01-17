@@ -66,9 +66,6 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
     let name = &item.ident;
     let (impl_generics, ty_generics, where_clause) = item.generics.split_for_impl();
 
-    let mut panic_a = None;
-    let mut panic_b = None;
-
     let (variant_to_tokens, variant_from_tokens): (Vec<_>, Vec<_>) = data_enum
         .variants
         .iter()
@@ -78,23 +75,7 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
             let fields = &variant.fields;
             let (fields_to_set, fields_from_set): (Vec<_>, Vec<_>) = fields
                 .iter()
-                .map(|field| {
-                    if variant_name_str == "ByPoolId".to_lowercase() {
-                        panic_a = Some(format!(
-                            "{variant_name_str} - {:?}: {:?}",
-                            field.ident.as_ref().map(|id| id.to_string()),
-                            field.ty
-                        ));
-                    } else if variant_name_str == "ByTokens".to_lowercase() {
-                        panic_b = Some(format!(
-                            "{variant_name_str} - {:?}: {:?}",
-                            field.ident.as_ref().map(|id| id.to_string()),
-                            field.ty
-                        ));
-                    }
-
-                    field_to_neon_value(field, true).zip(field_from_neon_value(field))
-                })
+                .map(|field| field_to_neon_value(field, true).zip(field_from_neon_value(field)))
                 .map(|v| v.map(|(a, b)| (Some(a), Some(b))).unwrap_or_default())
                 .unzip();
 
@@ -134,19 +115,6 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
             )
         })
         .unzip();
-
-    // if let Some((a, b)) = panic_a.zip(panic_b) {
-    //     panic!("{a}\n\n{b}");
-    // }
-
-    // panic!(
-    //     "{:?}",
-    //     quote::quote! {#(
-
-    //         #variant_from_tokens
-
-    //     )*}
-    // );
 
     let trait_impl = quote::quote! {
         impl #impl_generics crate::js_utils::MakeNeonObject for #name #ty_generics #where_clause {

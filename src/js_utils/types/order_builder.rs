@@ -520,8 +520,6 @@ impl Into<OrderFilter> for OrderFilterNeon {
     }
 }
 
-neon_object_as!(OrderFilter, OrderFilterNeon);
-
 #[derive(Debug, Clone, NeonObject, PartialEq, Eq, Hash)]
 struct OrderFilterByPoolIdParamsNeon {
     pool_id: PoolId
