@@ -29,7 +29,7 @@ use types::{
         AngstromFillProvider, AngstromFiller, FillWrapper, FillerOrder, NonceGeneratorFiller,
         SignerFiller, TokenBalanceCheckFiller
     },
-    HistoricalOrders, HistoricalOrdersFilter, TokenPairInfo
+    HistoricalOrders, HistoricalOrdersFilter, TokenPairInfo, TransactionRequestWithLiquidityMeta
 };
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 use validation::order::OrderPoolNewOrderResult;
@@ -60,6 +60,18 @@ where
     P: Provider + Clone,
     F: FillWrapper
 {
+    pub async fn send_eth_tx(
+        &self,
+        order: TransactionRequestWithLiquidityMeta
+    ) -> eyre::Result<()> {
+        let mut filler_order: FillerOrder = order.into();
+        self.filler
+            .fill(&self.eth_provider, &self.angstrom, &mut filler_order)
+            .await?;
+
+        Ok(())
+    }
+
     pub fn with_filler<F1: FillWrapper>(
         self,
         filler: F1
