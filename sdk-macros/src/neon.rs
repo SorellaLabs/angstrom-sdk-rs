@@ -139,6 +139,16 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
     //     panic!("{a}\n\n{b}");
     // }
 
+    panic!(
+        "{:?}",
+        quote::quote! {#(
+
+            #variant_from_tokens
+
+
+        )*}
+    );
+
     let trait_impl = quote::quote! {
         impl #impl_generics crate::js_utils::MakeNeonObject for #name #ty_generics #where_clause {
             fn make_object<'a, C: neon::prelude::Context<'a>>(&self, cx: &mut C) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
