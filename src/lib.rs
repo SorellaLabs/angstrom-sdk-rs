@@ -13,7 +13,7 @@ pub mod test_utils;
 pub mod types;
 
 use alloy_network::TxSigner;
-use alloy_primitives::{Address, PrimitiveSignature};
+use alloy_primitives::{Address, PrimitiveSignature, TxHash};
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_rpc::api::GasEstimateResponse;
@@ -60,16 +60,19 @@ where
     P: Provider + Clone,
     F: FillWrapper
 {
-    pub async fn send_eth_tx(
+    pub async fn send_add_remove_liquidity_tx(
         &self,
-        order: TransactionRequestWithLiquidityMeta
-    ) -> eyre::Result<()> {
-        let mut filler_order: FillerOrder = order.into();
+        tx_req: TransactionRequestWithLiquidityMeta
+    ) -> eyre::Result<TxHash> {
+        let mut filled_tx_req: FillerOrder = tx_req.into();
         self.filler
-            .fill(&self.eth_provider, &self.angstrom, &mut filler_order)
+            .fill(&self.eth_provider, &self.angstrom, &mut filled_tx_req)
             .await?;
 
-        Ok(())
+        Ok(self
+            .eth_provider
+            .send_add_remove_liquidity_tx(filled_tx_req.force_regular_tx())
+            .await?)
     }
 
     pub fn with_filler<F1: FillWrapper>(

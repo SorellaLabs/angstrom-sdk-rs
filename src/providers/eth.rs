@@ -3,7 +3,7 @@ use std::sync::Arc;
 use alloy_network::{Ethereum, EthereumWallet, TxSigner};
 use alloy_primitives::{
     aliases::{I24, U24},
-    Address, FixedBytes, PrimitiveSignature, TxKind
+    Address, FixedBytes, PrimitiveSignature, TxHash, TxKind
 };
 use alloy_provider::{
     fillers::{FillProvider, JoinFill, WalletFiller},
@@ -75,6 +75,18 @@ impl<P: Provider + Clone> EthRpcProvider<P> {
             .on_provider(self.0);
 
         EthRpcProvider(p)
+    }
+
+    pub async fn send_add_remove_liquidity_tx(
+        &self,
+        tx_req: TransactionRequestWithLiquidityMeta
+    ) -> eyre::Result<TxHash> {
+        Ok(self
+            .0
+            .send_transaction(tx_req.tx_request)
+            .await?
+            .watch()
+            .await?)
     }
 }
 
