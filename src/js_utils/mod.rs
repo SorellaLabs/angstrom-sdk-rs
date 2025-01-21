@@ -142,7 +142,6 @@ js_value!(
     val,
     { JsBigInt::from_digits_le(cx, neon::types::bigint::Sign::Positive, this.as_limbs()) },
     {
-        println!("{:?}", val);
         U256::from_limbs_slice(&val.to_digits_le(cx).1)
     }
 );
@@ -451,7 +450,7 @@ impl AsNeonValue for PrivateKeySigner {
 
     fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut C
+        _: &mut C
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         unreachable!("cannot convert PrivateKeySigner to a neon object")
     }
