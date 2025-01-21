@@ -263,13 +263,19 @@ where
         &self,
         user_address: Address
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
-        let tx = self
+        let user_positons = self
             .eth_provider
             .view_call(
                 POSITION_FETCHER_ADDRESS,
-                PositionFetcher::getPositions(user_address, U256::ZERO, U256::MAX, U256::MAX)
+                PositionFetcher::getPositionsCall {
+                    owner:       user_address,
+                    tokenId:     U256::ZERO,
+                    lastTokenId: U256::MAX,
+                    maxResults:  U256::MAX
+                }
             )
             .await?;
-        Ok(vec![])
+
+        Ok(user_positons._2.into_iter().map(Into::into).collect())
     }
 }
