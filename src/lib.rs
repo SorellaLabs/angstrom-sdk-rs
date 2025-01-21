@@ -270,7 +270,7 @@ where
                 PositionFetcher::getPositionsCall {
                     owner:       user_address,
                     tokenId:     U256::ZERO,
-                    lastTokenId: U256::MAX,
+                    lastTokenId: U256::from(100u64),
                     maxResults:  U256::MAX
                 }
             )
