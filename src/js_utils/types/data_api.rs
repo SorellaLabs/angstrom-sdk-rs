@@ -314,10 +314,10 @@ pub struct EnhancedUniswapPoolNeon {
     sync_swap_with_sim:     bool,
     initial_ticks_per_side: u16,
     data_loader:            DataLoaderNeon,
-    token_a:                Address,
-    token_a_decimals:       u8,
-    token_b:                Address,
-    token_b_decimals:       u8,
+    token0:                 Address,
+    token0_decimals:        u8,
+    token1:                 Address,
+    token1_decimals:        u8,
     liquidity:              u128,
     liquidity_net:          i128,
     sqrt_price:             U256,
@@ -334,10 +334,10 @@ impl From<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>> for EnhancedUniswapPo
             sync_swap_with_sim:     value.is_sync_swap_with_sim(),
             initial_ticks_per_side: value.initial_ticks_per_side(),
             data_loader:            value.data_loader.into(),
-            token_a:                value.token_a,
-            token_a_decimals:       value.token_a_decimals,
-            token_b:                value.token_b,
-            token_b_decimals:       value.token_b_decimals,
+            token0:                 value.token0,
+            token0_decimals:        value.token0_decimals,
+            token1:                 value.token1,
+            token1_decimals:        value.token1_decimals,
             liquidity:              value.liquidity,
             liquidity_net:          value.liquidity_net,
             sqrt_price:             value.sqrt_price,
@@ -360,10 +360,10 @@ impl Into<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>> for EnhancedUniswapPo
             EnhancedUniswapPool::new(self.data_loader.into(), self.initial_ticks_per_side);
         pool.set_sim_swap_sync(self.sync_swap_with_sim);
 
-        pool.token_a = self.token_a;
-        pool.token_a_decimals = self.token_a_decimals;
-        pool.token_b = self.token_b;
-        pool.token_b_decimals = self.token_b_decimals;
+        pool.token0 = self.token0;
+        pool.token0_decimals = self.token0_decimals;
+        pool.token1 = self.token1;
+        pool.token1_decimals = self.token1_decimals;
         pool.liquidity = self.liquidity;
         pool.liquidity_net = self.liquidity_net;
         pool.sqrt_price = self.sqrt_price;
