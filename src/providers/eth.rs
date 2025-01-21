@@ -35,7 +35,7 @@ where
     P: Provider + Clone;
 
 impl EthRpcProvider<RootProvider<BoxTransport>> {
-    /// based on the url passed in, will auto parse to http,ws or ipc
+    /// based on the url passed in, will auto parse to http, ws or ipc
     pub async fn new(url: &str) -> eyre::Result<Self> {
         Ok(Self(
             RootProvider::<BoxTransport, _>::builder()
