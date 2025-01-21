@@ -126,3 +126,11 @@ pub(crate) fn sort_tokens(token0: Address, token1: Address) -> (Address, Address
         (token1, token0)
     }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct UserLiquidityPosition {
+    pub token_id:   U256,
+    pub tick_lower: i32,
+    pub tick_upper: i32,
+    pub pool_id:    PoolId
+}

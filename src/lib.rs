@@ -13,12 +13,13 @@ pub mod test_utils;
 pub mod types;
 
 use alloy_network::TxSigner;
-use alloy_primitives::{Address, PrimitiveSignature, TxHash};
+use alloy_primitives::{Address, PrimitiveSignature, TxHash, U256};
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_rpc::api::GasEstimateResponse;
 use angstrom_types::{
-    contract_bindings::angstrom::Angstrom::PoolKey, primitive::PoolId,
+    contract_bindings::{angstrom::Angstrom::PoolKey, position_fetcher::PositionFetcher},
+    primitive::PoolId,
     sol_bindings::grouped_orders::AllOrders
 };
 use apis::user_api::AngstromUserApi;
@@ -29,7 +30,8 @@ use types::{
         AngstromFillProvider, AngstromFiller, FillWrapper, FillerOrder, NonceGeneratorFiller,
         SignerFiller, TokenBalanceCheckFiller
     },
-    HistoricalOrders, HistoricalOrdersFilter, TokenPairInfo, TransactionRequestWithLiquidityMeta
+    HistoricalOrders, HistoricalOrdersFilter, TokenPairInfo, TransactionRequestWithLiquidityMeta,
+    UserLiquidityPosition, POSITION_FETCHER_ADDRESS
 };
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 use validation::order::OrderPoolNewOrderResult;
@@ -257,16 +259,17 @@ where
     P: Provider + Clone,
     F: FillWrapper
 {
-    async fn get_positions(&self, user_address: Address) -> eyre::Result<()> {
-        Ok(())
-    }
-
-    async fn get_pool_view(
+    async fn get_positions(
         &self,
-        user_address: Address,
-        token0: Address,
-        token1: Address
-    ) -> eyre::Result<()> {
-        Ok(())
+        user_address: Address
+    ) -> eyre::Result<Vec<UserLiquidityPosition>> {
+        let tx = self
+            .eth_provider
+            .view_call(
+                POSITION_FETCHER_ADDRESS,
+                PositionFetcher::getPositions(user_address, U256::ZERO, U256::MAX, U256::MAX)
+            )
+            .await?;
+        Ok(vec![])
     }
 }
