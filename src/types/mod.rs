@@ -6,6 +6,9 @@ pub use historical_order_filters::*;
 
 pub mod fillers;
 
+pub const POSITION_FETCHER_ADDRESS: alloy_primitives::Address =
+    alloy_primitives::address!("59167FBa92904D512a3b3A9005eE916AF6acA687");
+
 pub const CONTROLLER_V1_ADDRESS: alloy_primitives::Address =
     alloy_primitives::address!("3c7bF57FD2CEA97eC78e58803662978575Cf79ca");
 
