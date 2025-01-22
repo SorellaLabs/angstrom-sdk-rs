@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
+use alloy::json_abi::Function;
+use alloy_dyn_abi::DynSolValue;
+use alloy_multicall::Multicall;
 use alloy_network::{Ethereum, EthereumWallet, TxSigner};
 use alloy_primitives::{
     aliases::{I24, U24},
-    Address, FixedBytes, PrimitiveSignature, TxHash, TxKind
+    Address, FixedBytes, PrimitiveSignature, TxHash, TxKind, B256
 };
 use alloy_provider::{
     fillers::{FillProvider, JoinFill, WalletFiller},
@@ -14,7 +17,10 @@ use alloy_signer::{Signer, SignerSync};
 use alloy_sol_types::SolCall;
 use alloy_transport::BoxTransport;
 use angstrom_types::{
-    contract_bindings::{angstrom::Angstrom::PoolKey, controller_v_1::ControllerV1},
+    contract_bindings::{
+        angstrom::Angstrom::PoolKey,
+        controller_v_1::ControllerV1::{self, poolsCall, ControllerV1Calls, ControllerV1Instance}
+    },
     primitive::PoolId
 };
 use futures::StreamExt;
@@ -95,38 +101,110 @@ where
     P: Provider + Clone
 {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
-        let partial_keys = pool_config_store(self.provider())
-            .await?
-            .all_entries()
-            .iter()
-            .map(|val| FixedBytes::from(*val.pool_partial_key))
-            .collect::<Vec<_>>();
+        let config_store = pool_config_store(self.provider()).await?;
+        let partial_key_entries = config_store.all_entries();
 
-        let all_pools_call = self
-            .view_call(
+        if partial_key_entries.is_empty() {
+            return Ok(Vec::new())
+        }
+
+        println!("{partial_key_entries:?}");
+
+        let mut multicall = Multicall::with_provider_chain_id(self.provider().clone()).await?;
+        multicall.set_version(3);
+
+        let funcs = ControllerV1::abi::functions();
+        let pools_fn = funcs.get("pools").unwrap().first().unwrap();
+
+        partial_key_entries.iter().for_each(|partial_key| {
+            let mut key = vec![0, 0, 0, 0, 0];
+            key.extend(FixedBytes::from(*partial_key.pool_partial_key).0);
+
+            // let other_key = FixedBytes::from(*partial_key.pool_partial_key);
+            // let this = other_key.;
+
+            multicall.add_call(
                 CONTROLLER_V1_ADDRESS,
-                ControllerV1::getAllPoolsCall { storeKeys: partial_keys }
-            )
-            .await?;
+                pools_fn,
+                &[DynSolValue::FixedBytes(B256::from_slice(&key), 27)],
+                // &[],
+                true
+            );
+        });
+
+        let all_pools_call = multicall
+            .as_aggregate_3()
+            .call()
+            .await?
+            .returnData
+            .into_iter()
+            .map(|res| {
+                if res.success {
+                    Ok(poolsCall::abi_decode_returns(&*res.returnData, true).unwrap())
+                } else {
+                    Err(eyre::eyre!("{:?}", res.returnData))
+                }
+                // println!("{res:?}");
+                // Ok::<_, eyre::ErrReport>(
+                //     res.map(|val| {
+                //         val.as_custom_struct()
+                //             .unwrap()
+                //             .2
+                //             .iter()
+                //             .map(|tuple_val| tuple_val.as_address().unwrap())
+                //             .collect::<Vec<_>>()
+                //     })
+                //     .unwrap()
+                // )
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| eyre::eyre!(e))?;
 
         Ok(all_pools_call
-            ._0
             .into_iter()
             .map(|val| TokenPairInfo {
+                // token0:    *val.first().unwrap(),
+                // token1:    *val.last().unwrap(),
                 token0:    val.asset0,
                 token1:    val.asset1,
-                is_active: true
+                is_active: false
             })
             .collect())
     }
+
+    // async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
+    //     let config_store = pool_config_store(self.provider()).await?;
+    //     let partial_key_entries = config_store.all_entries();
+
+    //     let all_pools_call =
+    // futures::future::join_all(partial_key_entries.iter().map(|key| {
+    //         self.view_call(
+    //             CONTROLLER_V1_ADDRESS,
+    //             ControllerV1::poolsCall { key:
+    // FixedBytes::from(*key.pool_partial_key) }         )
+    //     }))
+    //     .await
+    //     .into_iter()
+    //     .collect::<Result<Vec<_>, _>>()?;
+
+    //     Ok(all_pools_call
+    //         .into_iter()
+    //         .map(|val| TokenPairInfo {
+    //             token0:    val.asset0,
+    //             token1:    val.asset1,
+    //             is_active: true
+    //         })
+    //         .collect())
+    // }
 
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
         let (token0, token1) = sort_tokens(token0, token1);
 
         let config_store = pool_config_store(self.provider()).await?;
-        let pool_config_store = config_store
-            .get_entry(token0, token1)
-            .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
+        let pool_config_store = config_store.get_entry(token0, token1).ok_or(eyre::eyre!(
+            "no config store entry for tokens {token0:?} -
+    {token1:?}"
+        ))?;
 
         Ok(PoolKey {
             currency0:   token0,

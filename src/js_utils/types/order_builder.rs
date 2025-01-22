@@ -443,13 +443,17 @@ struct AuthorizationNeon {
 
 impl From<Authorization> for AuthorizationNeon {
     fn from(value: Authorization) -> Self {
-        Self { chain_id: value.chain_id, address: value.address, nonce: value.nonce }
+        Self { chain_id: value.chain_id.to(), address: value.address, nonce: value.nonce }
     }
 }
 
 impl Into<Authorization> for AuthorizationNeon {
     fn into(self) -> Authorization {
-        Authorization { chain_id: self.chain_id, address: self.address, nonce: self.nonce }
+        Authorization {
+            chain_id: U256::from(self.chain_id),
+            address:  self.address,
+            nonce:    self.nonce
+        }
     }
 }
 

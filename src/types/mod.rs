@@ -7,16 +7,16 @@ pub use historical_order_filters::*;
 pub mod fillers;
 
 pub const POSITION_FETCHER_ADDRESS: alloy_primitives::Address =
-    alloy_primitives::address!("59167FBa92904D512a3b3A9005eE916AF6acA687");
+    alloy_primitives::address!("c9D3CC2DBf823D66400D952e2984e47C07E2DF68");
 
 pub const CONTROLLER_V1_ADDRESS: alloy_primitives::Address =
-    alloy_primitives::address!("3c7bF57FD2CEA97eC78e58803662978575Cf79ca");
+    alloy_primitives::address!("59167FBa92904D512a3b3A9005eE916AF6acA687");
 
 pub const ANGSTROM_ADDRESS: alloy_primitives::Address =
     alloy_primitives::address!("efa489c72885095170b02CA2d826c22FECB51a90");
 
 pub const POOL_GATE_ADDRESS: alloy_primitives::Address =
-    alloy_primitives::address!("06fE3C4D1515C4Ff139C9E544035F847EC2b5e23");
+    alloy_primitives::address!("F967Ede45ED04ec89EcA04a4c7175b6E0106e3A8");
 
 pub const POOL_MANAGER_ADDRESS: alloy_primitives::Address =
     alloy_primitives::address!("C310E4d9dBF28E5e184B802E978Ab5a8E1CfCb56");
