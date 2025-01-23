@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use alloy_primitives::Address;
 use angstrom_types::{contract_bindings::angstrom::Angstrom::PoolKey, primitive::PoolId};
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
@@ -13,6 +15,8 @@ pub trait AngstromDataApi {
             .await?
             .into_iter()
             .flat_map(|val| [val.token0, val.token1])
+            .collect::<HashSet<_>>()
+            .into_iter()
             .collect())
     }
 
