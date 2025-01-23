@@ -7,6 +7,15 @@ use crate::types::*;
 pub trait AngstromDataApi {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>>;
 
+    async fn all_tokens(&self) -> eyre::Result<Vec<Address>> {
+        Ok(self
+            .all_token_pairs()
+            .await?
+            .into_iter()
+            .flat_map(|val| [val.token0, val.token1])
+            .collect())
+    }
+
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey>;
 
     async fn pool_id(&self, token0: Address, token1: Address) -> eyre::Result<PoolId> {
