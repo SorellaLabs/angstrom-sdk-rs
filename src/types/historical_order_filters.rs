@@ -7,13 +7,13 @@ use alloy_consensus::Transaction;
 use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_rpc_types::Block;
-#[cfg(feature = "neon")]
+#[cfg(feature = "wasm-bindgen")]
 use angstrom_sdk_rs_macros::NeonObject;
 use angstrom_types::{
     contract_payloads::angstrom::{AngstromBundle, TopOfBlockOrder, UserOrder},
     primitive::PoolId
 };
-#[cfg(feature = "neon")]
+#[cfg(feature = "wasm-bindgen")]
 use neon::object::Object;
 use pade::PadeDecode;
 
@@ -166,7 +166,7 @@ impl HistoricalOrdersFilter {
 }
 
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[cfg_attr(feature = "wasm-bindgen", derive(NeonObject))]
 pub enum OrderKind {
     TOB,
     User,

@@ -13,7 +13,7 @@ name = "angstrom_sdk_rs"
 angstrom-types = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-types", branch = "feat/sdk-work" }
 angstrom-rpc = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-rpc", branch = "feat/sdk-work" }
 uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git", package = "uniswap-v4", branch = "feat/sdk-work" }
-validation = { git = "https://github.com/SorellaLabs/angstrom.git", package = "validation", branch = "feat/sdk-work" }
+# validation = { git = "https://github.com/SorellaLabs/angstrom.git", package = "validation", branch = "feat/sdk-work" }
 
 # pade
 pade = { git = "https://github.com/SorellaLabs/pade", version = "0.1.0" }
@@ -100,16 +100,18 @@ itertools = "0.12.1"
 neon = { version = "1", optional = true }
 angstrom-sdk-rs-macros = { path = "./sdk-macros", optional = true }
 
+wasm-bindgen = { version = "0.2.84", optional = true }
+
 
 [dev-dependencies]
 testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", branch = "feat/sdk-work" }
 
 
 [features]
-default = ["full", "neon"]
+default = ["full", "wasm-bindgen"]
 full = ["ipc", "ws"]
 
 ipc = []
 ws = []
 
-neon = ["dep:neon", "dep:angstrom-sdk-rs-macros"]
+wasm-bindgen = ["dep:neon", "dep:angstrom-sdk-rs-macros", "dep:wasm-bindgen"]

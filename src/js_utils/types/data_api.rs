@@ -309,7 +309,7 @@ impl Into<StandingValidation> for StandingValidationNeon {
 }
 
 #[derive(Clone, Default)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[cfg_attr(feature = "wasm-bindgen", derive(NeonObject))]
 pub struct EnhancedUniswapPoolNeon {
     sync_swap_with_sim:     bool,
     initial_ticks_per_side: u16,
@@ -380,7 +380,7 @@ impl Into<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>> for EnhancedUniswapPo
 neon_object_as!(EnhancedUniswapPool<DataLoader<PoolId>, PoolId>, EnhancedUniswapPoolNeon);
 
 #[derive(Clone, Default)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[cfg_attr(feature = "wasm-bindgen", derive(NeonObject))]
 pub struct DataLoaderNeon {
     pool_id:       B256,
     pool_registry: Option<UniswapPoolRegistryNeon>,
@@ -408,7 +408,7 @@ impl Into<DataLoader<PoolId>> for DataLoaderNeon {
 }
 
 #[derive(Clone, Default)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[cfg_attr(feature = "wasm-bindgen", derive(NeonObject))]
 pub struct UniswapPoolRegistryNeon {
     pools: HashMap<B256, PoolKeyNeon>
 }
@@ -437,7 +437,7 @@ impl Into<UniswapPoolRegistry> for UniswapPoolRegistryNeon {
 }
 
 #[derive(Clone, Default)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[cfg_attr(feature = "wasm-bindgen", derive(NeonObject))]
 pub struct TickInfoNeon {
     liquidity_gross: u128,
     liquidity_net:   i128,

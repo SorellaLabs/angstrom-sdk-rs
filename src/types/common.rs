@@ -3,21 +3,22 @@ use alloy_primitives::{
     Address, U256
 };
 use alloy_rpc_types::TransactionRequest;
-#[cfg(feature = "neon")]
+#[cfg(feature = "wasm-bindgen")]
 use angstrom_sdk_rs_macros::NeonObject;
 use angstrom_types::{
     contract_bindings::{angstrom::Angstrom::PoolKey, pool_gate::PoolGate},
     contract_payloads::angstrom::AngPoolConfigEntry,
     primitive::PoolId
 };
-#[cfg(feature = "neon")]
+#[cfg(feature = "wasm-bindgen")]
 use neon::object::Object;
 use serde::{Deserialize, Serialize};
+use wasm_bindgen::prelude::wasm_bindgen;
 
 use super::ANGSTROM_ADDRESS;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
+#[cfg_attr(feature = "wasm-bindgen", derive(NeonObject))]
 pub struct TokenPairInfo {
     pub token0:    Address,
     pub token1:    Address,
@@ -128,7 +129,7 @@ pub(crate) fn sort_tokens(token0: Address, token1: Address) -> (Address, Address
 }
 
 #[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "neon", derive(angstrom_sdk_rs_macros::NeonObject))]
+#[cfg_attr(feature = "wasm-bindgen", derive(angstrom_sdk_rs_macros::NeonObject))]
 pub struct UserLiquidityPosition {
     pub token_id:   U256,
     pub tick_lower: i32,

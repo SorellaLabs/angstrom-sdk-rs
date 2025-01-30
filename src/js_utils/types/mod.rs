@@ -11,3 +11,7 @@ pub use order_builder::{
 };
 mod fillers;
 pub use fillers::ClientFillerTypes;
+
+pub struct WasmUint<const BITS: usize, const LIMBS: usize> {
+    limbs: [u64; LIMBS]
+}

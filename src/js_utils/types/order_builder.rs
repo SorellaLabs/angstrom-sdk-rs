@@ -198,6 +198,17 @@ impl OrderBuilderExactFlashOrderArgs {
     }
 }
 
+// #[derive(Debug, Clone)]
+// pub struct TransactionRequestWithLiquidityMetaNeon {
+//     tx_request: TransactionRequestNeon,
+//     token0:     String,
+//     token1:     String,
+//     tick_lower: i32,
+//     tick_upper: i32,
+//     liquidity:  U256,
+//     is_add:     bool
+// }
+
 #[derive(Debug, Clone, NeonObject)]
 pub struct TransactionRequestWithLiquidityMetaNeon {
     tx_request: TransactionRequestNeon,
