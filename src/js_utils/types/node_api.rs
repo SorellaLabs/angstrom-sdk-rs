@@ -3,6 +3,7 @@ use angstrom_rpc::api::GasEstimateResponse;
 use angstrom_sdk_rs_macros::{neon_object_as, NeonObject};
 use angstrom_types::{
     orders::{CancelOrderRequest, OrderLocation, OrderStatus},
+    primitive::OrderPoolNewOrderResult,
     sol_bindings::{
         grouped_orders::{AllOrders, FlashVariants, StandingVariants},
         rpc_orders::{
@@ -12,7 +13,6 @@ use angstrom_types::{
     }
 };
 use neon::object::Object;
-use validation::order::OrderPoolNewOrderResult;
 
 #[derive(Debug, Clone, NeonObject)]
 pub enum AllOrdersNeon {

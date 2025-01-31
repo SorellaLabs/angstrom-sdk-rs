@@ -18,7 +18,8 @@ use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_rpc::api::GasEstimateResponse;
 use angstrom_types::{
-    contract_bindings::angstrom::Angstrom::PoolKey, primitive::PoolId,
+    contract_bindings::angstrom::Angstrom::PoolKey,
+    primitive::{OrderPoolNewOrderResult, PoolId},
     sol_bindings::grouped_orders::AllOrders
 };
 use apis::user_api::AngstromUserApi;
@@ -32,7 +33,6 @@ use types::{
     HistoricalOrders, HistoricalOrdersFilter, TokenPairInfo, TransactionRequestWithLiquidityMeta
 };
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
-use validation::order::OrderPoolNewOrderResult;
 
 use crate::apis::{data_api::AngstromDataApi, node_api::AngstromNodeApi};
 
