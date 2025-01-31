@@ -436,7 +436,7 @@ impl Into<SignedAuthorization> for SignedAuthorizationNeon {
 
 #[derive(Debug, Clone, NeonObject)]
 struct AuthorizationNeon {
-    chain_id: u64,
+    chain_id: U256,
     address:  Address,
     nonce:    u64
 }

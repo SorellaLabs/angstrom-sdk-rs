@@ -7,12 +7,11 @@ use angstrom_rpc::{
 };
 use angstrom_types::{
     orders::{CancelOrderRequest, OrderLocation, OrderStatus},
-    primitive::PoolId,
+    primitive::{OrderPoolNewOrderResult, PoolId},
     sol_bindings::grouped_orders::AllOrders
 };
 use futures::{Stream, StreamExt, TryStreamExt};
 use jsonrpsee_http_client::HttpClient;
-use validation::order::OrderPoolNewOrderResult;
 
 pub trait AngstromNodeApi {
     fn rpc_provider(&self) -> HttpClient;

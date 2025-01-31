@@ -1680,7 +1680,6 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "uniswap-v4",
- "validation",
 ]
 
 [[package]]

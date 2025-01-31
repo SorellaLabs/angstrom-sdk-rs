@@ -13,7 +13,6 @@ name = "angstrom_sdk_rs"
 angstrom-types = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-types", branch = "feat/sdk-work" }
 angstrom-rpc = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-rpc", branch = "feat/sdk-work" }
 uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git", package = "uniswap-v4", branch = "feat/sdk-work" }
-validation = { git = "https://github.com/SorellaLabs/angstrom.git", package = "validation", branch = "feat/sdk-work" }
 
 # pade
 pade = { git = "https://github.com/SorellaLabs/pade", version = "0.1.0" }
