@@ -104,7 +104,7 @@ wasm-bindgen = { version = "0.2.84", optional = true }
 
 
 [dev-dependencies]
-testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", branch = "feat/sdk-work" }
+# testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", branch = "feat/sdk-work" }
 
 
 [features]
