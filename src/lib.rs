@@ -13,12 +13,12 @@ pub mod test_utils;
 pub mod types;
 
 use alloy_network::TxSigner;
-use alloy_primitives::{Address, PrimitiveSignature, TxHash};
+use alloy_primitives::{Address, PrimitiveSignature, TxHash, U256};
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_rpc::api::GasEstimateResponse;
 use angstrom_types::{
-    contract_bindings::angstrom::Angstrom::PoolKey,
+    contract_bindings::{angstrom::Angstrom::PoolKey, position_fetcher::PositionFetcher},
     primitive::{OrderPoolNewOrderResult, PoolId},
     sol_bindings::grouped_orders::AllOrders
 };
@@ -30,11 +30,15 @@ use types::{
         AngstromFillProvider, AngstromFiller, FillWrapper, FillerOrder, NonceGeneratorFiller,
         SignerFiller, TokenBalanceCheckFiller
     },
-    HistoricalOrders, HistoricalOrdersFilter, TokenPairInfo, TransactionRequestWithLiquidityMeta
+    HistoricalOrders, HistoricalOrdersFilter, TokenPairInfo, TransactionRequestWithLiquidityMeta,
+    UserLiquidityPosition
 };
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
-use crate::apis::{data_api::AngstromDataApi, node_api::AngstromNodeApi};
+use crate::{
+    apis::{data_api::AngstromDataApi, node_api::AngstromNodeApi},
+    types::POSITION_FETCHER_ADDRESS
+};
 
 #[derive(Clone)]
 pub struct AngstromApi<P, F = ()>
@@ -257,16 +261,23 @@ where
     P: Provider + Clone,
     F: FillWrapper
 {
-    async fn get_positions(&self, user_address: Address) -> eyre::Result<()> {
-        Ok(())
-    }
-
-    async fn get_pool_view(
+    async fn get_positions(
         &self,
-        user_address: Address,
-        token0: Address,
-        token1: Address
-    ) -> eyre::Result<()> {
-        Ok(())
+        user_address: Address
+    ) -> eyre::Result<Vec<UserLiquidityPosition>> {
+        let user_positons = self
+            .eth_provider
+            .view_call(
+                POSITION_FETCHER_ADDRESS,
+                PositionFetcher::getPositionsCall {
+                    owner:       user_address,
+                    tokenId:     U256::from(1u8),
+                    lastTokenId: U256::ZERO,
+                    maxResults:  U256::MAX
+                }
+            )
+            .await?;
+
+        Ok(user_positons._2.into_iter().map(Into::into).collect())
     }
 }
