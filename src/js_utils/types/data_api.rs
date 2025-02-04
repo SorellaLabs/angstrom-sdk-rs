@@ -8,7 +8,7 @@ use angstrom_sdk_rs_macros::{neon_object_as, NeonObject};
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
     contract_payloads::{
-        angstrom::{OrderQuantities, TopOfBlockOrder, UserOrder},
+        angstrom::{OrderQuantities, StandingValidation, TopOfBlockOrder, UserOrder},
         Signature
     },
     primitive::{PoolId, UniswapPoolRegistry}
