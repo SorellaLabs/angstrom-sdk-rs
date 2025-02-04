@@ -255,6 +255,7 @@ where
         let (token0, token1) = sort_tokens(token0, token1);
 
         let pool_key = self.pool_key(token0, token1).await?;
+        pool_key.fee = U24::from(0x800000);
         let pool_id: PoolId = pool_key.clone().into();
 
         let data_loader =
