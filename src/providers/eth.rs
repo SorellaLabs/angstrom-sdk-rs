@@ -61,8 +61,12 @@ impl EthRpcProvider<RootProvider<BoxTransport>> {
     }
 }
 impl<P: Provider + Clone> EthRpcProvider<P> {
-    pub fn provider(&self) -> &P {
+    pub fn eth_provider(&self) -> &P {
         &self.eth_provider
+    }
+
+    pub fn web_provider(&self) -> &reqwest::Client {
+        &self.web_provider
     }
 
     pub(crate) async fn view_call<IC>(
@@ -79,7 +83,7 @@ impl<P: Provider + Clone> EthRpcProvider<P> {
             ..Default::default()
         };
 
-        Ok(IC::abi_decode_returns(&self.provider().call(&tx).await?, false)?)
+        Ok(IC::abi_decode_returns(&self.eth_provider().call(&tx).await?, false)?)
     }
 
     pub(crate) fn with_wallet<S>(self, signer: S) -> EthRpcProvider<RpcWalletProvider<P>>
@@ -184,7 +188,7 @@ where
     // }
 
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
-        let config_store = pool_config_store(self.provider()).await?;
+        let config_store = pool_config_store(self.eth_provider()).await?;
         let partial_key_entries = config_store.all_entries();
 
         let all_pools_call = futures::future::join_all(partial_key_entries.iter().map(|key| {
@@ -210,11 +214,10 @@ where
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
         let (token0, token1) = sort_tokens(token0, token1);
 
-        let config_store = pool_config_store(self.provider()).await?;
-        let pool_config_store = config_store.get_entry(token0, token1).ok_or(eyre::eyre!(
-            "no config store entry for tokens {token0:?} -
-    {token1:?}"
-        ))?;
+        let config_store = pool_config_store(self.eth_provider()).await?;
+        let pool_config_store = config_store
+            .get_entry(token0, token1)
+            .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
 
         Ok(PoolKey {
             currency0:   token0,

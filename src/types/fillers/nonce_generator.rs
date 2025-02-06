@@ -31,7 +31,7 @@ impl AngstromFiller for NonceGeneratorFiller {
             return Ok(None);
         };
 
-        let current_nonce = provider.provider().get_transaction_count(from).await?;
+        let current_nonce = provider.eth_provider().get_transaction_count(from).await?;
         let pending_orders = angstrom_provider.pending_orders(vec![from]).await?.len() as u64;
 
         Ok(Some(current_nonce + pending_orders + 1))

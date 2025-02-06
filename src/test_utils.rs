@@ -34,7 +34,7 @@ pub async fn make_generator<P>(
 where
     P: Provider + Clone
 {
-    let block_number = provider.provider().get_block_number().await?;
+    let block_number = provider.eth_provider().get_block_number().await?;
     let pairs = provider.all_token_pairs().await?;
 
     let uniswap_pools = futures::future::join_all(pairs.into_iter().map(|pair| async move {

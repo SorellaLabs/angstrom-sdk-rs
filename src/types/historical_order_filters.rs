@@ -230,7 +230,7 @@ impl AngstromPoolTokenIndexToPair {
             return Ok(Self(HashMap::default()));
         }
 
-        let config_store = pool_config_store(provider.provider()).await?;
+        let config_store = pool_config_store(provider.eth_provider()).await?;
         let pools = token_pairs
             .map(|(token0, token1)| {
                 let pool_config = config_store.get_entry(token0, token1).ok_or(eyre::eyre!(
