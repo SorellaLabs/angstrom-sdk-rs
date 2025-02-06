@@ -25,7 +25,7 @@ pub use types::{
     ClientFillerTypes, OrderBuilderAddLiquidityArgs, OrderBuilderExactFlashOrderArgs,
     OrderBuilderExactStandingOrderArgs, OrderBuilderPartialFlashOrderArgs,
     OrderBuilderPartialStandingOrderArgs, OrderBuilderRemoveLiquidityArgs,
-    OrderBuilderTopOfBlockOrderArgs
+    OrderBuilderTopOfBlockOrderArgs, TokenImageUrl
 };
 
 pub trait MakeNeonObject<S = Self>
@@ -141,9 +141,7 @@ js_value!(
     cx,
     val,
     { JsBigInt::from_digits_le(cx, neon::types::bigint::Sign::Positive, this.as_limbs()) },
-    {
-        U256::from_limbs_slice(&val.to_digits_le(cx).1)
-    }
+    { U256::from_limbs_slice(&val.to_digits_le(cx).1) }
 );
 
 js_value!(
