@@ -10,9 +10,9 @@ name = "angstrom_sdk_rs"
 [dependencies]
 
 # angstrom
-angstrom-types = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-types", branch = "feat/sdk-work" }
-angstrom-rpc = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-rpc", branch = "feat/sdk-work" }
-uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git", package = "uniswap-v4", branch = "feat/sdk-work" }
+angstrom-types = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-types", branch = "feat/alt-sdk-stuff" }
+angstrom-rpc = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-rpc", branch = "feat/alt-sdk-stuff" }
+uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git", package = "uniswap-v4", branch = "feat/alt-sdk-stuff" }
 
 # pade
 pade = { git = "https://github.com/SorellaLabs/pade", version = "0.1.0" }
@@ -102,7 +102,7 @@ angstrom-sdk-rs-macros = { path = "./sdk-macros", optional = true }
 
 
 [dev-dependencies]
-testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", branch = "feat/sdk-work" }
+testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", branch = "feat/alt-sdk-stuff" }
 
 
 [features]
