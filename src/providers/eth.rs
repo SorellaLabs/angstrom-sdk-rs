@@ -384,7 +384,7 @@ mod tests {
         assert_eq!(pool_key, expected_pool_key);
     }
 
-    #[tokio::test(flavor = "multi_thread")]
+    #[tokio::test]
     async fn test_binance_price() {
         let provider = spawn_ws_provider().await.unwrap();
         let price = provider
