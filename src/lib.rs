@@ -7,6 +7,10 @@
 pub mod apis;
 #[cfg(feature = "neon")]
 pub mod js_utils;
+
+#[cfg(feature = "neon")]
+pub use angstrom_sdk_rs_macros::{neon_object_as, NeonObject};
+
 pub mod providers;
 #[cfg(test)]
 pub mod test_utils;
