@@ -307,8 +307,6 @@ where
 
         let binance_pair = format!("{token_symbol}USDT");
 
-        println!("{binance_pair}");
-
         let response: Value = self
             .web_provider
             .get(format!("{BINANCE_REST_API_BASE_URL}/api/v3/ticker/price?symbol={binance_pair}"))
