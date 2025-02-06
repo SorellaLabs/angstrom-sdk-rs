@@ -295,14 +295,6 @@ where
             self.view_call(token_address, MintableMockERC20::symbolCall {})
         )?;
 
-        // let token_instance = Box::leak(Box::new(MintableMockERC20Instance::new(
-        //     token_address,
-        //     self.eth_provider.clone()
-        // )));
-
-        // let (unfmt_token_name, unfmt_token_symbol) =
-        //     tokio::try_join!(token_instance.name(), token_instance.symbol(),)?;
-
         println!("{unfmt_token_name:?} - {unfmt_token_symbol:?}");
 
         let token_symbol = if unfmt_token_symbol._0.starts_with("W")
@@ -388,13 +380,13 @@ mod tests {
     async fn test_binance_price() {
         let provider = spawn_ws_provider().await.unwrap();
         let price = provider
-            .binance_price(address!("2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"))
+            .binance_price(address!("3d85e7b30be9fd7a4bad709d6ed2d130579f9a2e"))
             .await
             .unwrap();
         println!("PRICE FOR WBTC: {price}");
 
         let price = provider
-            .binance_price(address!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"))
+            .binance_price(address!("45cb6df752760cc995fe9b05c61ce6bd8776b1e7"))
             .await
             .unwrap();
         println!("PRICE FOR WETH: {price}");
