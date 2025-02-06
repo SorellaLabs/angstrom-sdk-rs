@@ -30,8 +30,8 @@ use types::{
         AngstromFillProvider, AngstromFiller, FillWrapper, FillerOrder, NonceGeneratorFiller,
         SignerFiller, TokenBalanceCheckFiller
     },
-    HistoricalOrders, HistoricalOrdersFilter, TokenPairInfo, TransactionRequestWithLiquidityMeta,
-    UserLiquidityPosition
+    BinanceTokenPrice, HistoricalOrders, HistoricalOrdersFilter, TokenPairInfo,
+    TransactionRequestWithLiquidityMeta, UserLiquidityPosition
 };
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
@@ -255,7 +255,7 @@ where
         self.eth_provider.pool_key(token0, token1).await
     }
 
-    async fn binance_price(&self, token_address: Address) -> eyre::Result<f64> {
+    async fn binance_price(&self, token_address: Address) -> eyre::Result<BinanceTokenPrice> {
         self.eth_provider.binance_price(token_address).await
     }
 }

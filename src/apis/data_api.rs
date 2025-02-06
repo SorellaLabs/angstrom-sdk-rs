@@ -20,7 +20,19 @@ pub trait AngstromDataApi {
             .collect())
     }
 
-    async fn binance_price(&self, token_address: Address) -> eyre::Result<f64>;
+    async fn binance_price(&self, token_address: Address) -> eyre::Result<BinanceTokenPrice>;
+
+    async fn binance_prices(
+        &self,
+        token_addresses: Vec<Address>
+    ) -> eyre::Result<Vec<BinanceTokenPrice>> {
+        Ok(futures::future::try_join_all(
+            token_addresses
+                .into_iter()
+                .map(|addr| self.binance_price(addr))
+        )
+        .await?)
+    }
 
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey>;
 

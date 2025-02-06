@@ -292,13 +292,11 @@ where
         Ok(enhanced_uni_pool)
     }
 
-    async fn binance_price(&self, token_address: Address) -> eyre::Result<f64> {
+    async fn binance_price(&self, token_address: Address) -> eyre::Result<BinanceTokenPrice> {
         let (unfmt_token_name, unfmt_token_symbol) = tokio::try_join!(
             self.view_call(token_address, MintableMockERC20::nameCall {}),
             self.view_call(token_address, MintableMockERC20::symbolCall {})
         )?;
-
-        println!("{unfmt_token_name:?} - {unfmt_token_symbol:?}");
 
         let token_symbol = if unfmt_token_symbol._0.starts_with("W")
             && unfmt_token_name._0.to_lowercase().contains("wrapped")
@@ -319,12 +317,10 @@ where
             .await?;
         let response = Box::leak(Box::new(response));
 
-        println!("{:?}", response);
-
-        if let Some(price) = response.get("price") {
+        let out_res = if let Some(price) = response.get("price") {
             price
                 .as_str()
-                .map(|v| v.parse().ok())
+                .map(|v| v.parse::<f64>().ok())
                 .flatten()
                 .ok_or(eyre::eyre!("could not convert price to f64 for {binance_pair}"))
         } else {
@@ -332,8 +328,21 @@ where
                 .get("msg")
                 .ok_or(eyre::eyre!("could not fetch binance price for {binance_pair}"))?
                 .as_str()
-                .ok_or(eyre::eyre!("could not convert price to f64 for {binance_pair}"))?;
+                .ok_or(eyre::eyre!("could not convert error msg to string for {binance_pair}"))?;
             Err(eyre::eyre!(err_msg))
+        };
+
+        match out_res {
+            Ok(price) => Ok(BinanceTokenPrice {
+                address:   token_address,
+                price:     Some(price),
+                error_msg: None
+            }),
+            Err(err) => Ok(BinanceTokenPrice {
+                address:   token_address,
+                price:     None,
+                error_msg: Some(err.to_string())
+            })
         }
     }
 }
@@ -384,12 +393,12 @@ mod tests {
             .binance_price(address!("3d85e7b30be9fd7a4bad709d6ed2d130579f9a2e"))
             .await
             .unwrap();
-        println!("PRICE FOR WBTC: {price}");
+        println!("PRICE FOR WBTC: {price:?}");
 
         let price = provider
             .binance_price(address!("45cb6df752760cc995fe9b05c61ce6bd8776b1e7"))
             .await
             .unwrap();
-        println!("PRICE FOR WETH: {price}");
+        println!("PRICE FOR WETH: {price:?}");
     }
 }

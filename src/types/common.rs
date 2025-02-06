@@ -150,3 +150,11 @@ impl From<angstrom_types::contract_bindings::position_fetcher::PositionFetcher::
         }
     }
 }
+
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "neon", derive(angstrom_sdk_rs_macros::NeonObject))]
+pub struct BinanceTokenPrice {
+    pub address:   Address,
+    pub price:     Option<f64>,
+    pub error_msg: Option<String>
+}
