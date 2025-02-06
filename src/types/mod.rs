@@ -23,3 +23,5 @@ pub const POOL_MANAGER_ADDRESS: alloy_primitives::Address =
 
 pub const ANGSTROM_DEPLOYED_BLOCK: u64 = 0;
 pub const POOL_CONFIG_STORE_SLOT: u8 = 3;
+
+pub const BINANCE_REST_API_BASE_URL: &str = "https://api.binance.us";

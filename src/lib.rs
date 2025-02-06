@@ -254,6 +254,10 @@ where
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
         self.eth_provider.pool_key(token0, token1).await
     }
+
+    async fn binance_price(&self, token_address: Address) -> eyre::Result<f64> {
+        self.eth_provider.binance_price(token_address).await
+    }
 }
 
 impl<P, F> AngstromUserApi for AngstromApi<P, F>

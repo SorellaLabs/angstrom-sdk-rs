@@ -5,6 +5,7 @@ use alloy_dyn_abi::DynSolValue;
 use alloy_multicall::Multicall;
 use alloy_network::{Ethereum, EthereumWallet, TxSigner};
 use alloy_primitives::{
+    address,
     aliases::{I24, U24},
     Address, FixedBytes, PrimitiveSignature, TxHash, TxKind, B256
 };
@@ -14,16 +15,21 @@ use alloy_provider::{
 };
 use alloy_rpc_types::{BlockTransactionsKind, TransactionInput, TransactionRequest};
 use alloy_signer::{Signer, SignerSync};
-use alloy_sol_types::SolCall;
+use alloy_sol_types::{SolCall, SolInterface};
 use alloy_transport::BoxTransport;
 use angstrom_types::{
     contract_bindings::{
         angstrom::Angstrom::PoolKey,
-        controller_v_1::ControllerV1::{self, poolsCall, ControllerV1Calls, ControllerV1Instance}
+        controller_v_1::ControllerV1::{self, poolsCall, ControllerV1Calls, ControllerV1Instance},
+        mintable_mock_erc_20::MintableMockERC20::{
+            self, MintableMockERC20Calls, MintableMockERC20Instance
+        }
     },
-    primitive::PoolId
+    primitive::{PoolId, ERC20},
+    sol_bindings::testnet::MockERC20::MockERC20Instance
 };
 use futures::StreamExt;
+use serde_json::Value;
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
 use crate::{
@@ -35,24 +41,28 @@ pub(crate) type RpcWalletProvider<P> =
     FillProvider<JoinFill<Identity, WalletFiller<EthereumWallet>>, P, BoxTransport, Ethereum>;
 
 #[derive(Debug, Clone)]
-#[repr(transparent)]
-pub struct EthRpcProvider<P>(P)
+pub struct EthRpcProvider<P>
 where
-    P: Provider + Clone;
+    P: Provider + Clone
+{
+    eth_provider: P,
+    web_provider: reqwest::Client
+}
 
 impl EthRpcProvider<RootProvider<BoxTransport>> {
     /// based on the url passed in, will auto parse to http, ws or ipc
     pub async fn new(url: &str) -> eyre::Result<Self> {
-        Ok(Self(
-            RootProvider::<BoxTransport, _>::builder()
+        Ok(Self {
+            eth_provider: RootProvider::<BoxTransport, _>::builder()
                 .on_builtin(url)
-                .await?
-        ))
+                .await?,
+            web_provider: reqwest::Client::new()
+        })
     }
 }
 impl<P: Provider + Clone> EthRpcProvider<P> {
     pub fn provider(&self) -> &P {
-        &self.0
+        &self.eth_provider
     }
 
     pub(crate) async fn view_call<IC>(
@@ -69,18 +79,18 @@ impl<P: Provider + Clone> EthRpcProvider<P> {
             ..Default::default()
         };
 
-        Ok(IC::abi_decode_returns(&self.provider().call(&tx).await?, true)?)
+        Ok(IC::abi_decode_returns(&self.provider().call(&tx).await?, false)?)
     }
 
     pub(crate) fn with_wallet<S>(self, signer: S) -> EthRpcProvider<RpcWalletProvider<P>>
     where
         S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Send + Sync + 'static
     {
-        let p = alloy_provider::builder::<Ethereum>()
+        let eth_provider = alloy_provider::builder::<Ethereum>()
             .wallet(EthereumWallet::new(signer))
-            .on_provider(self.0);
+            .on_provider(self.eth_provider);
 
-        EthRpcProvider(p)
+        EthRpcProvider { web_provider: self.web_provider, eth_provider }
     }
 
     pub async fn send_add_remove_liquidity_tx(
@@ -88,7 +98,7 @@ impl<P: Provider + Clone> EthRpcProvider<P> {
         tx_req: TransactionRequestWithLiquidityMeta
     ) -> eyre::Result<TxHash> {
         Ok(self
-            .0
+            .eth_provider
             .send_transaction(tx_req.tx_request)
             .await?
             .watch()
@@ -223,13 +233,16 @@ where
         let pool_stores = &AngstromPoolTokenIndexToPair::new_with_tokens(self, filter).await?;
 
         let start_block = filter.from_block.unwrap_or(ANGSTROM_DEPLOYED_BLOCK);
-        let end_block =
-            if let Some(e) = filter.to_block { e } else { self.0.get_block_number().await? };
+        let end_block = if let Some(e) = filter.to_block {
+            e
+        } else {
+            self.eth_provider.get_block_number().await?
+        };
 
         let mut block_stream = futures::stream::iter(start_block..end_block)
             .map(|bn| async move {
                 let block = self
-                    .0
+                    .eth_provider
                     .get_block(bn.into(), BlockTransactionsKind::Full)
                     .await?
                     .ok_or(eyre::eyre!("block number {bn} not found"))?;
@@ -263,14 +276,72 @@ where
 
         let mut enhanced_uni_pool = EnhancedUniswapPool::new(data_loader, 200);
 
-        let block_number =
-            if let Some(bn) = block_number { bn } else { self.0.get_block_number().await? };
+        let block_number = if let Some(bn) = block_number {
+            bn
+        } else {
+            self.eth_provider.get_block_number().await?
+        };
 
         enhanced_uni_pool
-            .initialize(Some(block_number), Arc::new(self.0.clone()))
+            .initialize(Some(block_number), Arc::new(self.eth_provider.clone()))
             .await?;
 
         Ok(enhanced_uni_pool)
+    }
+
+    async fn binance_price(&self, token_address: Address) -> eyre::Result<f64> {
+        let (unfmt_token_name, unfmt_token_symbol) = tokio::try_join!(
+            self.view_call(token_address, MintableMockERC20::nameCall {}),
+            self.view_call(token_address, MintableMockERC20::symbolCall {})
+        )?;
+
+        // let token_instance = Box::leak(Box::new(MintableMockERC20Instance::new(
+        //     token_address,
+        //     self.eth_provider.clone()
+        // )));
+
+        // let (unfmt_token_name, unfmt_token_symbol) =
+        //     tokio::try_join!(token_instance.name(), token_instance.symbol(),)?;
+
+        println!("{unfmt_token_name:?} - {unfmt_token_symbol:?}");
+
+        let token_symbol = if unfmt_token_symbol._0.starts_with("W")
+            && unfmt_token_name._0.to_lowercase().contains("wrapped")
+        {
+            unfmt_token_symbol._0[1..].to_string()
+        } else {
+            unfmt_token_symbol._0
+        };
+
+        let binance_pair = format!("{token_symbol}USDT");
+
+        println!("{binance_pair}");
+
+        let response: Value = self
+            .web_provider
+            .get(format!("{BINANCE_REST_API_BASE_URL}/api/v3/ticker/price?symbol={binance_pair}"))
+            .send()
+            .await?
+            .json()
+            .await?;
+        let response = Box::leak(Box::new(response));
+
+        println!("{:?}", response);
+
+        if let Some(price) = response.get("price") {
+            price
+                .as_str()
+                .map(|v| v.parse().ok())
+                .flatten()
+                .ok_or(eyre::eyre!("could not convert price to f64 for {binance_pair}"))
+        } else {
+            let err_msg = response
+                .get("msg")
+                .ok_or(eyre::eyre!("could not fetch binance price for {binance_pair}"))?
+                .as_str()
+                .ok_or(eyre::eyre!("could not convert price to f64 for {binance_pair}"))?;
+            Err(eyre::eyre!(err_msg))
+        }
     }
 }
 
@@ -298,8 +369,8 @@ mod tests {
     #[tokio::test]
     async fn test_pool_key() {
         let provider = spawn_ws_provider().await.unwrap();
-        let token0 = address!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
-        let token1 = address!("cbcb9b1dff95bc829c17290c6c096c105974a14d");
+        let token0 = address!("2260fac5e5542a773aa44fbcfedf7c193bc2c599");
+        let token1 = address!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
 
         let pool_key = provider.pool_key(token0, token1).await.unwrap();
         let expected_pool_key = PoolKey {
@@ -311,5 +382,21 @@ mod tests {
         };
 
         assert_eq!(pool_key, expected_pool_key);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_binance_price() {
+        let provider = spawn_ws_provider().await.unwrap();
+        let price = provider
+            .binance_price(address!("2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"))
+            .await
+            .unwrap();
+        println!("PRICE FOR WBTC: {price}");
+
+        let price = provider
+            .binance_price(address!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"))
+            .await
+            .unwrap();
+        println!("PRICE FOR WETH: {price}");
     }
 }
