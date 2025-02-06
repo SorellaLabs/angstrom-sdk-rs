@@ -11,3 +11,5 @@ pub use order_builder::{
 };
 mod fillers;
 pub use fillers::ClientFillerTypes;
+mod other;
+pub use other::TokenImageUrl;
