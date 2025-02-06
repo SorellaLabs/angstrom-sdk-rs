@@ -108,7 +108,7 @@ impl<P: Provider + Clone> EthRpcProvider<P> {
 
 impl<P> AngstromDataApi for EthRpcProvider<P>
 where
-    P: Provider + Clone
+    P: Provider + Clone + 'static
 {
     // async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
     //     let config_store = pool_config_store(self.provider()).await?;
@@ -388,15 +388,16 @@ mod tests {
     async fn test_binance_price() {
         let provider = spawn_ws_provider().await.unwrap();
         let price = provider
-            .binance_price(address!("2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"))
-            .await
-            .unwrap();
-        println!("PRICE FOR WBTC: {price}");
-
-        let price = provider
-            .binance_price(address!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"))
+            .binance_price(address!("3d85e7b30be9fd7a4bad709d6ed2d130579f9a2e"))
             .await
             .unwrap();
         println!("PRICE FOR WETH: {price}");
+
+        let price = provider
+            .binance_price(address!("45cb6df752760cc995fe9b05c61ce6bd8776b1e7"))
+            .await
+            .unwrap();
+
+        println!("PRICE FOR WBTC: {price}");
     }
 }
