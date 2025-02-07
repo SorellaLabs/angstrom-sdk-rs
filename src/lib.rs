@@ -34,7 +34,7 @@ use types::{
         AngstromFillProvider, AngstromFiller, FillWrapper, FillerOrder, NonceGeneratorFiller,
         SignerFiller, TokenBalanceCheckFiller
     },
-    BinanceTokenPrice, HistoricalOrders, HistoricalOrdersFilter, TokenPairInfo,
+    BinanceTokenPrice, HistoricalOrders, HistoricalOrdersFilter, TokenInfoWithMeta, TokenPairInfo,
     TransactionRequestWithLiquidityMeta, UserLiquidityPosition
 };
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
@@ -235,6 +235,10 @@ where
 {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
         self.eth_provider.all_token_pairs().await
+    }
+
+    async fn all_tokens(&self) -> eyre::Result<Vec<TokenInfoWithMeta>> {
+        self.eth_provider.all_tokens().await
     }
 
     async fn historical_orders(

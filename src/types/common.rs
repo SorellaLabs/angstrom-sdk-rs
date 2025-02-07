@@ -24,6 +24,13 @@ pub struct TokenPairInfo {
     pub is_active: bool
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "neon", derive(NeonObject))]
+pub struct TokenInfoWithMeta {
+    pub address: Address,
+    pub symbol:  String
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PoolMetadata {
     // pub pool_ticker: String,

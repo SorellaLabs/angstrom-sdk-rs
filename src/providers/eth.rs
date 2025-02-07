@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 use alloy::json_abi::Function;
 use alloy_dyn_abi::DynSolValue;
@@ -28,7 +28,7 @@ use angstrom_types::{
     primitive::{PoolId, ERC20},
     sol_bindings::testnet::MockERC20::MockERC20Instance
 };
-use futures::StreamExt;
+use futures::{StreamExt, TryFutureExt};
 use serde_json::Value;
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
@@ -191,15 +191,13 @@ where
         let config_store = pool_config_store(self.eth_provider()).await?;
         let partial_key_entries = config_store.all_entries();
 
-        let all_pools_call = futures::future::join_all(partial_key_entries.iter().map(|key| {
+        let all_pools_call = futures::future::try_join_all(partial_key_entries.iter().map(|key| {
             self.view_call(
                 CONTROLLER_V1_ADDRESS,
                 ControllerV1::poolsCall { key: FixedBytes::from(*key.pool_partial_key) }
             )
         }))
-        .await
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()?;
+        .await?;
 
         Ok(all_pools_call
             .into_iter()
@@ -209,6 +207,23 @@ where
                 is_active: true
             })
             .collect())
+    }
+
+    async fn all_tokens(&self) -> eyre::Result<Vec<TokenInfoWithMeta>> {
+        let all_tokens_addresses = self
+            .all_token_pairs()
+            .await?
+            .into_iter()
+            .flat_map(|val| [val.token0, val.token1])
+            .collect::<HashSet<_>>();
+
+        Ok(futures::future::try_join_all(all_tokens_addresses.into_iter().map(|address| {
+            self.view_call(address, MintableMockERC20::symbolCall {})
+                .and_then(
+                    move |val| async move { Ok(TokenInfoWithMeta { address, symbol: val._0 }) }
+                )
+        }))
+        .await?)
     }
 
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
