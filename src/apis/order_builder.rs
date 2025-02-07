@@ -102,7 +102,6 @@ pub fn partial_standing_order(
     min_amount_in: u128,
     max_amount_in: u128,
     min_price: U256,
-    max_extra_fee_asset0: Option<u128>,
     deadline: Option<u64>,
     recipient: Address
 ) -> PartialStandingOrder {
@@ -112,7 +111,7 @@ pub fn partial_standing_order(
         max_amount_in,
         min_amount_in,
         min_price,
-        max_extra_fee_asset0: max_extra_fee_asset0.unwrap_or_default(),
+        max_extra_fee_asset0: max_amount_in,
         deadline: deadline.map(|d| U40::from(d)).unwrap_or_default(),
         recipient,
         ..Default::default()
@@ -125,7 +124,6 @@ pub fn exact_standing_order(
     exact_in: bool,
     amount: u128,
     min_price: U256,
-    max_extra_fee_asset0: Option<u128>,
     deadline: Option<u64>,
     recipient: Address
 ) -> ExactStandingOrder {
@@ -133,7 +131,13 @@ pub fn exact_standing_order(
         asset_in,
         asset_out,
         min_price,
-        max_extra_fee_asset0: max_extra_fee_asset0.unwrap_or_default(),
+        max_extra_fee_asset0: if exact_in {
+            amount
+        } else {
+            Ray::from(min_price)
+                .mul_quantity(U256::from(amount))
+                .saturating_to::<u128>()
+        },
         deadline: deadline.map(|d| U40::from(d)).unwrap_or_default(),
         exact_in,
         amount,
@@ -148,7 +152,6 @@ pub fn partial_flash_order(
     min_amount_in: u128,
     max_amount_in: u128,
     min_price: U256,
-    max_extra_fee_asset0: Option<u128>,
     valid_for_block: u64,
     recipient: Address
 ) -> PartialFlashOrder {
@@ -158,7 +161,7 @@ pub fn partial_flash_order(
         max_amount_in,
         min_amount_in,
         min_price,
-        max_extra_fee_asset0: max_extra_fee_asset0.unwrap_or_default(),
+        max_extra_fee_asset0: max_amount_in,
         valid_for_block,
         recipient,
         ..Default::default()
