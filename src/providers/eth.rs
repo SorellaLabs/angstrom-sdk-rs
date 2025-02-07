@@ -1,13 +1,9 @@
 use std::{collections::HashSet, sync::Arc};
 
-use alloy::json_abi::Function;
-use alloy_dyn_abi::DynSolValue;
-use alloy_multicall::Multicall;
 use alloy_network::{Ethereum, EthereumWallet, TxSigner};
 use alloy_primitives::{
-    address,
     aliases::{I24, U24},
-    Address, FixedBytes, PrimitiveSignature, TxHash, TxKind, B256
+    Address, FixedBytes, PrimitiveSignature, TxHash, TxKind
 };
 use alloy_provider::{
     fillers::{FillProvider, JoinFill, WalletFiller},
@@ -15,18 +11,14 @@ use alloy_provider::{
 };
 use alloy_rpc_types::{BlockTransactionsKind, TransactionInput, TransactionRequest};
 use alloy_signer::{Signer, SignerSync};
-use alloy_sol_types::{SolCall, SolInterface};
+use alloy_sol_types::SolCall;
 use alloy_transport::BoxTransport;
 use angstrom_types::{
     contract_bindings::{
-        angstrom::Angstrom::PoolKey,
-        controller_v_1::ControllerV1::{self, poolsCall, ControllerV1Calls, ControllerV1Instance},
-        mintable_mock_erc_20::MintableMockERC20::{
-            self, MintableMockERC20Calls, MintableMockERC20Instance
-        }
+        angstrom::Angstrom::PoolKey, controller_v_1::ControllerV1,
+        mintable_mock_erc_20::MintableMockERC20
     },
-    primitive::{PoolId, ERC20},
-    sol_bindings::testnet::MockERC20::MockERC20Instance
+    primitive::PoolId
 };
 use futures::{StreamExt, TryFutureExt};
 use serde_json::Value;

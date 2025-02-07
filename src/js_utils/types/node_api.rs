@@ -15,6 +15,65 @@ use angstrom_types::{
 use neon::object::Object;
 
 #[derive(Debug, Clone, NeonObject)]
+pub struct AllOrdersWithSignature {
+    order:          AllOrders,
+    signer_address: Address,
+    signature:      Bytes
+}
+
+impl AllOrdersWithSignature {
+    #[allow(unused)]
+    pub fn sign_order_with(self) -> AllOrders {
+        match self.order {
+            AllOrders::Standing(standing_variants) => match standing_variants {
+                StandingVariants::Partial(mut partial_standing_order) => {
+                    partial_standing_order.meta = OrderMeta {
+                        isEcdsa:   true,
+                        from:      self.signer_address,
+                        signature: self.signature
+                    };
+                    AllOrders::Standing(StandingVariants::Partial(partial_standing_order))
+                }
+                StandingVariants::Exact(mut exact_standing_order) => {
+                    exact_standing_order.meta = OrderMeta {
+                        isEcdsa:   true,
+                        from:      self.signer_address,
+                        signature: self.signature
+                    };
+                    AllOrders::Standing(StandingVariants::Exact(exact_standing_order))
+                }
+            },
+            AllOrders::Flash(flash_variants) => match flash_variants {
+                FlashVariants::Partial(mut partial_flash_order) => {
+                    partial_flash_order.meta = OrderMeta {
+                        isEcdsa:   true,
+                        from:      self.signer_address,
+                        signature: self.signature
+                    };
+                    AllOrders::Flash(FlashVariants::Partial(partial_flash_order))
+                }
+                FlashVariants::Exact(mut exact_flash_order) => {
+                    exact_flash_order.meta = OrderMeta {
+                        isEcdsa:   true,
+                        from:      self.signer_address,
+                        signature: self.signature
+                    };
+                    AllOrders::Flash(FlashVariants::Exact(exact_flash_order))
+                }
+            },
+            AllOrders::TOB(mut top_of_block_order) => {
+                top_of_block_order.meta = OrderMeta {
+                    isEcdsa:   true,
+                    from:      self.signer_address,
+                    signature: self.signature
+                };
+                AllOrders::TOB(top_of_block_order)
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, NeonObject)]
 pub enum AllOrdersNeon {
     Standing { order: StandingVariantsNeon },
     Flash { order: FlashVariantsNeon },
@@ -86,8 +145,7 @@ pub struct PartialStandingOrderNeon {
     recipient:            Address,
     hook_data:            Bytes,
     nonce:                u64,
-    deadline:             u64,
-    meta:                 OrderMetaNeon
+    deadline:             u64 // meta:                 OrderMetaNeon
 }
 
 impl From<PartialStandingOrder> for PartialStandingOrderNeon {
@@ -104,8 +162,7 @@ impl From<PartialStandingOrder> for PartialStandingOrderNeon {
             recipient:            value.recipient,
             hook_data:            value.hook_data,
             nonce:                value.nonce,
-            deadline:             value.deadline.to(),
-            meta:                 value.meta.into()
+            deadline:             value.deadline.to() // meta:                 value.meta.into()
         }
     }
 }
@@ -125,7 +182,7 @@ impl Into<PartialStandingOrder> for PartialStandingOrderNeon {
             hook_data:            self.hook_data,
             nonce:                self.nonce,
             deadline:             U40::from(self.deadline),
-            meta:                 self.meta.into()
+            meta:                 Default::default()
         }
     }
 }
@@ -145,8 +202,7 @@ pub struct ExactStandingOrderNeon {
     recipient:            Address,
     hook_data:            Bytes,
     nonce:                u64,
-    deadline:             u64,
-    meta:                 OrderMetaNeon
+    deadline:             u64 // meta:                 OrderMetaNeon
 }
 
 impl From<ExactStandingOrder> for ExactStandingOrderNeon {
@@ -162,7 +218,7 @@ impl From<ExactStandingOrder> for ExactStandingOrderNeon {
             hook_data:            value.hook_data,
             nonce:                value.nonce,
             deadline:             value.deadline.to(),
-            meta:                 value.meta.into(),
+            // meta:                 value.meta.into(),
             exact_in:             value.exact_in,
             amount:               value.amount
         }
@@ -182,7 +238,7 @@ impl Into<ExactStandingOrder> for ExactStandingOrderNeon {
             hook_data:            self.hook_data,
             nonce:                self.nonce,
             deadline:             U40::from(self.deadline),
-            meta:                 self.meta.into(),
+            meta:                 Default::default(),
             exact_in:             self.exact_in,
             amount:               self.amount
         }
@@ -227,8 +283,7 @@ pub struct PartialFlashOrderNeon {
     asset_out:            Address,
     recipient:            Address,
     hook_data:            Bytes,
-    valid_for_block:      u64,
-    meta:                 OrderMetaNeon
+    valid_for_block:      u64 // meta:                 OrderMetaNeon
 }
 
 impl From<PartialFlashOrder> for PartialFlashOrderNeon {
@@ -244,8 +299,7 @@ impl From<PartialFlashOrder> for PartialFlashOrderNeon {
             asset_out:            value.asset_out,
             recipient:            value.recipient,
             hook_data:            value.hook_data,
-            valid_for_block:      value.valid_for_block,
-            meta:                 value.meta.into()
+            valid_for_block:      value.valid_for_block // meta:                 value.meta.into()
         }
     }
 }
@@ -264,7 +318,8 @@ impl Into<PartialFlashOrder> for PartialFlashOrderNeon {
             recipient:            self.recipient,
             hook_data:            self.hook_data,
             valid_for_block:      self.valid_for_block,
-            meta:                 self.meta.into()
+            // meta:                 self.meta.into()
+            meta:                 Default::default()
         }
     }
 }
@@ -283,8 +338,7 @@ pub struct ExactFlashOrderNeon {
     asset_out:            Address,
     recipient:            Address,
     hook_data:            Bytes,
-    valid_for_block:      u64,
-    meta:                 OrderMetaNeon
+    valid_for_block:      u64 // meta:                 OrderMetaNeon
 }
 
 impl From<ExactFlashOrder> for ExactFlashOrderNeon {
@@ -299,7 +353,7 @@ impl From<ExactFlashOrder> for ExactFlashOrderNeon {
             recipient:            value.recipient,
             hook_data:            value.hook_data,
             valid_for_block:      value.valid_for_block,
-            meta:                 value.meta.into(),
+            // meta:                 value.meta.into(),
             exact_in:             value.exact_in,
             amount:               value.amount
         }
@@ -318,7 +372,8 @@ impl Into<ExactFlashOrder> for ExactFlashOrderNeon {
             recipient:            self.recipient,
             hook_data:            self.hook_data,
             valid_for_block:      self.valid_for_block,
-            meta:                 self.meta.into(),
+            // meta:                 self.meta.into(),
+            meta:                 Default::default(),
             exact_in:             self.exact_in,
             amount:               self.amount
         }
@@ -336,8 +391,7 @@ pub struct TopOfBlockOrderSolBindingsNeon {
     asset_in:        Address,
     asset_out:       Address,
     recipient:       Address,
-    valid_for_block: u64,
-    meta:            OrderMetaNeon
+    valid_for_block: u64 // meta:            OrderMetaNeon
 }
 
 impl From<TopOfBlockOrder> for TopOfBlockOrderSolBindingsNeon {
@@ -350,8 +404,7 @@ impl From<TopOfBlockOrder> for TopOfBlockOrderSolBindingsNeon {
             asset_in:        value.asset_in,
             asset_out:       value.asset_out,
             recipient:       value.recipient,
-            valid_for_block: value.valid_for_block,
-            meta:            value.meta.into()
+            valid_for_block: value.valid_for_block // meta:            value.meta.into()
         }
     }
 }
@@ -367,32 +420,33 @@ impl Into<TopOfBlockOrder> for TopOfBlockOrderSolBindingsNeon {
             asset_out:       self.asset_out,
             recipient:       self.recipient,
             valid_for_block: self.valid_for_block,
-            meta:            self.meta.into()
+            // meta:            self.meta.into()
+            meta:            Default::default()
         }
     }
 }
 
 neon_object_as!(TopOfBlockOrder, TopOfBlockOrderSolBindingsNeon);
 
-#[allow(non_snake_case)]
-#[derive(Debug, Clone, NeonObject)]
-struct OrderMetaNeon {
-    isEcdsa:   bool,
-    from:      Address,
-    signature: Bytes
-}
+// #[allow(non_snake_case)]
+// #[derive(Debug, Clone, NeonObject)]
+// struct OrderMetaNeon {
+//     isEcdsa:   bool,
+//     from:      Address,
+//     signature: Bytes
+// }
 
-impl From<OrderMeta> for OrderMetaNeon {
-    fn from(value: OrderMeta) -> Self {
-        Self { isEcdsa: value.isEcdsa, from: value.from, signature: value.signature }
-    }
-}
+// impl From<OrderMeta> for OrderMetaNeon {
+//     fn from(value: OrderMeta) -> Self {
+//         Self { isEcdsa: value.isEcdsa, from: value.from, signature:
+// value.signature }     }
+// }
 
-impl Into<OrderMeta> for OrderMetaNeon {
-    fn into(self) -> OrderMeta {
-        OrderMeta { isEcdsa: self.isEcdsa, from: self.from, signature: self.signature }
-    }
-}
+// impl Into<OrderMeta> for OrderMetaNeon {
+//     fn into(self) -> OrderMeta {
+//         OrderMeta { isEcdsa: self.isEcdsa, from: self.from, signature:
+// self.signature }     }
+// }
 
 #[derive(Debug, Clone, NeonObject)]
 pub enum OrderPoolNewOrderResultNeon {
