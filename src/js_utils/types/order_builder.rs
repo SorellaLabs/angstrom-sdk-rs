@@ -103,14 +103,13 @@ impl OrderBuilderTopOfBlockOrderArgs {
 
 #[derive(Debug, Clone, NeonObject)]
 pub struct OrderBuilderPartialStandingOrderArgs {
-    asset_in:             Address,
-    asset_out:            Address,
-    min_amount_in:        u128,
-    max_amount_in:        u128,
-    min_price:            U256,
-    max_extra_fee_asset0: Option<u128>,
-    deadline:             Option<u64>,
-    recipient:            Address
+    asset_in:      Address,
+    asset_out:     Address,
+    min_amount_in: u128,
+    max_amount_in: u128,
+    min_price:     U256,
+    deadline:      Option<u64>,
+    recipient:     Address
 }
 
 impl OrderBuilderPartialStandingOrderArgs {
@@ -121,7 +120,6 @@ impl OrderBuilderPartialStandingOrderArgs {
             self.min_amount_in,
             self.max_amount_in,
             self.min_price,
-            self.max_extra_fee_asset0,
             self.deadline,
             self.recipient
         )
@@ -130,14 +128,13 @@ impl OrderBuilderPartialStandingOrderArgs {
 
 #[derive(Debug, Clone, NeonObject)]
 pub struct OrderBuilderExactStandingOrderArgs {
-    asset_in:             Address,
-    asset_out:            Address,
-    exact_in:             bool,
-    amount:               u128,
-    min_price:            U256,
-    max_extra_fee_asset0: Option<u128>,
-    deadline:             Option<u64>,
-    recipient:            Address
+    asset_in:  Address,
+    asset_out: Address,
+    exact_in:  bool,
+    amount:    u128,
+    min_price: U256,
+    deadline:  Option<u64>,
+    recipient: Address
 }
 
 impl OrderBuilderExactStandingOrderArgs {
@@ -148,7 +145,6 @@ impl OrderBuilderExactStandingOrderArgs {
             self.exact_in,
             self.amount,
             self.min_price,
-            self.max_extra_fee_asset0,
             self.deadline,
             self.recipient
         )
@@ -157,14 +153,13 @@ impl OrderBuilderExactStandingOrderArgs {
 
 #[derive(Debug, Clone, NeonObject)]
 pub struct OrderBuilderPartialFlashOrderArgs {
-    asset_in:             Address,
-    asset_out:            Address,
-    min_amount_in:        u128,
-    max_amount_in:        u128,
-    min_price:            U256,
-    max_extra_fee_asset0: Option<u128>,
-    valid_for_block:      u64,
-    recipient:            Address
+    asset_in:        Address,
+    asset_out:       Address,
+    min_amount_in:   u128,
+    max_amount_in:   u128,
+    min_price:       U256,
+    valid_for_block: u64,
+    recipient:       Address
 }
 
 impl OrderBuilderPartialFlashOrderArgs {
@@ -175,7 +170,6 @@ impl OrderBuilderPartialFlashOrderArgs {
             self.min_amount_in,
             self.max_amount_in,
             self.min_price,
-            self.max_extra_fee_asset0,
             self.valid_for_block,
             self.recipient
         )
@@ -184,14 +178,13 @@ impl OrderBuilderPartialFlashOrderArgs {
 
 #[derive(Debug, Clone, NeonObject)]
 pub struct OrderBuilderExactFlashOrderArgs {
-    asset_in:             Address,
-    asset_out:            Address,
-    exact_in:             bool,
-    amount:               u128,
-    min_price:            U256,
-    max_extra_fee_asset0: Option<u128>,
-    valid_for_block:      u64,
-    recipient:            Address
+    asset_in:        Address,
+    asset_out:       Address,
+    exact_in:        bool,
+    amount:          u128,
+    min_price:       U256,
+    valid_for_block: u64,
+    recipient:       Address
 }
 
 impl OrderBuilderExactFlashOrderArgs {
