@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 
 use alloy_consensus::BlobTransactionSidecar;
+use alloy_dyn_abi::Eip712Domain;
 use alloy_eips::{eip4844::BYTES_PER_BLOB, eip7702::SignedAuthorization};
-use alloy_primitives::{Address, Bytes, ChainId, FixedBytes, TxKind, B256, U256};
+use alloy_primitives::{Address, Bytes, ChainId, FixedBytes, TxHash, TxKind, B256, U256};
 use alloy_rpc_types::{
     AccessList, AccessListItem, Authorization, TransactionInput, TransactionRequest
 };
@@ -82,7 +83,8 @@ pub struct OrderBuilderTopOfBlockOrderArgs {
     quantity_in:     u128,
     quantity_out:    u128,
     max_gas_asset0:  u128,
-    valid_for_block: u64
+    valid_for_block: u64,
+    recipient:       Address
 }
 
 impl OrderBuilderTopOfBlockOrderArgs {
@@ -93,7 +95,8 @@ impl OrderBuilderTopOfBlockOrderArgs {
             self.quantity_in,
             self.quantity_out,
             self.max_gas_asset0,
-            self.valid_for_block
+            self.valid_for_block,
+            self.recipient
         )
     }
 }
@@ -106,7 +109,8 @@ pub struct OrderBuilderPartialStandingOrderArgs {
     max_amount_in:        u128,
     min_price:            U256,
     max_extra_fee_asset0: Option<u128>,
-    deadline:             Option<u64>
+    deadline:             Option<u64>,
+    recipient:            Address
 }
 
 impl OrderBuilderPartialStandingOrderArgs {
@@ -118,7 +122,8 @@ impl OrderBuilderPartialStandingOrderArgs {
             self.max_amount_in,
             self.min_price,
             self.max_extra_fee_asset0,
-            self.deadline
+            self.deadline,
+            self.recipient
         )
     }
 }
@@ -131,7 +136,8 @@ pub struct OrderBuilderExactStandingOrderArgs {
     amount:               u128,
     min_price:            U256,
     max_extra_fee_asset0: Option<u128>,
-    deadline:             Option<u64>
+    deadline:             Option<u64>,
+    recipient:            Address
 }
 
 impl OrderBuilderExactStandingOrderArgs {
@@ -143,7 +149,8 @@ impl OrderBuilderExactStandingOrderArgs {
             self.amount,
             self.min_price,
             self.max_extra_fee_asset0,
-            self.deadline
+            self.deadline,
+            self.recipient
         )
     }
 }
@@ -156,7 +163,8 @@ pub struct OrderBuilderPartialFlashOrderArgs {
     max_amount_in:        u128,
     min_price:            U256,
     max_extra_fee_asset0: Option<u128>,
-    valid_for_block:      u64
+    valid_for_block:      u64,
+    recipient:            Address
 }
 
 impl OrderBuilderPartialFlashOrderArgs {
@@ -168,7 +176,8 @@ impl OrderBuilderPartialFlashOrderArgs {
             self.max_amount_in,
             self.min_price,
             self.max_extra_fee_asset0,
-            self.valid_for_block
+            self.valid_for_block,
+            self.recipient
         )
     }
 }
@@ -181,7 +190,8 @@ pub struct OrderBuilderExactFlashOrderArgs {
     amount:               u128,
     min_price:            U256,
     max_extra_fee_asset0: Option<u128>,
-    valid_for_block:      u64
+    valid_for_block:      u64,
+    recipient:            Address
 }
 
 impl OrderBuilderExactFlashOrderArgs {
@@ -192,8 +202,8 @@ impl OrderBuilderExactFlashOrderArgs {
             self.exact_in,
             self.amount,
             self.min_price,
-            self.max_extra_fee_asset0,
-            self.valid_for_block
+            self.valid_for_block,
+            self.recipient
         )
     }
 }
@@ -534,3 +544,38 @@ struct OrderFilterByTokensParamsNeon {
     token0: Address,
     token1: Address
 }
+
+#[derive(Debug, Clone, NeonObject)]
+pub struct Eip712DomainNeon {
+    name:               Option<String>,
+    version:            Option<String>,
+    chain_id:           Option<U256>,
+    verifying_contract: Option<Address>,
+    salt:               Option<TxHash>
+}
+
+impl From<Eip712Domain> for Eip712DomainNeon {
+    fn from(value: Eip712Domain) -> Self {
+        Self {
+            name:               value.name.map(Into::into),
+            version:            value.version.map(Into::into),
+            chain_id:           value.chain_id,
+            verifying_contract: value.verifying_contract,
+            salt:               value.salt
+        }
+    }
+}
+
+impl Into<Eip712Domain> for Eip712DomainNeon {
+    fn into(self) -> Eip712Domain {
+        Eip712Domain {
+            name:               self.name.map(Into::into),
+            version:            self.version.map(Into::into),
+            chain_id:           self.chain_id,
+            verifying_contract: self.verifying_contract,
+            salt:               self.salt
+        }
+    }
+}
+
+neon_object_as!(Eip712Domain, Eip712DomainNeon);

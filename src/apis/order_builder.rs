@@ -1,3 +1,4 @@
+use alloy_dyn_abi::Eip712Domain;
 use alloy_primitives::{
     aliases::{I24, U40},
     Address, TxKind, U256
@@ -6,6 +7,8 @@ use alloy_rpc_types::{TransactionInput, TransactionRequest};
 use alloy_sol_types::SolCall;
 use angstrom_types::{
     contract_bindings::pool_gate::PoolGate,
+    matching::Ray,
+    primitive::ANGSTROM_DOMAIN,
     sol_bindings::rpc_orders::{
         ExactFlashOrder, ExactStandingOrder, PartialFlashOrder, PartialStandingOrder,
         TopOfBlockOrder
@@ -78,7 +81,8 @@ pub fn top_of_block_order(
     quantity_in: u128,
     quantity_out: u128,
     max_gas_asset0: u128,
-    valid_for_block: u64
+    valid_for_block: u64,
+    recipient: Address
 ) -> TopOfBlockOrder {
     TopOfBlockOrder {
         asset_in,
@@ -87,6 +91,7 @@ pub fn top_of_block_order(
         quantity_out,
         valid_for_block,
         max_gas_asset0,
+        recipient,
         ..Default::default()
     }
 }
@@ -98,7 +103,8 @@ pub fn partial_standing_order(
     max_amount_in: u128,
     min_price: U256,
     max_extra_fee_asset0: Option<u128>,
-    deadline: Option<u64>
+    deadline: Option<u64>,
+    recipient: Address
 ) -> PartialStandingOrder {
     PartialStandingOrder {
         asset_in,
@@ -108,6 +114,7 @@ pub fn partial_standing_order(
         min_price,
         max_extra_fee_asset0: max_extra_fee_asset0.unwrap_or_default(),
         deadline: deadline.map(|d| U40::from(d)).unwrap_or_default(),
+        recipient,
         ..Default::default()
     }
 }
@@ -119,7 +126,8 @@ pub fn exact_standing_order(
     amount: u128,
     min_price: U256,
     max_extra_fee_asset0: Option<u128>,
-    deadline: Option<u64>
+    deadline: Option<u64>,
+    recipient: Address
 ) -> ExactStandingOrder {
     ExactStandingOrder {
         asset_in,
@@ -129,6 +137,7 @@ pub fn exact_standing_order(
         deadline: deadline.map(|d| U40::from(d)).unwrap_or_default(),
         exact_in,
         amount,
+        recipient,
         ..Default::default()
     }
 }
@@ -140,7 +149,8 @@ pub fn partial_flash_order(
     max_amount_in: u128,
     min_price: U256,
     max_extra_fee_asset0: Option<u128>,
-    valid_for_block: u64
+    valid_for_block: u64,
+    recipient: Address
 ) -> PartialFlashOrder {
     PartialFlashOrder {
         asset_in,
@@ -150,6 +160,7 @@ pub fn partial_flash_order(
         min_price,
         max_extra_fee_asset0: max_extra_fee_asset0.unwrap_or_default(),
         valid_for_block,
+        recipient,
         ..Default::default()
     }
 }
@@ -160,17 +171,28 @@ pub fn exact_flash_order(
     exact_in: bool,
     amount: u128,
     min_price: U256,
-    max_extra_fee_asset0: Option<u128>,
-    valid_for_block: u64
+    valid_for_block: u64,
+    recipient: Address
 ) -> ExactFlashOrder {
     ExactFlashOrder {
         asset_in,
         asset_out,
         min_price,
-        max_extra_fee_asset0: max_extra_fee_asset0.unwrap_or_default(),
+        max_extra_fee_asset0: if exact_in {
+            amount
+        } else {
+            Ray::from(min_price)
+                .mul_quantity(U256::from(amount))
+                .saturating_to::<u128>()
+        },
         exact_in,
         amount,
         valid_for_block,
+        recipient,
         ..Default::default()
     }
+}
+
+pub fn angstrom_eip712_domain() -> Eip712Domain {
+    ANGSTROM_DOMAIN
 }
