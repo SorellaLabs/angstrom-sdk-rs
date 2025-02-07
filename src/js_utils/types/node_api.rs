@@ -21,9 +21,8 @@ pub struct AllOrdersWithSignature {
     signature:      Bytes
 }
 
-impl AllOrdersWithSignature {
-    #[allow(unused)]
-    pub fn sign_order_with(self) -> AllOrders {
+impl Into<AllOrders> for AllOrdersWithSignature {
+    fn into(self) -> AllOrders {
         match self.order {
             AllOrders::Standing(standing_variants) => match standing_variants {
                 StandingVariants::Partial(mut partial_standing_order) => {
