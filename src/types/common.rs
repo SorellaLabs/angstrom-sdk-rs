@@ -1,6 +1,6 @@
 use alloy_primitives::{
     aliases::{I24, U24},
-    Address, FixedBytes, U256
+    Address, U256
 };
 use alloy_rpc_types::TransactionRequest;
 #[cfg(feature = "neon")]

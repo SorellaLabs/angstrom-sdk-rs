@@ -14,10 +14,7 @@ use neon::{
     object::Object,
     prelude::{Context, FunctionContext, Handle},
     result::{NeonResult, Throw},
-    types::{
-        buffer::TypedArray, JsArray, JsBigInt, JsBoolean, JsNull, JsNumber, JsObject, JsString,
-        JsUint8Array, JsValue, Value
-    }
+    types::{JsArray, JsBigInt, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, Value}
 };
 
 mod types;

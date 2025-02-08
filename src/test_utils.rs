@@ -11,7 +11,8 @@ use uniswap_v4::uniswap::pool_manager::{SyncedUniswapPools, TickRangeToLoad};
 
 use crate::{
     apis::data_api::AngstromDataApi,
-    providers::{AngstromProvider, EthRpcProvider}
+    providers::{AngstromProvider, EthRpcProvider},
+    AngstromApi
 };
 
 pub async fn spawn_ws_provider() -> eyre::Result<EthRpcProvider<RootProvider<BoxTransport>>> {
@@ -26,6 +27,10 @@ pub async fn spawn_angstrom_provider() -> eyre::Result<AngstromProvider> {
     let http_url = std::env::var("ANGSTROM_HTTP_URL").expect("ANGSTROM_HTTP_URL not found in .env");
 
     AngstromProvider::new(http_url)
+}
+
+pub async fn spawn_angstrom_api() -> eyre::Result<AngstromApi<RootProvider<BoxTransport>>> {
+    Ok(AngstromApi::new(spawn_ws_provider().await?, spawn_angstrom_provider().await?))
 }
 
 pub async fn make_generator<P>(

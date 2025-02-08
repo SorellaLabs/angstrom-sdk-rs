@@ -8,9 +8,6 @@ pub mod apis;
 #[cfg(feature = "neon")]
 pub mod js_utils;
 
-// #[cfg(feature = "neon")]
-// pub use angstrom_sdk_rs_macros::{neon_object_as, NeonObject};
-
 pub mod providers;
 #[cfg(test)]
 pub mod test_utils;
@@ -41,7 +38,7 @@ use types::{
         SignerFiller, TokenBalanceCheckFiller
     },
     BinanceTokenPrice, HistoricalOrders, HistoricalOrdersFilter, TokenInfoWithMeta, TokenPairInfo,
-    TransactionRequestWithLiquidityMeta, UserLiquidityPosition, POOL_MANAGER_ADDRESS
+    TransactionRequestWithLiquidityMeta, UserLiquidityPosition, POSITION_MANAGER_ADDRESS
 };
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
@@ -306,7 +303,7 @@ where
             futures::future::try_join_all(unique_pool_ids.into_iter().map(|uni_id| {
                 self.eth_provider
                     .view_call(
-                        POOL_MANAGER_ADDRESS,
+                        POSITION_MANAGER_ADDRESS,
                         PositionManager::poolKeysCall { poolId: uni_id }
                     )
                     .and_then(move |ang_id| async move {
@@ -339,5 +336,25 @@ where
                 )
             })
             .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloy_primitives::address;
+
+    use super::*;
+    use crate::test_utils::spawn_angstrom_api;
+
+    #[tokio::test]
+    async fn test_get_positions() {
+        let angstrom_api = spawn_angstrom_api().await.unwrap();
+
+        let positions = angstrom_api
+            .get_positions(address!("0x796fB50EAe1456A523F869f6135dd557eeaEE226"))
+            .await
+            .unwrap();
+
+        println!("{positions:?}");
     }
 }
