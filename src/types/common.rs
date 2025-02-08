@@ -134,27 +134,25 @@ pub(crate) fn sort_tokens(token0: Address, token1: Address) -> (Address, Address
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "neon", derive(angstrom_sdk_rs_macros::NeonObject))]
 pub struct UserLiquidityPosition {
     pub token_id:   U256,
     pub tick_lower: i32,
     pub tick_upper: i32,
-    // pub pool_id:    PoolId
-    pub pool_id:    FixedBytes<25>
+    pub pool_key:   PoolKey
 }
 
-impl From<angstrom_types::contract_bindings::position_fetcher::PositionFetcher::Position>
-    for UserLiquidityPosition
-{
-    fn from(
-        value: angstrom_types::contract_bindings::position_fetcher::PositionFetcher::Position
+impl UserLiquidityPosition {
+    pub fn new(
+        pool_key: PoolKey,
+        position: angstrom_types::contract_bindings::position_fetcher::PositionFetcher::Position
     ) -> Self {
         Self {
-            token_id:   value.tokenId,
-            tick_lower: value.tickLower.as_i32(),
-            tick_upper: value.tickUpper.as_i32(),
-            pool_id:    value.poolId
+            token_id: position.tokenId,
+            tick_lower: position.tickLower.as_i32(),
+            tick_upper: position.tickUpper.as_i32(),
+            pool_key
         }
     }
 }

@@ -18,6 +18,9 @@ pub const ANGSTROM_ADDRESS: alloy_primitives::Address =
 pub const POOL_GATE_ADDRESS: alloy_primitives::Address =
     alloy_primitives::address!("F967Ede45ED04ec89EcA04a4c7175b6E0106e3A8");
 
+pub const POSITION_MANAGER_ADDRESS: alloy_primitives::Address =
+    alloy_primitives::address!("EECc919927FeA22488D460d87De461809AaCbbA7");
+
 pub const POOL_MANAGER_ADDRESS: alloy_primitives::Address =
     alloy_primitives::address!("C310E4d9dBF28E5e184B802E978Ab5a8E1CfCb56");
 

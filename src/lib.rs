@@ -16,17 +16,23 @@ pub mod providers;
 pub mod test_utils;
 pub mod types;
 
+use std::collections::{HashMap, HashSet};
+
 use alloy_network::TxSigner;
 use alloy_primitives::{Address, PrimitiveSignature, TxHash, U256};
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_rpc::api::GasEstimateResponse;
 use angstrom_types::{
-    contract_bindings::{angstrom::Angstrom::PoolKey, position_fetcher::PositionFetcher},
+    contract_bindings::{
+        angstrom::Angstrom::PoolKey, position_fetcher::PositionFetcher,
+        position_manager::PositionManager
+    },
     primitive::{OrderPoolNewOrderResult, PoolId},
     sol_bindings::grouped_orders::AllOrders
 };
 use apis::user_api::AngstromUserApi;
+use futures::TryFutureExt;
 use jsonrpsee_http_client::HttpClient;
 use providers::{AngstromProvider, EthRpcProvider, RpcWalletProvider};
 use types::{
@@ -35,7 +41,7 @@ use types::{
         SignerFiller, TokenBalanceCheckFiller
     },
     BinanceTokenPrice, HistoricalOrders, HistoricalOrdersFilter, TokenInfoWithMeta, TokenPairInfo,
-    TransactionRequestWithLiquidityMeta, UserLiquidityPosition
+    TransactionRequestWithLiquidityMeta, UserLiquidityPosition, POOL_MANAGER_ADDRESS
 };
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
@@ -290,6 +296,48 @@ where
             )
             .await?;
 
-        Ok(user_positons._2.into_iter().map(Into::into).collect())
+        let unique_pool_ids = user_positons
+            ._2
+            .iter()
+            .map(|pos| pos.poolId)
+            .collect::<HashSet<_>>();
+
+        let uni_pool_id_to_ang_pool_ids =
+            futures::future::try_join_all(unique_pool_ids.into_iter().map(|uni_id| {
+                self.eth_provider
+                    .view_call(
+                        POOL_MANAGER_ADDRESS,
+                        PositionManager::poolKeysCall { poolId: uni_id }
+                    )
+                    .and_then(move |ang_id| async move {
+                        Ok((
+                            uni_id,
+                            PoolKey {
+                                currency0:   ang_id.currency0,
+                                currency1:   ang_id.currency1,
+                                fee:         ang_id.fee,
+                                tickSpacing: ang_id.tickSpacing,
+                                hooks:       ang_id.hooks
+                            }
+                        ))
+                    })
+            }))
+            .await?
+            .into_iter()
+            .collect::<HashMap<_, _>>();
+
+        Ok(user_positons
+            ._2
+            .into_iter()
+            .map(|pos| {
+                UserLiquidityPosition::new(
+                    uni_pool_id_to_ang_pool_ids
+                        .get(&pos.poolId)
+                        .unwrap()
+                        .clone(),
+                    pos
+                )
+            })
+            .collect())
     }
 }
