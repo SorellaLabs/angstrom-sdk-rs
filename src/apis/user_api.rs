@@ -1,4 +1,5 @@
 use alloy_primitives::Address;
+use angstrom_types::primitive::PoolId;
 
 use super::data_api::AngstromDataApi;
 use crate::types::UserLiquidityPosition;
@@ -18,11 +19,9 @@ pub trait AngstromUserApi: AngstromDataApi {
         let all_positions = self.get_positions(user_address).await?;
         let pool_id = self.pool_id(token0, token1).await?;
 
-        // Ok(all_positions
-        //     .into_iter()
-        //     .filter(|position| position.pool_id == pool_id)
-        //     .collect())
-
-        Ok(Vec::new())
+        Ok(all_positions
+            .into_iter()
+            .filter(|position| PoolId::from(position.pool_key.clone()) == pool_id)
+            .collect())
     }
 }
