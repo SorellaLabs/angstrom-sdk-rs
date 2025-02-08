@@ -349,10 +349,10 @@ impl<A: AsNeonValue, B: AsNeonValue> AsNeonValue for (A, B) {
         let obj = cx.empty_object();
 
         let val0 = self.0.as_neon_value(cx)?;
-        obj.set(cx, "_0", val0)?;
+        obj.set(cx, 0, val0)?;
 
         let val1 = self.1.as_neon_value(cx)?;
-        obj.set(cx, "_1", val1)?;
+        obj.set(cx, 1, val1)?;
 
         Ok(obj)
     }
@@ -364,8 +364,8 @@ impl<A: AsNeonValue, B: AsNeonValue> AsNeonValue for (A, B) {
     where
         Self: Sized
     {
-        let val0 = value.get::<<A as AsNeonValue>::NeonValue, _, _>(cx, "_0")?;
-        let val1 = value.get::<<B as AsNeonValue>::NeonValue, _, _>(cx, "_1")?;
+        let val0 = value.get::<<A as AsNeonValue>::NeonValue, _, _>(cx, 0)?;
+        let val1 = value.get::<<B as AsNeonValue>::NeonValue, _, _>(cx, 1)?;
 
         Ok((A::from_neon_value(val0, cx)?, B::from_neon_value(val1, cx)?))
     }
