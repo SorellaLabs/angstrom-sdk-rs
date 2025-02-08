@@ -154,7 +154,7 @@ impl From<angstrom_types::contract_bindings::position_fetcher::PositionFetcher::
             token_id:   value.tokenId,
             tick_lower: value.tickLower.as_i32(),
             tick_upper: value.tickUpper.as_i32(),
-            pool_id:    value.poolId.0
+            pool_id:    value.poolId
         }
     }
 }
