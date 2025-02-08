@@ -1,6 +1,6 @@
 use alloy_primitives::{
     aliases::{I24, U24},
-    Address, U256
+    Address, FixedBytes, U256
 };
 use alloy_rpc_types::TransactionRequest;
 #[cfg(feature = "neon")]
@@ -140,7 +140,8 @@ pub struct UserLiquidityPosition {
     pub token_id:   U256,
     pub tick_lower: i32,
     pub tick_upper: i32,
-    pub pool_id:    PoolId
+    // pub pool_id:    PoolId
+    pub pool_id:    FixedBytes<25>
 }
 
 impl From<angstrom_types::contract_bindings::position_fetcher::PositionFetcher::Position>
@@ -153,7 +154,7 @@ impl From<angstrom_types::contract_bindings::position_fetcher::PositionFetcher::
             token_id:   value.tokenId,
             tick_lower: value.tickLower.as_i32(),
             tick_upper: value.tickUpper.as_i32(),
-            pool_id:    PoolId::from_slice(&value.poolId.0)
+            pool_id:    value.poolId.0
         }
     }
 }
