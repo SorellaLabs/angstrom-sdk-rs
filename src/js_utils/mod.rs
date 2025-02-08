@@ -177,15 +177,15 @@ js_value!(
     }
 );
 
-js_value!(JsUint8Array, [Bytes], this, cx, val, { JsUint8Array::from_slice(cx, &&*this)? }, {
-    Bytes::copy_from_slice(&val.as_slice(cx).into_iter().copied().collect::<Vec<_>>())
-});
+// js_value!(JsUint8Array, [Bytes], this, cx, val, {
+// JsUint8Array::from_slice(cx, &&*this)? }, {     Bytes::copy_from_slice(&val.
+// as_slice(cx).into_iter().copied().collect::<Vec<_>>()) });
 
 js_value!(JsBoolean, [bool], this, cx, val, { JsBoolean::new(cx, *this) }, { val.value(cx) });
 
 js_value!(
     FromStr | JsString,
-    [Address, B256],
+    [Address, B256, Bytes],
     this,
     cx,
     val,
