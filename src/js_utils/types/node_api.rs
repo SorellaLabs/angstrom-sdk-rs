@@ -16,7 +16,8 @@ use neon::object::Object;
 
 #[derive(Debug, Clone, NeonObject)]
 pub struct AllOrdersWithSignature {
-    order:          AllOrders,
+    inner:          AllOrders,
+    order_type:     AllOrderType,
     signer_address: Address,
     signature:      Bytes
 }
@@ -603,3 +604,12 @@ impl Into<OrderLocation> for OrderLocationNeon {
 }
 
 neon_object_as!(OrderLocation, OrderLocationNeon);
+
+#[derive(Debug, Clone, NeonObject)]
+pub enum AllOrderType {
+    TOB,
+    PartialStandingOrder,
+    ExactStandingOrder,
+    PartialFlashOrder,
+    ExactFlashOrder
+}
