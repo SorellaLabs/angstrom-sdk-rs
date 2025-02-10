@@ -13,6 +13,7 @@ use angstrom_types::{
     }
 };
 use neon::object::Object;
+use pade::PadeEncode;
 
 #[derive(Debug, Clone, NeonObject)]
 pub struct AllOrdersWithSignature {
@@ -30,7 +31,10 @@ impl Into<AllOrders> for AllOrdersWithSignature {
                     partial_standing_order.meta = OrderMeta {
                         isEcdsa:   true,
                         from:      self.signer_address,
-                        signature: self.signature
+                        signature: PrimitiveSignature::try_from(&**self.signature)
+                            .unwrap()
+                            .pade_encode()
+                            .into()
                     };
                     AllOrders::Standing(StandingVariants::Partial(partial_standing_order))
                 }
@@ -38,7 +42,10 @@ impl Into<AllOrders> for AllOrdersWithSignature {
                     exact_standing_order.meta = OrderMeta {
                         isEcdsa:   true,
                         from:      self.signer_address,
-                        signature: self.signature
+                        signature: PrimitiveSignature::try_from(&**self.signature)
+                            .unwrap()
+                            .pade_encode()
+                            .into()
                     };
                     AllOrders::Standing(StandingVariants::Exact(exact_standing_order))
                 }
@@ -48,7 +55,10 @@ impl Into<AllOrders> for AllOrdersWithSignature {
                     partial_flash_order.meta = OrderMeta {
                         isEcdsa:   true,
                         from:      self.signer_address,
-                        signature: self.signature
+                        signature: PrimitiveSignature::try_from(&**self.signature)
+                            .unwrap()
+                            .pade_encode()
+                            .into()
                     };
                     AllOrders::Flash(FlashVariants::Partial(partial_flash_order))
                 }
@@ -56,7 +66,10 @@ impl Into<AllOrders> for AllOrdersWithSignature {
                     exact_flash_order.meta = OrderMeta {
                         isEcdsa:   true,
                         from:      self.signer_address,
-                        signature: self.signature
+                        signature: PrimitiveSignature::try_from(&**self.signature)
+                            .unwrap()
+                            .pade_encode()
+                            .into()
                     };
                     AllOrders::Flash(FlashVariants::Exact(exact_flash_order))
                 }
@@ -65,7 +78,10 @@ impl Into<AllOrders> for AllOrdersWithSignature {
                 top_of_block_order.meta = OrderMeta {
                     isEcdsa:   true,
                     from:      self.signer_address,
-                    signature: self.signature
+                    signature: PrimitiveSignature::try_from(&**self.signature)
+                        .unwrap()
+                        .pade_encode()
+                        .into()
                 };
                 AllOrders::TOB(top_of_block_order)
             }
