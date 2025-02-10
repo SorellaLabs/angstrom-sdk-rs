@@ -16,7 +16,7 @@ use neon::object::Object;
 
 #[derive(Debug, Clone, NeonObject)]
 pub struct AllOrdersWithSignature {
-    inner:          AllOrders,
+    order:          AllOrders,
     order_type:     AllOrderType,
     signer_address: Address,
     signature:      Bytes
@@ -24,7 +24,7 @@ pub struct AllOrdersWithSignature {
 
 impl Into<AllOrders> for AllOrdersWithSignature {
     fn into(self) -> AllOrders {
-        match self.inner {
+        match self.order {
             AllOrders::Standing(standing_variants) => match standing_variants {
                 StandingVariants::Partial(mut partial_standing_order) => {
                     partial_standing_order.meta = OrderMeta {
