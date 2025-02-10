@@ -24,7 +24,7 @@ pub struct AllOrdersWithSignature {
 
 impl Into<AllOrders> for AllOrdersWithSignature {
     fn into(self) -> AllOrders {
-        match self.order {
+        match self.inner {
             AllOrders::Standing(standing_variants) => match standing_variants {
                 StandingVariants::Partial(mut partial_standing_order) => {
                     partial_standing_order.meta = OrderMeta {
