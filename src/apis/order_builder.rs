@@ -197,8 +197,9 @@ pub fn exact_flash_order(
 }
 
 pub fn angstrom_eip712_domain(chain_id: u64) -> Eip712Domain {
-    let mut domain = ANGSTROM_DOMAIN;
-    domain.chain_id = Some(U256::from(chain_id));
-    domain.chain_id = Some(U256::from(chain_id));
-    domain
+    // let mut domain = ANGSTROM_DOMAIN;
+    // domain.chain_id = Some(U256::from(chain_id));
+    // domain.chain_id = Some(U256::from(chain_id));
+    // domain
+    ANGSTROM_DOMAIN
 }
