@@ -106,10 +106,11 @@ testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package =
 
 
 [features]
-default = ["full", "neon"]
+default = ["full", "neon", "testnet"]
 full = ["ipc", "ws"]
 
 ipc = []
 ws = []
 
 neon = ["dep:neon", "dep:angstrom-sdk-rs-macros"]
+testnet = ["angstrom-types/testnet"]
