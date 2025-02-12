@@ -178,13 +178,12 @@ impl OrderBuilderPartialFlashOrderArgs {
 
 #[derive(Debug, Clone, NeonObject)]
 pub struct OrderBuilderExactFlashOrderArgs {
-    asset_in:        Address,
-    asset_out:       Address,
-    exact_in:        bool,
-    amount:          u128,
-    min_price:       U256,
-    valid_for_block: u64,
-    recipient:       Address
+    asset_in:  Address,
+    asset_out: Address,
+    exact_in:  bool,
+    amount:    u128,
+    min_price: U256,
+    recipient: Address
 }
 
 impl OrderBuilderExactFlashOrderArgs {
@@ -195,7 +194,6 @@ impl OrderBuilderExactFlashOrderArgs {
             self.exact_in,
             self.amount,
             self.min_price,
-            self.valid_for_block,
             self.recipient
         )
     }

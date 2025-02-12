@@ -174,7 +174,6 @@ pub fn exact_flash_order(
     exact_in: bool,
     amount: u128,
     min_price: U256,
-    valid_for_block: u64,
     recipient: Address
 ) -> ExactFlashOrder {
     ExactFlashOrder {
@@ -190,7 +189,6 @@ pub fn exact_flash_order(
         },
         exact_in,
         amount,
-        valid_for_block,
         recipient,
         ..Default::default()
     }
