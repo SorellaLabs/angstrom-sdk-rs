@@ -28,10 +28,12 @@ use angstrom_types::{
     primitive::{OrderPoolNewOrderResult, PoolId},
     sol_bindings::grouped_orders::AllOrders
 };
-use apis::user_api::AngstromUserApi;
+use apis::{order_builder::AngstromOrderBuilder, user_api::AngstromUserApi};
 use futures::TryFutureExt;
 use jsonrpsee_http_client::HttpClient;
 use providers::{AngstromProvider, EthRpcProvider, RpcWalletProvider};
+#[cfg(not(feature = "neon"))]
+use types::fillers::SignerFiller;
 use types::{
     fillers::{
         AngstromFillProvider, AngstromFiller, FillWrapper, FillerOrder, NonceGeneratorFiller,
@@ -117,6 +119,7 @@ where
         }
     }
 
+    #[cfg(not(feature = "neon"))]
     pub fn with_signer_filler<S>(
         self,
         signer: S
@@ -132,6 +135,7 @@ where
         }
     }
 
+    #[cfg(not(feature = "neon"))]
     pub fn with_all_fillers<S>(
         self,
         signer: S
@@ -158,6 +162,32 @@ where
                 .wrap_with_filler(NonceGeneratorFiller)
                 .wrap_with_filler(TokenBalanceCheckFiller)
                 .wrap_with_filler(SignerFiller::new(signer))
+        }
+    }
+
+    #[cfg(feature = "neon")]
+    pub fn with_all_fillers<S>(
+        self,
+        signer: S
+    ) -> AngstromApi<
+        P,
+        AngstromFillProvider<
+            AngstromFillProvider<F, NonceGeneratorFiller>,
+            TokenBalanceCheckFiller
+        >
+    >
+    where
+        S: Signer + SignerSync + Send,
+        SignerFiller<S>: AngstromFiller,
+        P: Provider + Clone
+    {
+        AngstromApi {
+            eth_provider: self.eth_provider,
+            angstrom:     self.angstrom,
+            filler:       self
+                .filler
+                .wrap_with_filler(NonceGeneratorFiller)
+                .wrap_with_filler(TokenBalanceCheckFiller)
         }
     }
 }
@@ -336,6 +366,33 @@ where
                 )
             })
             .collect())
+    }
+}
+
+impl<P, F> AngstromOrderBuilder for AngstromApi<P, F>
+where
+    P: Provider + Clone,
+    F: FillWrapper
+{
+    async fn top_of_block_order(
+        asset_in: Address,
+        asset_out: Address,
+        quantity_in: u128,
+        quantity_out: u128,
+        max_gas_asset0: u128,
+        valid_for_block: u64,
+        recipient: Address
+    ) -> TopOfBlockOrder {
+        TopOfBlockOrder {
+            asset_in,
+            asset_out,
+            quantity_in,
+            quantity_out,
+            valid_for_block,
+            max_gas_asset0,
+            recipient,
+            ..Default::default()
+        }
     }
 }
 

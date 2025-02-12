@@ -4,7 +4,9 @@ use alloy_primitives::Address;
 use alloy_provider::Provider;
 use angstrom_types::sol_bindings::{grouped_orders::AllOrders, RawPoolOrder};
 pub use balance_check::*;
+#[cfg(not(feature = "neon"))]
 mod signer;
+#[cfg(not(feature = "neon"))]
 pub use signer::*;
 mod nonce_generator;
 pub use nonce_generator::*;
