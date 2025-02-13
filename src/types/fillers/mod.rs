@@ -210,3 +210,11 @@ impl From<TransactionRequestWithLiquidityMeta> for FillerOrder {
         FillerOrder::RegularOrder(value)
     }
 }
+
+pub(crate) struct PriceFillerOrder(pub(crate) AllOrders);
+
+impl From<AllOrders> for PriceFillerOrder {
+    fn from(value: AllOrders) -> Self {
+        PriceFillerOrder(value)
+    }
+}

@@ -374,22 +374,28 @@ where
     P: Provider + Clone,
     F: FillWrapper
 {
-    async fn top_of_block_order(
+    async fn exact_flash_order(
+        &self,
         asset_in: Address,
         asset_out: Address,
-        quantity_in: u128,
-        quantity_out: u128,
-        max_gas_asset0: u128,
-        valid_for_block: u64,
+        exact_in: bool,
+        amount: u128,
+        min_price: U256,
         recipient: Address
-    ) -> TopOfBlockOrder {
-        TopOfBlockOrder {
+    ) -> ExactFlashOrder {
+        ExactFlashOrder {
             asset_in,
             asset_out,
-            quantity_in,
-            quantity_out,
-            valid_for_block,
-            max_gas_asset0,
+            min_price,
+            max_extra_fee_asset0: if exact_in {
+                amount
+            } else {
+                Ray::from(min_price)
+                    .mul_quantity(U256::from(amount))
+                    .saturating_to::<u128>()
+            },
+            exact_in,
+            amount,
             recipient,
             ..Default::default()
         }

@@ -275,6 +275,7 @@ where
         token1: Address,
         block_number: Option<u64>
     ) -> eyre::Result<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>> {
+        let t0 = token0;
         let (token0, token1) = sort_tokens(token0, token1);
 
         let mut pool_key = self.pool_key(token0, token1).await?;
@@ -295,6 +296,9 @@ where
         enhanced_uni_pool
             .initialize(Some(block_number), Arc::new(self.eth_provider.clone()))
             .await?;
+
+        let price = enhanced_uni_pool.calculate_price();
+        println!("PRICE: {price} - {}", t0 == token0);
 
         Ok(enhanced_uni_pool)
     }
@@ -362,6 +366,9 @@ mod tests {
     use super::*;
     use crate::test_utils::spawn_ws_provider;
 
+    const TOKEN0: Address = address!("0x3d85e7b30be9fd7a4bad709d6ed2d130579f9a2e");
+    const TOKEN1: Address = address!("0xd550015f84142abecd5e82c8f296083df3c9a80d");
+
     #[tokio::test]
     async fn test_all_token_pairs() {
         let provider = spawn_ws_provider().await.unwrap();
@@ -378,13 +385,11 @@ mod tests {
     #[tokio::test]
     async fn test_pool_key() {
         let provider = spawn_ws_provider().await.unwrap();
-        let token0 = address!("2260fac5e5542a773aa44fbcfedf7c193bc2c599");
-        let token1 = address!("c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
 
-        let pool_key = provider.pool_key(token0, token1).await.unwrap();
+        let pool_key = provider.pool_key(TOKEN0, TOKEN1).await.unwrap();
         let expected_pool_key = PoolKey {
-            currency0:   token0,
-            currency1:   token1,
+            currency0:   TOKEN0,
+            currency1:   TOKEN1,
             fee:         U24::ZERO,
             tickSpacing: I24::unchecked_from(60),
             hooks:       ANGSTROM_ADDRESS
@@ -393,19 +398,20 @@ mod tests {
         assert_eq!(pool_key, expected_pool_key);
     }
 
+    #[tokio::test]
+    async fn test_pool_data() {
+        let provider = spawn_ws_provider().await.unwrap();
+
+        let _pool_key = provider.pool_data(TOKEN0, TOKEN1, None).await.unwrap();
+    }
+
     #[tokio::test(flavor = "multi_thread")]
     async fn test_binance_price() {
         let provider = spawn_ws_provider().await.unwrap();
-        let price = provider
-            .binance_price(address!("3d85e7b30be9fd7a4bad709d6ed2d130579f9a2e"))
-            .await
-            .unwrap();
+        let price = provider.binance_price(TOKEN0).await.unwrap();
         println!("PRICE FOR WBTC: {price:?}");
 
-        let price = provider
-            .binance_price(address!("45cb6df752760cc995fe9b05c61ce6bd8776b1e7"))
-            .await
-            .unwrap();
+        let price = provider.binance_price(TOKEN1).await.unwrap();
         println!("PRICE FOR WETH: {price:?}");
     }
 }

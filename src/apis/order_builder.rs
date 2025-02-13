@@ -19,6 +19,7 @@ use crate::types::{TransactionRequestWithLiquidityMeta, POOL_GATE_ADDRESS};
 
 pub trait AngstromOrderBuilder {
     async fn top_of_block_order(
+        &self,
         asset_in: Address,
         asset_out: Address,
         quantity_in: u128,
@@ -40,6 +41,7 @@ pub trait AngstromOrderBuilder {
     }
 
     async fn partial_standing_order(
+        &self,
         asset_in: Address,
         asset_out: Address,
         min_amount_in: u128,
@@ -90,6 +92,7 @@ pub trait AngstromOrderBuilder {
     }
 
     async fn partial_flash_order(
+        &self,
         asset_in: Address,
         asset_out: Address,
         min_amount_in: u128,
@@ -112,6 +115,7 @@ pub trait AngstromOrderBuilder {
     }
 
     async fn exact_flash_order(
+        &self,
         asset_in: Address,
         asset_out: Address,
         exact_in: bool,
@@ -138,6 +142,7 @@ pub trait AngstromOrderBuilder {
     }
 
     async fn add_liquidity(
+        &self,
         token0: Address,
         token1: Address,
         tick_lower: i32,
@@ -167,6 +172,7 @@ pub trait AngstromOrderBuilder {
     }
 
     async fn remove_liquidity(
+        &self,
         token0: Address,
         token1: Address,
         tick_lower: i32,
