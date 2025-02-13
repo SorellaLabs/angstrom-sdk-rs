@@ -33,6 +33,7 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
         impl #impl_generics crate::js_utils::MakeNeonObject for #name #ty_generics #where_clause {
             fn make_object<'a, C: neon::prelude::Context<'a>>(&self, cx: &mut C) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                 let obj = neon::context::Context::empty_object(cx);
+                let mut this: Self = self.clone();
                 #(#fields_to_set)*
                 Ok(obj)
             }
@@ -175,7 +176,7 @@ pub(super) fn field_to_neon_value(field: &Field, is_enum: bool) -> Option<TokenS
         let field_ident = if is_enum {
             quote::quote! {#field_name}
         } else {
-            quote::quote! {self.#field_name}
+            quote::quote! {this.#field_name}
         };
         quote::quote! {
             #attr_fn;
@@ -213,12 +214,7 @@ fn parse_attr(field: &Field) -> Option<TokenStream> {
             if meta.path.is_ident("convert_with") {
                 let _ = meta.input.parse::<Token![=]>()?;
                 let out_str = meta.input.parse::<LitStr>()?;
-                out = Some(
-                    out_str
-                        .value()
-                        .replace("&mut self", "&mut me")
-                        .parse::<TokenStream>()?
-                );
+                out = Some(format!("this.{}();", out_str.value()).parse::<TokenStream>()?);
             }
 
             Ok(())

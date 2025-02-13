@@ -324,7 +324,7 @@ pub struct EnhancedUniswapPoolNeon {
     tick:                   i32,
     tick_spacing:           i32,
     tick_bitmap:            HashMap<i16, U256>,
-    #[neon(convert_with = "Self::generate_tick_prices(&mut self)")]
+    #[neon(convert_with = "generate_tick_prices")]
     ticks:                  HashMap<i32, TickInfoNeon>
 }
 
