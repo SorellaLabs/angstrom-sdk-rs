@@ -123,7 +123,7 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
         impl #impl_generics crate::js_utils::MakeNeonObject for #name #ty_generics #where_clause {
             fn make_object<'a, C: neon::prelude::Context<'a>>(&self, cx: &mut C) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                 let obj = neon::context::Context::empty_object(cx);
-                let me: Self = self.clone();
+                let mut me: Self = self.clone();
                 match me {
                     #(#variant_to_tokens)*
                 };
@@ -213,7 +213,12 @@ fn parse_attr(field: &Field) -> Option<TokenStream> {
             if meta.path.is_ident("convert_with") {
                 let _ = meta.input.parse::<Token![=]>()?;
                 let out_str = meta.input.parse::<LitStr>()?;
-                out = Some(out_str.value().parse::<TokenStream>()?);
+                out = Some(
+                    out_str
+                        .value()
+                        .replace("&mut self", "&mut me")
+                        .parse::<TokenStream>()?
+                );
             }
 
             Ok(())
