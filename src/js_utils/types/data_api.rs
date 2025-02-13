@@ -330,6 +330,7 @@ pub struct EnhancedUniswapPoolNeon {
 
 impl EnhancedUniswapPoolNeon {
     pub fn generate_tick_prices(&mut self) {
+        panic!("BEING CALLED");
         self.ticks.iter_mut().for_each(|(tick, info)| {
             info.generate_price(*tick, self.token0_decimals as i8 - self.token1_decimals as i8)
         })
