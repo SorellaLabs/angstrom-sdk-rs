@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap};
 
 use alloy_primitives::{
     aliases::{I24, U24},
@@ -328,6 +328,14 @@ pub struct EnhancedUniswapPoolNeon {
     ticks:                  HashMap<i32, TickInfoNeon>
 }
 
+impl EnhancedUniswapPoolNeon {
+    pub fn generate_tick_prices(&mut self) {
+        self.ticks.iter_mut().for_each(|(tick, info)| {
+            info.generate_price(*tick, self.token0_decimals as i8 - self.token1_decimals as i8)
+        })
+    }
+}
+
 impl From<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>> for EnhancedUniswapPoolNeon {
     fn from(value: EnhancedUniswapPool<DataLoader<PoolId>, PoolId>) -> Self {
         EnhancedUniswapPoolNeon {
@@ -441,7 +449,20 @@ impl Into<UniswapPoolRegistry> for UniswapPoolRegistryNeon {
 pub struct TickInfoNeon {
     liquidity_gross: u128,
     liquidity_net:   i128,
-    initialized:     bool
+    initialized:     bool,
+    price:           f64
+}
+
+impl TickInfoNeon {
+    fn generate_price(&mut self, tick: i32, shift: i8) {
+        let base_price = 1.0001_f64.powi(tick);
+        let price = match shift.cmp(&0) {
+            Ordering::Less => base_price / 10_f64.powi(-shift as i32),
+            Ordering::Greater => base_price * 10_f64.powi(shift as i32),
+            Ordering::Equal => base_price
+        };
+        self.price = price;
+    }
 }
 
 impl From<TickInfo> for TickInfoNeon {
@@ -449,7 +470,8 @@ impl From<TickInfo> for TickInfoNeon {
         TickInfoNeon {
             liquidity_gross: value.liquidity_gross,
             liquidity_net:   value.liquidity_net,
-            initialized:     value.initialized
+            initialized:     value.initialized,
+            price:           0.0
         }
     }
 }
