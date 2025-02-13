@@ -15,7 +15,7 @@ use crate::{
     AngstromApi
 };
 
-pub async fn spawn_ws_provider() -> eyre::Result<EthRpcProvider<RootProvider<BoxTransport>>> {
+pub async fn spawn_ws_provider() -> eyre::Result<EthRpcProvider<RootProvider>> {
     dotenv::dotenv().ok();
     let ws_url = std::env::var("ETH_WS_URL").expect("ETH_WS_URL not found in .env");
 
@@ -29,7 +29,7 @@ pub async fn spawn_angstrom_provider() -> eyre::Result<AngstromProvider> {
     AngstromProvider::new(http_url)
 }
 
-pub async fn spawn_angstrom_api() -> eyre::Result<AngstromApi<RootProvider<BoxTransport>>> {
+pub async fn spawn_angstrom_api() -> eyre::Result<AngstromApi<RootProvider>> {
     Ok(AngstromApi::new(spawn_ws_provider().await?, spawn_angstrom_provider().await?))
 }
 

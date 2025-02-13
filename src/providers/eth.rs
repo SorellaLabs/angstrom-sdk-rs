@@ -30,7 +30,7 @@ use crate::{
 };
 
 pub(crate) type RpcWalletProvider<P> =
-    FillProvider<JoinFill<Identity, WalletFiller<EthereumWallet>>, P, BoxTransport, Ethereum>;
+    FillProvider<JoinFill<Identity, WalletFiller<EthereumWallet>>, P, Ethereum>;
 
 #[derive(Debug, Clone)]
 pub struct EthRpcProvider<P>
@@ -41,13 +41,11 @@ where
     web_provider: reqwest::Client
 }
 
-impl EthRpcProvider<RootProvider<BoxTransport>> {
+impl EthRpcProvider<RootProvider> {
     /// based on the url passed in, will auto parse to http, ws or ipc
     pub async fn new(url: &str) -> eyre::Result<Self> {
         Ok(Self {
-            eth_provider: RootProvider::<BoxTransport, _>::builder()
-                .on_builtin(url)
-                .await?,
+            eth_provider: RootProvider::builder().on_builtin(url).await?,
             web_provider: reqwest::Client::new()
         })
     }

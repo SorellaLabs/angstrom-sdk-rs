@@ -45,7 +45,7 @@ impl AngstromFiller for NonceGeneratorFiller {
     //     orders: &[FillerOrder],
     // ) -> eyre::Result<Vec<Self::FillOutput>>
     // where
-    //     P: Provider<T> + Clone,
+    //     P: Provider + Clone<T> + Clone,
     //     T: Transport + Clone,
     // {
 
