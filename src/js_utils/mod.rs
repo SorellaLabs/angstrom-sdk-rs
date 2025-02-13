@@ -19,10 +19,11 @@ use neon::{
 
 mod types;
 pub use types::{
-    AllOrdersWithSignature, ClientFillerTypes, OrderBuilderAddLiquidityArgs,
-    OrderBuilderExactFlashOrderArgs, OrderBuilderExactStandingOrderArgs,
-    OrderBuilderPartialFlashOrderArgs, OrderBuilderPartialStandingOrderArgs,
-    OrderBuilderRemoveLiquidityArgs, OrderBuilderTopOfBlockOrderArgs, TokenImageUrl
+    AllOrdersWithSignature, ClientFillerTypes, EnhancedUniswapPoolNeon,
+    OrderBuilderAddLiquidityArgs, OrderBuilderExactFlashOrderArgs,
+    OrderBuilderExactStandingOrderArgs, OrderBuilderPartialFlashOrderArgs,
+    OrderBuilderPartialStandingOrderArgs, OrderBuilderRemoveLiquidityArgs,
+    OrderBuilderTopOfBlockOrderArgs, TokenImageUrl
 };
 
 pub trait MakeNeonObject<S = Self>
