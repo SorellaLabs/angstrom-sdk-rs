@@ -211,30 +211,10 @@ fn parse_attr(field: &Field) -> Option<TokenStream> {
     neon_attr
         .parse_nested_meta(|meta| {
             if meta.path.is_ident("convert_with") {
-                // let _ = meta.input.parse::<syn::Ident>()?;
                 let _ = meta.input.parse::<Token![=]>()?;
-                let out_str = meta.input.parse::<Expr>()?;
-                out = Some(out_str.to_token_stream());
-
-                // Block::fr
+                let out_str = meta.input.parse::<LitStr>()?;
+                out = Some(out_str.value().parse::<TokenStream>()?);
             }
-
-            // Make sure we have a list, e.g. #[neon(...)]
-            // if let Meta::List(meta_list) = meta {
-            //     // Iterate over each nested meta item
-            //     for nested in meta_list.nested {
-            //         // We expect a name-value pair like convert_with = "..."
-            //         if let NestedMeta::Meta(Meta::NameValue(nv)) = nested {
-            //             if nv.path.is_ident("convert_with") {
-            //                 // Expect the value to be a string literal
-            //                 if let Lit::Str(lit_str) = nv.lit {
-            //                     // Parse the string content into a TokenStream
-            //                     out = lit_str.value().parse()?;
-            //                 }
-            //             }
-            //         }
-            //     }
-            // }
 
             Ok(())
         })
