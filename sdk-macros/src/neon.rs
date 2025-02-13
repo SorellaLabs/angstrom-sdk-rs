@@ -1,6 +1,6 @@
+use proc_macro::Ident;
 use proc_macro2::TokenStream;
-use syn::{parse::Parse, Data, DataEnum, DataStruct, DeriveInput, Field, Token, Type};
-
+use syn::{parse::Parse, Data, DataEnum, DataStruct, DeriveInput, Expr, Field, Meta, Token, Type};
 pub fn parse(item: DeriveInput) -> syn::Result<TokenStream> {
     match &item.data {
         Data::Struct(data_struct) => parse_struct(&item, data_struct),
@@ -164,6 +164,8 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
 }
 
 pub(super) fn field_to_neon_value(field: &Field, is_enum: bool) -> Option<TokenStream> {
+    // let attr_fn = parse_attr(field);
+
     field.ident.as_ref().map(|field_name| {
         let name_str = field_name.to_string();
         let field_ident = if is_enum {
@@ -172,6 +174,7 @@ pub(super) fn field_to_neon_value(field: &Field, is_enum: bool) -> Option<TokenS
             quote::quote! {self.#field_name}
         };
         quote::quote! {
+            // #attr_fn;
             let val = crate::js_utils::AsNeonValue::as_neon_value(&#field_ident, cx)?;
             obj.set(cx, #name_str, val)?;
         }
@@ -191,6 +194,41 @@ pub(super) fn field_from_neon_value(field: &Field) -> Option<TokenStream> {
         }
     })
 }
+
+// fn parse_attr(field: &Field) -> Option<TokenStream> {
+//     // Find the attribute named `neon`
+//     let neon_attr = field
+//         .attrs
+//         .iter()
+//         .find(|attr| attr.path().is_ident("neon"))?;
+
+//     let mut out = None;
+//     // Parse the attribute into a meta item
+//     neon_attr
+//         .parse_nested_meta(|meta| {
+//             // Make sure we have a list, e.g. #[neon(...)]
+//             if let Meta::List(meta_list) = meta {
+//                 // Iterate over each nested meta item
+//                 for nested in meta_list.nested {
+//                     // We expect a name-value pair like convert_with = "..."
+//                     if let NestedMeta::Meta(Meta::NameValue(nv)) = nested {
+//                         if nv.path.is_ident("convert_with") {
+//                             // Expect the value to be a string literal
+//                             if let Lit::Str(lit_str) = nv.lit {
+//                                 // Parse the string content into a
+// TokenStream                                 out = lit_str.value().parse()?;
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+
+//             Ok(())
+//         })
+//         .ok()?;
+
+//     out
+// }
 
 pub struct NeonObjectAs {
     to_impl_ty:    Type,

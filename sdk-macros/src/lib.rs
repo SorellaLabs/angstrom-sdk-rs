@@ -5,7 +5,7 @@ use syn::{parse_macro_input, DeriveInput};
 
 use crate::neon::NeonObjectAs;
 
-#[proc_macro_derive(NeonObject)]
+#[proc_macro_derive(NeonObject, attributes(neon))]
 pub fn neon_object(raw: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(raw as DeriveInput);
     neon::parse(input)
