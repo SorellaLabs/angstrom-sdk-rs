@@ -25,3 +25,12 @@ pub trait AngstromUserApi: AngstromDataApi {
             .collect())
     }
 }
+
+/*
+
+price
+tick range
+size of position
+pool exchange rate
+
+*/

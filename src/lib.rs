@@ -296,7 +296,7 @@ where
         let unique_pool_ids = user_positons
             ._2
             .iter()
-            .map(|pos| pos.poolId)
+            .map(|pos: &PositionFetcher::Position| pos.poolId)
             .collect::<HashSet<_>>();
 
         let uni_pool_id_to_ang_pool_ids =

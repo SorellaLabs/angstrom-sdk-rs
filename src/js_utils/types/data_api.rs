@@ -324,14 +324,28 @@ pub struct EnhancedUniswapPoolNeon {
     tick:                   i32,
     tick_spacing:           i32,
     tick_bitmap:            HashMap<i16, U256>,
-    #[neon(convert_with = "generate_tick_prices")]
+    #[neon(convert_with = "generate_tick_prices_and_liquidity")]
     ticks:                  HashMap<i32, TickInfoNeon>
 }
 
 impl EnhancedUniswapPoolNeon {
-    pub fn generate_tick_prices(&mut self) {
+    pub fn generate_tick_prices_and_liquidity(&mut self) {
         self.ticks.iter_mut().for_each(|(tick, info)| {
-            info.generate_price(*tick, self.token0_decimals as i8 - self.token1_decimals as i8)
+            if *tick == self.tick {
+                info.with_tick_prices_and_liquidity(
+                    *tick,
+                    self.token0_decimals as i8 - self.token1_decimals as i8,
+                    self.liquidity as i128,
+                    None
+                )
+            } else {
+                info.with_tick_prices_and_liquidity(
+                    *tick,
+                    self.token0_decimals as i8 - self.token1_decimals as i8,
+                    self.liquidity as i128,
+                    Some(*tick > self.tick)
+                )
+            }
         })
     }
 }
@@ -446,12 +460,19 @@ impl Into<UniswapPoolRegistry> for UniswapPoolRegistryNeon {
 pub struct TickInfoNeon {
     liquidity_gross: u128,
     liquidity_net:   i128,
+    liquidity_bar:   i128,
     initialized:     bool,
     price:           f64
 }
 
 impl TickInfoNeon {
-    fn generate_price(&mut self, tick: i32, shift: i8) {
+    fn with_tick_prices_and_liquidity(
+        &mut self,
+        tick: i32,
+        shift: i8,
+        liquidity_at_current_tick: i128,
+        current_tick_greater_than_tick: Option<bool>
+    ) {
         let base_price = 1.0001_f64.powi(tick);
         let price = match shift.cmp(&0) {
             Ordering::Less => base_price / 10_f64.powi(-shift as i32),
@@ -459,6 +480,14 @@ impl TickInfoNeon {
             Ordering::Equal => base_price
         };
         self.price = price;
+
+        let liquidity_bar = match current_tick_greater_than_tick {
+            Some(true) => liquidity_at_current_tick - self.liquidity_net,
+            Some(false) => liquidity_at_current_tick + self.liquidity_net,
+            None => liquidity_at_current_tick
+        };
+
+        self.liquidity_bar = liquidity_bar as i128;
     }
 }
 
@@ -467,6 +496,7 @@ impl From<TickInfo> for TickInfoNeon {
         TickInfoNeon {
             liquidity_gross: value.liquidity_gross,
             liquidity_net:   value.liquidity_net,
+            liquidity_bar:   0,
             initialized:     value.initialized,
             price:           0.0
         }
