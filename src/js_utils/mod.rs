@@ -1,20 +1,20 @@
 use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
-    str::FromStr
+    str::FromStr,
 };
 
 use alloy_eips::eip4844::BYTES_PER_BLOB;
 use alloy_primitives::{
+    Address, B256, Bytes, FixedBytes, I256, U256,
     aliases::{I24, U24},
-    Address, Bytes, FixedBytes, B256, I256, U256
 };
 use alloy_signer_local::PrivateKeySigner;
 use neon::{
     object::Object,
     prelude::{Context, FunctionContext, Handle},
     result::{NeonResult, Throw},
-    types::{JsArray, JsBigInt, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, Value}
+    types::{JsArray, JsBigInt, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, Value},
 };
 
 mod types;
@@ -23,15 +23,15 @@ pub use types::{
     OrderBuilderAddLiquidityArgs, OrderBuilderExactFlashOrderArgs,
     OrderBuilderExactStandingOrderArgs, OrderBuilderPartialFlashOrderArgs,
     OrderBuilderPartialStandingOrderArgs, OrderBuilderRemoveLiquidityArgs,
-    OrderBuilderTopOfBlockOrderArgs, TokenImageUrl
+    OrderBuilderTopOfBlockOrderArgs, TokenImageUrl,
 };
 
 pub trait MakeNeonObject<S = Self>
 where
     S: From<Self> + Into<Self> + AsNeonValue + Clone,
-    Self: Sized
+    Self: Sized,
 {
-    type MacroedType = S;
+    type MacroedType;
 
     fn make_object<'a, C: Context<'a>>(&self, cx: &mut C) -> NeonResult<Handle<'a, JsObject>>;
 }
@@ -41,19 +41,19 @@ pub trait AsNeonValue {
 
     fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Handle<'a, Self::NeonValue>>;
 
     fn from_neon_value<'a, C: Context<'a>>(
         value: Handle<'a, Self::NeonValue>,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Self>
     where
         Self: Sized;
 
     fn decode_fn_param(cx: &mut FunctionContext<'_>, param_idx: usize) -> NeonResult<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         let param = cx.argument::<Self::NeonValue>(param_idx)?;
         Self::from_neon_value(param, cx)
@@ -162,13 +162,13 @@ js_value!(
         if matches!(sign, neon::types::bigint::Sign::Positive) {
             I256::checked_from_sign_and_abs(
                 alloy_primitives::Sign::Positive,
-                U256::from_limbs_slice(&bytes)
+                U256::from_limbs_slice(&bytes),
             )
             .expect("I256 value could not be read")
         } else {
             I256::checked_from_sign_and_abs(
                 alloy_primitives::Sign::Negative,
-                U256::from_limbs_slice(&bytes)
+                U256::from_limbs_slice(&bytes),
             )
             .expect("I256 value could not be read")
         }
@@ -196,13 +196,13 @@ js_value!(JsString, [String], this, cx, val, { JsString::new(cx, this) }, { val.
 impl<A, B> AsNeonValue for HashMap<A, B>
 where
     A: AsNeonValue + Eq + Hash,
-    B: AsNeonValue
+    B: AsNeonValue,
 {
     type NeonValue = JsArray;
 
     fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         let res = cx.empty_array();
 
@@ -219,10 +219,10 @@ where
 
     fn from_neon_value<'a, C: Context<'a>>(
         value: Handle<'a, Self::NeonValue>,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         Ok(value
             .to_vec(cx)?
@@ -251,7 +251,7 @@ impl<A: AsNeonValue> AsNeonValue for Option<A> {
 
     fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         if let Some(val) = self.as_ref() {
             Ok(val.as_neon_value(cx)?.as_value(cx))
@@ -262,10 +262,10 @@ impl<A: AsNeonValue> AsNeonValue for Option<A> {
 
     fn from_neon_value<'a, C: Context<'a>>(
         value: Handle<'a, Self::NeonValue>,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         if let Ok(val) = value.downcast::<<A as AsNeonValue>::NeonValue, _>(cx) {
             A::from_neon_value(val, cx).map(Some)
@@ -280,7 +280,7 @@ impl<A: AsNeonValue> AsNeonValue for Vec<A> {
 
     fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         let arr = cx.empty_array();
         for (i, val) in self.iter().enumerate() {
@@ -292,16 +292,16 @@ impl<A: AsNeonValue> AsNeonValue for Vec<A> {
 
     fn from_neon_value<'a, C: Context<'a>>(
         value: Handle<'a, Self::NeonValue>,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
-        value
+        Ok(value
             .to_vec(cx)?
             .into_iter()
-            .map(|val| Ok(A::from_neon_value(val.downcast_or_throw(cx)?, cx)).flatten())
-            .collect::<Result<Vec<_>, _>>()
+            .map(|val| val.downcast_or_throw(cx).map(|v| A::from_neon_value(v, cx)))
+            .collect::<Result<Result<Vec<_>, _>, _>>()??)
     }
 }
 
@@ -310,7 +310,7 @@ impl<A: AsNeonValue + Eq + Hash + Clone> AsNeonValue for HashSet<A> {
 
     fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         self.into_iter()
             .map(Clone::clone)
@@ -320,10 +320,10 @@ impl<A: AsNeonValue + Eq + Hash + Clone> AsNeonValue for HashSet<A> {
 
     fn from_neon_value<'a, C: Context<'a>>(
         value: Handle<'a, Self::NeonValue>,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         let vec_vals: Vec<A> = Vec::<A>::from_neon_value(value, cx)?;
         Ok(HashSet::from_iter(vec_vals))
@@ -342,7 +342,7 @@ impl<A: AsNeonValue, B: AsNeonValue> AsNeonValue for (A, B) {
 
     fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         let obj = cx.empty_object();
 
@@ -357,10 +357,10 @@ impl<A: AsNeonValue, B: AsNeonValue> AsNeonValue for (A, B) {
 
     fn from_neon_value<'a, C: Context<'a>>(
         value: Handle<'a, Self::NeonValue>,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         let val0 = value.get::<<A as AsNeonValue>::NeonValue, _, _>(cx, 0)?;
         let val1 = value.get::<<B as AsNeonValue>::NeonValue, _, _>(cx, 1)?;
@@ -374,17 +374,17 @@ impl AsNeonValue for () {
 
     fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         Ok(cx.empty_object())
     }
 
     fn from_neon_value<'a, C: Context<'a>>(
         _: Handle<'a, Self::NeonValue>,
-        _: &mut C
+        _: &mut C,
     ) -> NeonResult<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         Ok(())
     }
@@ -400,17 +400,17 @@ impl AsNeonValue for FixedBytes<48> {
 
     fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         Ok(JsString::new(cx, format!("{:?}", self)))
     }
 
     fn from_neon_value<'a, C: Context<'a>>(
         value: Handle<'a, Self::NeonValue>,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         let str_val = value.value(cx);
         Ok(str_val.parse().expect("could not parse FixedBytes<48>"))
@@ -422,17 +422,17 @@ impl AsNeonValue for FixedBytes<25> {
 
     fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         Ok(JsString::new(cx, format!("{:?}", self)))
     }
 
     fn from_neon_value<'a, C: Context<'a>>(
         value: Handle<'a, Self::NeonValue>,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         let str_val = value.value(cx);
         Ok(str_val.parse().expect("could not parse FixedBytes<48>"))
@@ -444,17 +444,17 @@ impl AsNeonValue for FixedBytes<BYTES_PER_BLOB> {
 
     fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         Ok(JsString::new(cx, format!("{:?}", self)))
     }
 
     fn from_neon_value<'a, C: Context<'a>>(
         value: Handle<'a, Self::NeonValue>,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         let str_val = value.value(cx);
         Ok(str_val
@@ -468,17 +468,17 @@ impl AsNeonValue for PrivateKeySigner {
 
     fn as_neon_value<'a, C: Context<'a>>(
         &self,
-        _: &mut C
+        _: &mut C,
     ) -> NeonResult<Handle<'a, Self::NeonValue>> {
         unreachable!("cannot convert PrivateKeySigner to a neon object")
     }
 
     fn from_neon_value<'a, C: Context<'a>>(
         value: Handle<'a, Self::NeonValue>,
-        cx: &mut C
+        cx: &mut C,
     ) -> NeonResult<Self>
     where
-        Self: Sized
+        Self: Sized,
     {
         let str_val = value.value(cx);
         PrivateKeySigner::from_str(&str_val).or_else(|e| {

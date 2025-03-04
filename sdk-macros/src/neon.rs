@@ -3,13 +3,13 @@ use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::{
     parse::Parse, Block, Data, DataEnum, DataStruct, DeriveInput, Expr, Field, LitStr, Meta, Token,
-    Type
+    Type,
 };
 pub fn parse(item: DeriveInput) -> syn::Result<TokenStream> {
     match &item.data {
         Data::Struct(data_struct) => parse_struct(&item, data_struct),
         Data::Enum(data_enum) => parse_enum(&item, data_enum),
-        Data::Union(_) => unimplemented!()
+        Data::Union(_) => unimplemented!(),
     }
 }
 
@@ -31,6 +31,8 @@ fn parse_struct(item: &DeriveInput, data_struct: &DataStruct) -> syn::Result<Tok
 
     let trait_impl = quote::quote! {
         impl #impl_generics crate::js_utils::MakeNeonObject for #name #ty_generics #where_clause {
+            type MacroedType = Self;
+
             fn make_object<'a, C: neon::prelude::Context<'a>>(&self, cx: &mut C) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                 let obj = neon::context::Context::empty_object(cx);
                 let mut this: Self = self.clone();
@@ -115,13 +117,15 @@ fn parse_enum(item: &DeriveInput, data_enum: &DataEnum) -> syn::Result<TokenStre
                         #(#fields_from_set)*
                         Ok(Self::#variant_name { #(#field_names),* })
                     }
-                }
+                },
             )
         })
         .unzip();
 
     let trait_impl = quote::quote! {
         impl #impl_generics crate::js_utils::MakeNeonObject for #name #ty_generics #where_clause {
+            type MacroedType = Self;
+
             fn make_object<'a, C: neon::prelude::Context<'a>>(&self, cx: &mut C) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                 let obj = neon::context::Context::empty_object(cx);
                 let mut me: Self = self.clone();
@@ -229,8 +233,8 @@ fn parse_attr(field: &Field) -> Option<TokenStream> {
 }
 
 pub struct NeonObjectAs {
-    to_impl_ty:    Type,
-    conversion_ty: Type
+    to_impl_ty: Type,
+    conversion_ty: Type,
 }
 
 impl NeonObjectAs {
@@ -239,6 +243,8 @@ impl NeonObjectAs {
         let b = self.conversion_ty;
         quote::quote! {
             impl crate::js_utils::MakeNeonObject<#b> for #a {
+                type MacroedType = #b;
+
                 fn make_object<'a, C: neon::prelude::Context<'a>>(&self, cx: &mut C) -> neon::prelude::NeonResult<neon::prelude::Handle<'a, neon::prelude::JsObject>> {
                     let me: Self = self.clone();
                     let this: #b = me.into();
