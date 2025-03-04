@@ -1552,7 +1552,7 @@ checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
 [[package]]
 name = "angstrom"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#b5b1682dc0b9ad126e9d3ca423e360fb3dbe7c11"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#8fc99bed64de66d8473bfb99b5538ed997c43868"
 dependencies = [
  "alloy 0.11.1",
  "alloy-chains",
@@ -1592,7 +1592,7 @@ dependencies = [
 [[package]]
 name = "angstrom-eth"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#b5b1682dc0b9ad126e9d3ca423e360fb3dbe7c11"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#8fc99bed64de66d8473bfb99b5538ed997c43868"
 dependencies = [
  "alloy 0.11.1",
  "angstrom-types",
@@ -1601,7 +1601,7 @@ dependencies = [
  "auto_impl",
  "futures",
  "futures-util",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "pade",
  "reth-ethereum-primitives",
  "reth-primitives 1.2.1",
@@ -1616,7 +1616,7 @@ dependencies = [
 [[package]]
 name = "angstrom-metrics"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#b5b1682dc0b9ad126e9d3ca423e360fb3dbe7c11"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#8fc99bed64de66d8473bfb99b5538ed997c43868"
 dependencies = [
  "alloy-primitives 0.8.21",
  "angstrom-types",
@@ -1639,7 +1639,7 @@ dependencies = [
 [[package]]
 name = "angstrom-network"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#b5b1682dc0b9ad126e9d3ca423e360fb3dbe7c11"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#8fc99bed64de66d8473bfb99b5538ed997c43868"
 dependencies = [
  "alloy 0.11.1",
  "alloy-chains",
@@ -1698,7 +1698,7 @@ dependencies = [
 [[package]]
 name = "angstrom-rpc"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#b5b1682dc0b9ad126e9d3ca423e360fb3dbe7c11"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#8fc99bed64de66d8473bfb99b5538ed997c43868"
 dependencies = [
  "alloy-primitives 0.8.21",
  "alloy-sol-types 0.8.21",
@@ -1801,7 +1801,7 @@ dependencies = [
 [[package]]
 name = "angstrom-types"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#b5b1682dc0b9ad126e9d3ca423e360fb3dbe7c11"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#8fc99bed64de66d8473bfb99b5538ed997c43868"
 dependencies = [
  "alloy 0.11.1",
  "alloy-primitives 0.8.21",
@@ -1819,7 +1819,7 @@ dependencies = [
  "foldhash",
  "futures",
  "hex-literal",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "k256",
  "malachite",
  "num-traits",
@@ -1847,7 +1847,7 @@ dependencies = [
 [[package]]
 name = "angstrom-utils"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#b5b1682dc0b9ad126e9d3ca423e360fb3dbe7c11"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#8fc99bed64de66d8473bfb99b5538ed997c43868"
 dependencies = [
  "futures",
  "pin-project",
@@ -2286,7 +2286,7 @@ dependencies = [
  "bitflags 2.8.0",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "proc-macro2",
  "quote",
  "regex",
@@ -3009,7 +3009,7 @@ dependencies = [
 [[package]]
 name = "consensus"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#b5b1682dc0b9ad126e9d3ca423e360fb3dbe7c11"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#8fc99bed64de66d8473bfb99b5538ed997c43868"
 dependencies = [
  "alloy 0.11.1",
  "alloy-rlp",
@@ -3023,10 +3023,11 @@ dependencies = [
  "eyre",
  "futures",
  "hex-literal",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "matching-engine",
  "order-pool",
  "pade",
+ "rand 0.8.5",
  "rayon",
  "reth-metrics",
  "reth-primitives 1.2.1",
@@ -5713,7 +5714,7 @@ dependencies = [
 [[package]]
 name = "matching-engine"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#b5b1682dc0b9ad126e9d3ca423e360fb3dbe7c11"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#8fc99bed64de66d8473bfb99b5538ed997c43868"
 dependencies = [
  "alloy 0.11.1",
  "alloy-primitives 0.8.21",
@@ -5727,7 +5728,7 @@ dependencies = [
  "eyre",
  "futures",
  "futures-util",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "malachite",
  "malachite-q",
  "num-bigfloat",
@@ -6492,7 +6493,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "order-pool"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#b5b1682dc0b9ad126e9d3ca423e360fb3dbe7c11"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#8fc99bed64de66d8473bfb99b5538ed997c43868"
 dependencies = [
  "alloy 0.11.1",
  "angstrom-eth",
@@ -11518,7 +11519,7 @@ dependencies = [
 [[package]]
 name = "testing-tools"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#b5b1682dc0b9ad126e9d3ca423e360fb3dbe7c11"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#8fc99bed64de66d8473bfb99b5538ed997c43868"
 dependencies = [
  "alloy 0.11.1",
  "alloy-chains",
@@ -12259,7 +12260,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "uniswap-v4"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#b5b1682dc0b9ad126e9d3ca423e360fb3dbe7c11"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#8fc99bed64de66d8473bfb99b5538ed997c43868"
 dependencies = [
  "alloy 0.11.1",
  "alloy-primitives 0.8.21",
@@ -12272,7 +12273,7 @@ dependencies = [
  "eyre",
  "futures",
  "futures-util",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "malachite",
  "malachite-q",
  "num-bigfloat",
@@ -12382,7 +12383,7 @@ dependencies = [
 [[package]]
 name = "validation"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#b5b1682dc0b9ad126e9d3ca423e360fb3dbe7c11"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Falt-sdk-stuff#8fc99bed64de66d8473bfb99b5538ed997c43868"
 dependencies = [
  "alloy 0.11.1",
  "angstrom-eth",
