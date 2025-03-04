@@ -2,23 +2,22 @@ use std::{collections::HashSet, sync::Arc};
 
 use alloy_network::{Ethereum, EthereumWallet, TxSigner};
 use alloy_primitives::{
+    Address, FixedBytes, PrimitiveSignature, TxHash, TxKind,
     aliases::{I24, U24},
-    Address, FixedBytes, PrimitiveSignature, TxHash, TxKind
 };
 use alloy_provider::{
+    Identity, Provider, RootProvider,
     fillers::{FillProvider, JoinFill, WalletFiller},
-    Identity, Provider, RootProvider
 };
 use alloy_rpc_types::{BlockTransactionsKind, TransactionInput, TransactionRequest};
 use alloy_signer::{Signer, SignerSync};
 use alloy_sol_types::SolCall;
-use alloy_transport::BoxTransport;
 use angstrom_types::{
     contract_bindings::{
         angstrom::Angstrom::PoolKey, controller_v_1::ControllerV1,
-        mintable_mock_erc_20::MintableMockERC20
+        mintable_mock_erc_20::MintableMockERC20,
     },
-    primitive::PoolId
+    primitive::PoolId,
 };
 use futures::{StreamExt, TryFutureExt};
 use serde_json::Value;
@@ -26,7 +25,7 @@ use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoade
 
 use crate::{
     apis::{data_api::AngstromDataApi, utils::pool_config_store},
-    types::*
+    types::*,
 };
 
 pub(crate) type RpcWalletProvider<P> =
@@ -35,10 +34,10 @@ pub(crate) type RpcWalletProvider<P> =
 #[derive(Debug, Clone)]
 pub struct EthRpcProvider<P>
 where
-    P: Provider + Clone
+    P: Provider + Clone,
 {
     eth_provider: P,
-    web_provider: reqwest::Client
+    web_provider: reqwest::Client,
 }
 
 impl EthRpcProvider<RootProvider> {
@@ -46,7 +45,7 @@ impl EthRpcProvider<RootProvider> {
     pub async fn new(url: &str) -> eyre::Result<Self> {
         Ok(Self {
             eth_provider: RootProvider::builder().on_builtin(url).await?,
-            web_provider: reqwest::Client::new()
+            web_provider: reqwest::Client::new(),
         })
     }
 }
@@ -62,10 +61,10 @@ impl<P: Provider + Clone> EthRpcProvider<P> {
     pub(crate) async fn view_call<IC>(
         &self,
         contract: Address,
-        call: IC
+        call: IC,
     ) -> eyre::Result<IC::Return>
     where
-        IC: SolCall + Send
+        IC: SolCall + Send,
     {
         let tx = TransactionRequest {
             to: Some(TxKind::Call(contract)),
@@ -78,7 +77,7 @@ impl<P: Provider + Clone> EthRpcProvider<P> {
 
     pub(crate) fn with_wallet<S>(self, signer: S) -> EthRpcProvider<RpcWalletProvider<P>>
     where
-        S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Send + Sync + 'static
+        S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Send + Sync + 'static,
     {
         let eth_provider = alloy_provider::builder::<Ethereum>()
             .wallet(EthereumWallet::new(signer))
@@ -89,7 +88,7 @@ impl<P: Provider + Clone> EthRpcProvider<P> {
 
     pub async fn send_add_remove_liquidity_tx(
         &self,
-        tx_req: TransactionRequestWithLiquidityMeta
+        tx_req: TransactionRequestWithLiquidityMeta,
     ) -> eyre::Result<TxHash> {
         Ok(self
             .eth_provider
@@ -102,7 +101,7 @@ impl<P: Provider + Clone> EthRpcProvider<P> {
 
 impl<P> AngstromDataApi for EthRpcProvider<P>
 where
-    P: Provider + Clone
+    P: Provider + Clone,
 {
     // async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
     //     let config_store = pool_config_store(self.provider()).await?;
@@ -184,18 +183,14 @@ where
         let all_pools_call = futures::future::try_join_all(partial_key_entries.iter().map(|key| {
             self.view_call(
                 CONTROLLER_V1_ADDRESS,
-                ControllerV1::poolsCall { key: FixedBytes::from(*key.pool_partial_key) }
+                ControllerV1::poolsCall { key: FixedBytes::from(*key.pool_partial_key) },
             )
         }))
         .await?;
 
         Ok(all_pools_call
             .into_iter()
-            .map(|val| TokenPairInfo {
-                token0:    val.asset0,
-                token1:    val.asset1,
-                is_active: true
-            })
+            .map(|val| TokenPairInfo { token0: val.asset0, token1: val.asset1, is_active: true })
             .collect())
     }
 
@@ -210,7 +205,7 @@ where
         Ok(futures::future::try_join_all(all_tokens_addresses.into_iter().map(|address| {
             self.view_call(address, MintableMockERC20::symbolCall {})
                 .and_then(
-                    move |val| async move { Ok(TokenInfoWithMeta { address, symbol: val._0 }) }
+                    move |val| async move { Ok(TokenInfoWithMeta { address, symbol: val._0 }) },
                 )
         }))
         .await?)
@@ -225,17 +220,17 @@ where
             .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
 
         Ok(PoolKey {
-            currency0:   token0,
-            currency1:   token1,
-            fee:         U24::from(pool_config_store.fee_in_e6),
+            currency0: token0,
+            currency1: token1,
+            fee: U24::from(pool_config_store.fee_in_e6),
             tickSpacing: I24::unchecked_from(pool_config_store.tick_spacing),
-            hooks:       ANGSTROM_ADDRESS
+            hooks: ANGSTROM_ADDRESS,
         })
     }
 
     async fn historical_orders(
         &self,
-        filter: HistoricalOrdersFilter
+        filter: HistoricalOrdersFilter,
     ) -> eyre::Result<Vec<HistoricalOrders>> {
         let filter = &filter;
         let pool_stores = &AngstromPoolTokenIndexToPair::new_with_tokens(self, filter).await?;
@@ -271,7 +266,7 @@ where
         &self,
         token0: Address,
         token1: Address,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>> {
         let (token0, token1) = sort_tokens(token0, token1);
 
@@ -339,15 +334,15 @@ where
 
         match out_res {
             Ok(price) => Ok(BinanceTokenPrice {
-                address:   token_address,
-                price:     Some(price),
-                error_msg: None
+                address: token_address,
+                price: Some(price),
+                error_msg: None,
             }),
             Err(err) => Ok(BinanceTokenPrice {
-                address:   token_address,
-                price:     None,
-                error_msg: Some(err.to_string())
-            })
+                address: token_address,
+                price: None,
+                error_msg: Some(err.to_string()),
+            }),
         }
     }
 }
@@ -381,11 +376,11 @@ mod tests {
 
         let pool_key = provider.pool_key(token0, token1).await.unwrap();
         let expected_pool_key = PoolKey {
-            currency0:   token0,
-            currency1:   token1,
-            fee:         U24::ZERO,
+            currency0: token0,
+            currency1: token1,
+            fee: U24::ZERO,
             tickSpacing: I24::unchecked_from(60),
-            hooks:       ANGSTROM_ADDRESS
+            hooks: ANGSTROM_ADDRESS,
         };
 
         assert_eq!(pool_key, expected_pool_key);
