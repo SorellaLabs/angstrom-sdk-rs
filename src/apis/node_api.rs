@@ -1,61 +1,74 @@
 use std::collections::HashSet;
 
-use alloy_primitives::{Address, B256};
+use alloy_primitives::{Address, B256, FixedBytes, U256};
 use angstrom_rpc::{
-    api::{GasEstimateResponse, OrderApiClient},
-    types::{OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult}
+    api::OrderApiClient,
+    types::{
+        OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult, PendingOrder,
+    },
 };
 use angstrom_types::{
     orders::{CancelOrderRequest, OrderLocation, OrderStatus},
-    primitive::{OrderPoolNewOrderResult, PoolId},
-    sol_bindings::grouped_orders::AllOrders
+    primitive::PoolId,
+    sol_bindings::grouped_orders::AllOrders,
 };
 use futures::{Stream, StreamExt, TryStreamExt};
 use jsonrpsee_http_client::HttpClient;
 
 pub trait AngstromNodeApi {
-    fn rpc_provider(&self) -> HttpClient;
+    fn angstrom_rpc_provider(&self) -> HttpClient;
 
-    async fn send_order(&self, order: AllOrders) -> eyre::Result<OrderPoolNewOrderResult> {
-        let provider = self.rpc_provider();
-        Ok(provider.send_order(order).await?)
+    async fn send_order(&self, order: AllOrders) -> eyre::Result<FixedBytes<32>> {
+        let provider = self.angstrom_rpc_provider();
+        Ok(provider
+            .send_order(order)
+            .await?
+            .map_err(|e| eyre::eyre!(e))?)
     }
 
-    async fn pending_order(&self, from: Address) -> eyre::Result<Vec<AllOrders>> {
-        let provider = self.rpc_provider();
+    async fn pending_order(&self, from: Address) -> eyre::Result<Vec<PendingOrder>> {
+        let provider = self.angstrom_rpc_provider();
         Ok(provider.pending_order(from).await?)
     }
 
     async fn cancel_order(&self, request: CancelOrderRequest) -> eyre::Result<bool> {
-        let provider = self.rpc_provider();
+        let provider = self.angstrom_rpc_provider();
         Ok(provider.cancel_order(request).await?)
     }
 
-    async fn estimate_gas(&self, order: AllOrders) -> eyre::Result<GasEstimateResponse> {
-        let provider = self.rpc_provider();
-        Ok(provider.estimate_gas(order).await?)
+    async fn estimate_gas(
+        &self,
+        is_book: bool,
+        token_0: Address,
+        token_1: Address,
+    ) -> eyre::Result<U256> {
+        let provider = self.angstrom_rpc_provider();
+        Ok(provider
+            .estimate_gas(is_book, token_0, token_1)
+            .await?
+            .map_err(|e| eyre::eyre!(e))?)
     }
 
-    async fn order_status(&self, order_hash: B256) -> eyre::Result<Option<OrderStatus>> {
-        let provider = self.rpc_provider();
+    async fn order_status(&self, order_hash: B256) -> eyre::Result<OrderStatus> {
+        let provider = self.angstrom_rpc_provider();
         Ok(provider.order_status(order_hash).await?)
     }
 
     async fn orders_by_pool_id(
         &self,
         pool_id: PoolId,
-        location: OrderLocation
+        location: OrderLocation,
     ) -> eyre::Result<Vec<AllOrders>> {
-        let provider = self.rpc_provider();
+        let provider = self.angstrom_rpc_provider();
         Ok(provider.orders_by_pool_id(pool_id, location).await?)
     }
 
     async fn subscribe_orders(
         &self,
         kind: HashSet<OrderSubscriptionKind>,
-        filters: HashSet<OrderSubscriptionFilter>
+        filters: HashSet<OrderSubscriptionFilter>,
     ) -> eyre::Result<impl Stream<Item = eyre::Result<OrderSubscriptionResult>>> {
-        let provider = self.rpc_provider();
+        let provider = self.angstrom_rpc_provider();
 
         Ok(provider
             .subscribe_orders(kind, filters)
@@ -66,43 +79,50 @@ pub trait AngstromNodeApi {
 
     async fn send_orders(
         &self,
-        orders: Vec<AllOrders>
-    ) -> eyre::Result<Vec<OrderPoolNewOrderResult>> {
-        let provider = self.rpc_provider();
-        Ok(provider.send_orders(orders).await?)
+        orders: Vec<AllOrders>,
+    ) -> eyre::Result<Vec<eyre::Result<FixedBytes<32>>>> {
+        let provider = self.angstrom_rpc_provider();
+        Ok(provider
+            .send_orders(orders)
+            .await?
+            .into_iter()
+            .map(|r| r.map_err(|e| eyre::eyre!(e)))
+            .collect())
     }
 
-    async fn pending_orders(&self, from: Vec<Address>) -> eyre::Result<Vec<AllOrders>> {
-        let provider = self.rpc_provider();
+    async fn pending_orders(&self, from: Vec<Address>) -> eyre::Result<Vec<PendingOrder>> {
+        let provider = self.angstrom_rpc_provider();
         Ok(provider.pending_orders(from).await?)
     }
 
     async fn cancel_orders(&self, request: Vec<CancelOrderRequest>) -> eyre::Result<Vec<bool>> {
-        let provider = self.rpc_provider();
+        let provider = self.angstrom_rpc_provider();
         Ok(provider.cancel_orders(request).await?)
     }
 
     async fn estimate_gas_of_orders(
         &self,
-        orders: Vec<AllOrders>
-    ) -> eyre::Result<Vec<GasEstimateResponse>> {
-        let provider = self.rpc_provider();
-        Ok(provider.estimate_gas_of_orders(orders).await?)
+        orders: Vec<(bool, Address, Address)>,
+    ) -> eyre::Result<Vec<eyre::Result<U256>>> {
+        let provider = self.angstrom_rpc_provider();
+        Ok(provider
+            .estimate_gas_of_orders(orders)
+            .await?
+            .into_iter()
+            .map(|r| r.map_err(|e| eyre::eyre!(e)))
+            .collect())
     }
 
-    async fn status_of_orders(
-        &self,
-        order_hashes: Vec<B256>
-    ) -> eyre::Result<Vec<Option<OrderStatus>>> {
-        let provider = self.rpc_provider();
+    async fn status_of_orders(&self, order_hashes: Vec<B256>) -> eyre::Result<Vec<OrderStatus>> {
+        let provider = self.angstrom_rpc_provider();
         Ok(provider.status_of_orders(order_hashes).await?)
     }
 
     async fn orders_by_pool_ids(
         &self,
-        pool_ids_with_location: Vec<(PoolId, OrderLocation)>
+        pool_ids_with_location: Vec<(PoolId, OrderLocation)>,
     ) -> eyre::Result<Vec<AllOrders>> {
-        let provider = self.rpc_provider();
+        let provider = self.angstrom_rpc_provider();
         Ok(provider.orders_by_pool_ids(pool_ids_with_location).await?)
     }
 }
@@ -115,17 +135,18 @@ mod tests {
     use alloy_primitives::U256;
     use alloy_provider::Provider;
     use angstrom_types::sol_bindings::{
+        RawPoolOrder,
         grouped_orders::{FlashVariants, GroupedVanillaOrder},
         rpc_orders::TopOfBlockOrder,
-        RawPoolOrder
     };
     use testing_tools::order_generator::GeneratedPoolOrders;
 
     use super::*;
     use crate::{
         apis::data_api::AngstromDataApi,
-        providers::{AngstromProvider, EthRpcProvider},
-        test_utils::{make_generator, spawn_angstrom_provider, spawn_ws_provider}
+        providers::AngstromProvider,
+        test_utils::{make_order_generator, spawn_angstrom_api},
+        types::sort_tokens,
     };
 
     fn get_flash_order(orders: &[GeneratedPoolOrders]) -> FlashVariants {
@@ -134,7 +155,7 @@ mod tests {
             .flat_map(|book| book.book.clone())
             .filter_map(|order| match order {
                 GroupedVanillaOrder::KillOrFill(or) => Some(or.clone()),
-                _ => None
+                _ => None,
             })
             .next()
             .unwrap()
@@ -145,34 +166,25 @@ mod tests {
     }
 
     struct AllOrdersSent {
-        tob:  AllOrders,
-        user: AllOrders
+        tob: AllOrders,
+        user: AllOrders,
     }
 
     impl AllOrdersSent {
-        async fn send_orders<P>(
-            eth_provider: &EthRpcProvider<P>,
-            angstrom_provider: &AngstromProvider
-        ) -> eyre::Result<Self>
+        async fn send_orders<P>(provider: &AngstromProvider<P>) -> eyre::Result<Self>
         where
-            P: Provider + Clone
+            P: Provider + Clone,
         {
-            let (generator, _rx) = make_generator(eth_provider).await.unwrap();
+            let (generator, _rx) = make_order_generator(provider).await.unwrap();
             let orders = generator.generate_orders();
 
             let tob_order = AllOrders::TOB(get_tob_order(&orders));
-            let tob_order_sent = angstrom_provider
-                .send_order(tob_order.clone())
-                .await
-                .unwrap();
-            assert!(tob_order_sent.is_valid());
+            let tob_order_sent = provider.send_order(tob_order.clone()).await;
+            assert!(tob_order_sent.is_ok());
 
             let user_order = AllOrders::Flash(get_flash_order(&orders));
-            let user_order_sent = angstrom_provider
-                .send_order(user_order.clone())
-                .await
-                .unwrap();
-            assert!(user_order_sent.is_valid());
+            let user_order_sent = provider.send_order(user_order.clone()).await;
+            assert!(user_order_sent.is_ok());
 
             Ok(Self { tob: tob_order, user: user_order })
         }
@@ -180,60 +192,57 @@ mod tests {
 
     #[tokio::test]
     async fn test_send_order() {
-        let eth_provider = spawn_ws_provider().await.unwrap();
-        let angstrom_provider = spawn_angstrom_provider().await.unwrap();
+        let provider = spawn_angstrom_api().await.unwrap();
 
-        let _ = AllOrdersSent::send_orders(&eth_provider, &angstrom_provider)
+        let _ = AllOrdersSent::send_orders(&provider.provider)
             .await
             .unwrap();
     }
 
     #[tokio::test]
     async fn test_pending_order() {
-        let eth_provider = spawn_ws_provider().await.unwrap();
-        let angstrom_provider = spawn_angstrom_provider().await.unwrap();
+        let provider = spawn_angstrom_api().await.unwrap();
 
-        let orders = AllOrdersSent::send_orders(&eth_provider, &angstrom_provider)
+        let orders = AllOrdersSent::send_orders(&provider.provider)
             .await
             .unwrap();
 
-        let pending_tob_order = angstrom_provider
-            .pending_order(orders.tob.from())
-            .await
-            .unwrap();
-        assert_eq!(vec![orders.tob.clone()], pending_tob_order);
+        let pending_tob_order = provider.pending_order(orders.tob.from()).await.unwrap();
+        assert_eq!(
+            vec![PendingOrder { order_id: orders.tob.order_hash(), order: orders.tob.clone() }],
+            pending_tob_order
+        );
 
-        let pending_user_orders = angstrom_provider
-            .pending_order(orders.user.from())
-            .await
-            .unwrap();
-        assert_eq!(vec![orders.user.clone()], pending_user_orders);
+        let pending_user_orders = provider.pending_order(orders.user.from()).await.unwrap();
+        assert_eq!(
+            vec![PendingOrder { order_id: orders.user.order_hash(), order: orders.user.clone() }],
+            pending_user_orders
+        );
     }
 
     #[tokio::test]
     async fn test_cancel_order() {
-        let eth_provider = spawn_ws_provider().await.unwrap();
-        let angstrom_provider = spawn_angstrom_provider().await.unwrap();
+        let provider = spawn_angstrom_api().await.unwrap();
 
-        let orders = AllOrdersSent::send_orders(&eth_provider, &angstrom_provider)
+        let orders = AllOrdersSent::send_orders(&provider.provider)
             .await
             .unwrap();
 
-        let canceled_tob_order = angstrom_provider
+        let canceled_tob_order = provider
             .cancel_order(CancelOrderRequest {
-                signature:    orders.tob.order_signature().unwrap(),
+                signature: orders.tob.order_signature().unwrap().as_bytes().into(),
                 user_address: orders.tob.from(),
-                order_id:     orders.tob.order_hash()
+                order_id: orders.tob.order_hash(),
             })
             .await
             .unwrap();
         assert!(canceled_tob_order);
 
-        let canceled_user_orders = angstrom_provider
+        let canceled_user_orders = provider
             .cancel_order(CancelOrderRequest {
-                signature:    orders.user.order_signature().unwrap(),
+                signature: orders.user.order_signature().unwrap().as_bytes().into(),
                 user_address: orders.user.from(),
-                order_id:     orders.user.order_hash()
+                order_id: orders.user.order_hash(),
             })
             .await
             .unwrap();
@@ -242,70 +251,72 @@ mod tests {
 
     #[tokio::test]
     async fn test_estimate_gas() {
-        let eth_provider = spawn_ws_provider().await.unwrap();
-        let angstrom_provider = spawn_angstrom_provider().await.unwrap();
+        let provider = spawn_angstrom_api().await.unwrap();
 
-        let (generator, _rx) = make_generator(&eth_provider).await.unwrap();
+        let (generator, _rx) = make_order_generator(&provider.provider).await.unwrap();
         let orders = generator.generate_orders();
 
         let tob_order = AllOrders::TOB(get_tob_order(&orders));
-        let tob_order_gas_estimation = angstrom_provider.estimate_gas(tob_order).await.unwrap();
-        assert_eq!(tob_order_gas_estimation, GasEstimateResponse { gas_units: 0, gas: U256::ZERO });
+        let tokens = sort_tokens(tob_order.token_in(), tob_order.token_out());
+        let tob_order_gas_estimation = provider
+            .estimate_gas(tob_order.is_tob(), tokens.0, tokens.1)
+            .await
+            .unwrap();
+        assert_eq!(tob_order_gas_estimation, U256::ZERO);
 
         let user_order = AllOrders::Flash(get_flash_order(&orders));
-        let user_order_gas_estimation = angstrom_provider.estimate_gas(user_order).await.unwrap();
-        assert_eq!(
-            user_order_gas_estimation,
-            GasEstimateResponse { gas_units: 0, gas: U256::ZERO }
-        );
+        let tokens = sort_tokens(user_order.token_in(), user_order.token_out());
+        let user_order_gas_estimation = provider
+            .estimate_gas(!user_order.is_tob(), tokens.0, tokens.1)
+            .await
+            .unwrap();
+        assert_eq!(user_order_gas_estimation, U256::ZERO);
     }
 
     #[tokio::test]
     async fn test_order_status() {
-        let eth_provider = spawn_ws_provider().await.unwrap();
-        let angstrom_provider = spawn_angstrom_provider().await.unwrap();
+        let provider = spawn_angstrom_api().await.unwrap();
 
-        let orders = AllOrdersSent::send_orders(&eth_provider, &angstrom_provider)
+        let orders = AllOrdersSent::send_orders(&provider.provider)
             .await
             .unwrap();
 
-        let status_tob_order = angstrom_provider
+        let status_tob_order = provider
             .order_status(orders.tob.order_hash())
             .await
             .unwrap();
-        assert_eq!(status_tob_order, Some(OrderStatus::Pending));
+        assert_eq!(status_tob_order, OrderStatus::Pending);
 
-        let status_user_order = angstrom_provider
+        let status_user_order = provider
             .order_status(orders.user.order_hash())
             .await
             .unwrap();
-        assert_eq!(status_user_order, Some(OrderStatus::Pending));
+        assert_eq!(status_user_order, OrderStatus::Pending);
     }
 
     #[tokio::test]
     async fn test_order_by_pool_id() {
-        let eth_provider = spawn_ws_provider().await.unwrap();
-        let angstrom_provider = spawn_angstrom_provider().await.unwrap();
+        let provider = spawn_angstrom_api().await.unwrap();
 
-        let orders = AllOrdersSent::send_orders(&eth_provider, &angstrom_provider)
+        let orders = AllOrdersSent::send_orders(&provider.provider)
             .await
             .unwrap();
 
-        let tob_pool_id = eth_provider
+        let tob_pool_id = provider
             .pool_id(orders.tob.token_in(), orders.tob.token_out())
             .await
             .unwrap();
-        let tob_orders = angstrom_provider
+        let tob_orders = provider
             .orders_by_pool_id(tob_pool_id, orders.tob.order_location())
             .await
             .unwrap();
         assert_eq!(vec![orders.tob.clone()], tob_orders);
 
-        let user_pool_id = eth_provider
+        let user_pool_id = provider
             .pool_id(orders.user.token_in(), orders.user.token_out())
             .await
             .unwrap();
-        let user_orders = angstrom_provider
+        let user_orders = provider
             .orders_by_pool_id(user_pool_id, orders.user.order_location())
             .await
             .unwrap();
@@ -314,10 +325,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_subscribe_orders() {
-        let eth_provider = spawn_ws_provider().await.unwrap();
-        let angstrom_provider = spawn_angstrom_provider().await.unwrap();
+        let provider = spawn_angstrom_api().await.unwrap();
 
-        let mut sub_stream = angstrom_provider
+        let mut sub_stream = provider
             .subscribe_orders(HashSet::new(), HashSet::new())
             .await
             .unwrap();
@@ -340,7 +350,7 @@ mod tests {
 
         let order_send_fut = async {
             for _ in 0..order_cycles {
-                let _ = AllOrdersSent::send_orders(&eth_provider, &angstrom_provider)
+                let _ = AllOrdersSent::send_orders(&provider.provider)
                     .await
                     .unwrap();
             }

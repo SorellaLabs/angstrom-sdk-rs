@@ -5,16 +5,13 @@ use angstrom_types::{
     primitive::ANGSTROM_DOMAIN,
     sol_bindings::{
         grouped_orders::{AllOrders, FlashVariants, StandingVariants},
-        rpc_orders::{OmitOrderMeta, OrderMeta}
-    }
+        rpc_orders::{OmitOrderMeta, OrderMeta},
+    },
 };
 use pade::PadeEncode;
 
-use super::{AngstromFiller, FillFrom, FillerOrder};
-use crate::{
-    providers::{AngstromProvider, EthRpcProvider},
-    types::TransactionRequestWithLiquidityMeta
-};
+use super::{AngstromFiller, FillFrom, FillerOrder, errors::FillerError};
+use crate::{providers::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
 
 pub struct SignerFiller<S>(S);
 
@@ -23,14 +20,10 @@ impl<S: Signer + SignerSync> SignerFiller<S> {
         Self(signer)
     }
 
-    fn sign_into_meta<O: OmitOrderMeta>(&self, order: &O) -> eyre::Result<OrderMeta> {
+    fn sign_into_meta<O: OmitOrderMeta>(&self, order: &O) -> Result<OrderMeta, FillerError> {
         let hash = order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
         let sig = self.0.sign_hash_sync(&hash)?;
-        Ok(OrderMeta {
-            isEcdsa:   true,
-            from:      self.0.address(),
-            signature: sig.pade_encode().into()
-        })
+        Ok(OrderMeta { isEcdsa: true, from: self.0.address(), signature: sig.pade_encode().into() })
     }
 }
 
@@ -39,12 +32,11 @@ impl<S: Signer + SignerSync> AngstromFiller for SignerFiller<S> {
 
     async fn prepare<P>(
         &self,
-        _: &EthRpcProvider<P>,
-        _: &AngstromProvider,
-        order: &FillerOrder
-    ) -> eyre::Result<Self::FillOutput>
+        _: &AngstromProvider<P>,
+        order: &FillerOrder,
+    ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider + Clone
+        P: Provider,
     {
         let my_address = self.0.address();
 
@@ -66,7 +58,7 @@ impl<S: Signer + SignerSync> AngstromFiller for SignerFiller<S> {
                         self.sign_into_meta(exact_flash_order)?
                     }
                 },
-                AllOrders::TOB(top_of_block_order) => self.sign_into_meta(top_of_block_order)?
+                AllOrders::TOB(top_of_block_order) => self.sign_into_meta(top_of_block_order)?,
             };
             Some(om)
         } else {
@@ -78,7 +70,7 @@ impl<S: Signer + SignerSync> AngstromFiller for SignerFiller<S> {
 }
 
 impl<S: Signer + SignerSync> FillFrom<SignerFiller<S>, AllOrders> for (Address, Option<OrderMeta>) {
-    fn prepare_with(self, input_order: &mut AllOrders) -> eyre::Result<()> {
+    fn prepare_with(self, input_order: &mut AllOrders) -> Result<(), FillerError> {
         let (recipient, order_meta) = (self.0, self.1.expect("expected order meta"));
         match input_order {
             AllOrders::Standing(standing_variants) => match standing_variants {
@@ -116,8 +108,8 @@ impl<S: Signer + SignerSync> FillFrom<SignerFiller<S>, TransactionRequestWithLiq
 {
     fn prepare_with(
         self,
-        input_order: &mut TransactionRequestWithLiquidityMeta
-    ) -> eyre::Result<()> {
+        input_order: &mut TransactionRequestWithLiquidityMeta,
+    ) -> Result<(), FillerError> {
         input_order.tx_request.from = Some(self.0);
         Ok(())
     }

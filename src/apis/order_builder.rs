@@ -1,21 +1,20 @@
-use alloy_dyn_abi::Eip712Domain;
 use alloy_primitives::{
+    Address, TxKind, U256,
     aliases::{I24, U40},
-    Address, TxKind, U256
 };
 use alloy_rpc_types::{TransactionInput, TransactionRequest};
-use alloy_sol_types::SolCall;
+use alloy_sol_types::{Eip712Domain, SolCall};
 use angstrom_types::{
     contract_bindings::pool_gate::PoolGate,
     matching::Ray,
     primitive::ANGSTROM_DOMAIN,
     sol_bindings::rpc_orders::{
         ExactFlashOrder, ExactStandingOrder, PartialFlashOrder, PartialStandingOrder,
-        TopOfBlockOrder
-    }
+        TopOfBlockOrder,
+    },
 };
 
-use crate::types::{TransactionRequestWithLiquidityMeta, POOL_GATE_ADDRESS};
+use crate::types::{POOL_GATE_ADDRESS, TransactionRequestWithLiquidityMeta};
 
 pub fn add_liquidity(
     token0: Address,
@@ -24,7 +23,7 @@ pub fn add_liquidity(
     tick_upper: i32,
     liquidity: U256,
     max_fee_per_gas: Option<u128>,
-    max_priority_fee_per_gas: Option<u128>
+    max_priority_fee_per_gas: Option<u128>,
 ) -> TransactionRequestWithLiquidityMeta {
     let call = PoolGate::addLiquidityCall {
         asset0: token0,
@@ -32,7 +31,7 @@ pub fn add_liquidity(
         tickLower: I24::unchecked_from(tick_lower),
         tickUpper: I24::unchecked_from(tick_upper),
         liquidity,
-        salt: Default::default()
+        salt: Default::default(),
     };
 
     let tx = TransactionRequest {
@@ -53,7 +52,7 @@ pub fn remove_liquidity(
     tick_upper: i32,
     liquidity: U256,
     max_fee_per_gas: Option<u128>,
-    max_priority_fee_per_gas: Option<u128>
+    max_priority_fee_per_gas: Option<u128>,
 ) -> TransactionRequestWithLiquidityMeta {
     let call = PoolGate::removeLiquidityCall {
         asset0: token0,
@@ -61,7 +60,7 @@ pub fn remove_liquidity(
         tickLower: I24::unchecked_from(tick_lower),
         tickUpper: I24::unchecked_from(tick_upper),
         liquidity,
-        salt: Default::default()
+        salt: Default::default(),
     };
 
     let tx = TransactionRequest {
@@ -82,7 +81,7 @@ pub fn top_of_block_order(
     quantity_out: u128,
     max_gas_asset0: u128,
     valid_for_block: u64,
-    recipient: Address
+    recipient: Address,
 ) -> TopOfBlockOrder {
     TopOfBlockOrder {
         asset_in,
@@ -103,7 +102,7 @@ pub fn partial_standing_order(
     max_amount_in: u128,
     min_price: U256,
     deadline: Option<u64>,
-    recipient: Address
+    recipient: Address,
 ) -> PartialStandingOrder {
     PartialStandingOrder {
         asset_in,
@@ -125,7 +124,7 @@ pub fn exact_standing_order(
     amount: u128,
     min_price: U256,
     deadline: Option<u64>,
-    recipient: Address
+    recipient: Address,
 ) -> ExactStandingOrder {
     ExactStandingOrder {
         asset_in,
@@ -153,7 +152,7 @@ pub fn partial_flash_order(
     max_amount_in: u128,
     min_price: U256,
     valid_for_block: u64,
-    recipient: Address
+    recipient: Address,
 ) -> PartialFlashOrder {
     PartialFlashOrder {
         asset_in,
@@ -174,7 +173,7 @@ pub fn exact_flash_order(
     exact_in: bool,
     amount: u128,
     min_price: U256,
-    recipient: Address
+    recipient: Address,
 ) -> ExactFlashOrder {
     ExactFlashOrder {
         asset_in,
@@ -194,10 +193,6 @@ pub fn exact_flash_order(
     }
 }
 
-pub fn angstrom_eip712_domain(chain_id: u64) -> Eip712Domain {
-    // let mut domain = ANGSTROM_DOMAIN;
-    // domain.chain_id = Some(U256::from(chain_id));
-    // domain.chain_id = Some(U256::from(chain_id));
-    // domain
+pub fn angstrom_eip712_domain() -> Eip712Domain {
     ANGSTROM_DOMAIN
 }

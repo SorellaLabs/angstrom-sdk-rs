@@ -1,39 +1,29 @@
 use alloy_provider::Provider;
-use angstrom_types::sol_bindings::grouped_orders::AllOrders;
+use angstrom_types::{CHAIN_ID, sol_bindings::grouped_orders::AllOrders};
 
-use super::{AngstromFiller, FillFrom, FillerOrder};
-use crate::{
-    providers::{AngstromProvider, EthRpcProvider},
-    types::TransactionRequestWithLiquidityMeta
-};
+use super::{AngstromFiller, FillFrom, FillerOrder, errors::FillerError};
+use crate::{providers::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
 
 #[derive(Clone, Copy, Debug, Default)]
-pub struct ChainIdFiller(u64);
-
-impl ChainIdFiller {
-    pub fn new(chain_id: u64) -> Self {
-        Self(chain_id)
-    }
-}
+pub struct ChainIdFiller;
 
 impl AngstromFiller for ChainIdFiller {
     type FillOutput = Option<u64>;
 
     async fn prepare<P>(
         &self,
-        _: &EthRpcProvider<P>,
-        _: &AngstromProvider,
-        order: &FillerOrder
-    ) -> eyre::Result<Self::FillOutput>
+        _: &AngstromProvider<P>,
+        _: &FillerOrder,
+    ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider + Clone
+        P: Provider,
     {
-        Ok(matches!(order, FillerOrder::RegularOrder(_)).then_some(self.0))
+        Ok(None)
     }
 }
 
 impl FillFrom<ChainIdFiller, AllOrders> for Option<u64> {
-    fn prepare_with(self, _: &mut AllOrders) -> eyre::Result<()> {
+    fn prepare_with(self, _: &mut AllOrders) -> Result<(), FillerError> {
         Ok(())
     }
 }
@@ -41,9 +31,9 @@ impl FillFrom<ChainIdFiller, AllOrders> for Option<u64> {
 impl FillFrom<ChainIdFiller, TransactionRequestWithLiquidityMeta> for Option<u64> {
     fn prepare_with(
         self,
-        input_order: &mut TransactionRequestWithLiquidityMeta
-    ) -> eyre::Result<()> {
-        input_order.tx_request.chain_id = Some(self.expect("expected nonce"));
+        input_order: &mut TransactionRequestWithLiquidityMeta,
+    ) -> Result<(), FillerError> {
+        input_order.tx_request.chain_id = Some(CHAIN_ID);
         Ok(())
     }
 }

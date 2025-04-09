@@ -12,6 +12,7 @@ name = "angstrom_sdk_rs"
 # angstrom
 angstrom-types = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-types" }
 angstrom-rpc = { git = "https://github.com/SorellaLabs/angstrom.git", package = "angstrom-rpc" }
+validation = { git = "https://github.com/SorellaLabs/angstrom.git", package = "validation" }
 uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git", package = "uniswap-v4" }
 
 # pade
@@ -60,9 +61,7 @@ alloy-signer-local = { version = "0.12.6", default-features = false }
 alloy-network = { version = "0.12.6", default-features = false }
 alloy-consensus = { version = "0.12.6", default-features = false }
 alloy-transport = { version = "0.12.6" }
-alloy-transport-http = { version = "0.12.6", features = [
-    "reqwest-rustls-tls",
-], default-features = false }
+alloy-transport-http = { version = "0.12.6", default-features = false }
 alloy-transport-ws = { version = "0.12.6", default-features = false }
 alloy-transport-ipc = { version = "0.12.6", default-features = false }
 alloy-pubsub = { version = "0.12.6", default-features = false }
@@ -93,22 +92,24 @@ thiserror = "1.0"
 dotenv = "0.15"
 parking_lot = "0.12"
 itertools = "0.12.1"
-
-# neon
-neon = { version = "1", optional = true }
-angstrom-sdk-rs-macros = { path = "./sdk-macros", optional = true }
+rand = "0.9"
 
 
 [dev-dependencies]
-testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools" }
+testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", default-features = false }
 
 
 [features]
-default = ["full", "neon", "testnet"]
+default = ["full", "testnet-sepolia"]
 full = ["ipc", "ws"]
 
 ipc = []
 ws = []
 
-neon = ["dep:neon", "dep:angstrom-sdk-rs-macros"]
-testnet = ["angstrom-types/testnet"]
+testnet-sepolia = [
+    "angstrom-types/testnet-sepolia",
+    "validation/testnet-sepolia",
+    "angstrom-rpc/testnet-sepolia",
+    "uniswap-v4/testnet-sepolia",
+    "testing-tools/testnet-sepolia",
+]

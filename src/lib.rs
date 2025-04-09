@@ -3,8 +3,6 @@
 #![allow(private_bounds)]
 
 pub mod apis;
-#[cfg(feature = "neon")]
-pub mod js_utils;
 
 pub mod providers;
 #[cfg(test)]
@@ -14,25 +12,23 @@ pub mod types;
 use std::collections::{HashMap, HashSet};
 
 use alloy_network::TxSigner;
-use alloy_primitives::{Address, PrimitiveSignature, TxHash, U256};
+use alloy_primitives::{Address, FixedBytes, PrimitiveSignature, TxHash, U256};
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
-use angstrom_rpc::api::GasEstimateResponse;
 use angstrom_types::{
     contract_bindings::{
         angstrom::Angstrom::PoolKey, position_fetcher::PositionFetcher,
         position_manager::PositionManager,
     },
-    primitive::{OrderPoolNewOrderResult, PoolId},
     sol_bindings::grouped_orders::AllOrders,
 };
 use apis::user_api::AngstromUserApi;
 use futures::TryFutureExt;
 use jsonrpsee_http_client::HttpClient;
-use providers::{AngstromProvider, EthRpcProvider, RpcWalletProvider};
+use providers::{AngstromProvider, RpcWalletProvider};
 use types::{
-    BinanceTokenPrice, HistoricalOrders, HistoricalOrdersFilter, POSITION_MANAGER_ADDRESS,
-    TokenInfoWithMeta, TokenPairInfo, TransactionRequestWithLiquidityMeta, UserLiquidityPosition,
+    HistoricalOrders, HistoricalOrdersFilter, TokenInfoWithMeta, TokenPairInfo,
+    TransactionRequestWithLiquidityMeta, UserLiquidityPosition,
     fillers::{
         AngstromFillProvider, AngstromFiller, FillWrapper, FillerOrder, NonceGeneratorFiller,
         SignerFiller, TokenBalanceCheckFiller,
@@ -42,31 +38,30 @@ use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoade
 
 use crate::{
     apis::{data_api::AngstromDataApi, node_api::AngstromNodeApi},
-    types::POSITION_FETCHER_ADDRESS,
+    types::POSITION_MANAGER_ADDRESS,
 };
 
 #[derive(Clone)]
 pub struct AngstromApi<P, F = ()>
 where
-    P: Provider + Clone,
+    P: Provider,
 {
-    pub eth_provider: EthRpcProvider<P>,
-    pub angstrom: AngstromProvider,
+    pub provider: AngstromProvider<P>,
     filler: F,
 }
 
 impl<P> AngstromApi<P>
 where
-    P: Provider + Clone,
+    P: Provider,
 {
-    pub fn new(eth_provider: EthRpcProvider<P>, angstrom: AngstromProvider) -> Self {
-        Self { eth_provider, angstrom, filler: () }
+    pub fn new(provider: AngstromProvider<P>) -> Self {
+        Self { provider, filler: () }
     }
 }
 
 impl<P, F> AngstromApi<P, F>
 where
-    P: Provider + Clone,
+    P: Provider,
     F: FillWrapper,
 {
     pub async fn send_add_remove_liquidity_tx(
@@ -74,12 +69,10 @@ where
         tx_req: TransactionRequestWithLiquidityMeta,
     ) -> eyre::Result<TxHash> {
         let mut filled_tx_req: FillerOrder = tx_req.into();
-        self.filler
-            .fill(&self.eth_provider, &self.angstrom, &mut filled_tx_req)
-            .await?;
+        self.filler.fill(&self.provider, &mut filled_tx_req).await?;
 
         Ok(self
-            .eth_provider
+            .provider
             .send_add_remove_liquidity_tx(filled_tx_req.force_regular_tx())
             .await?)
     }
@@ -88,19 +81,14 @@ where
         self,
         filler: F1,
     ) -> AngstromApi<P, AngstromFillProvider<F, F1>> {
-        AngstromApi {
-            eth_provider: self.eth_provider,
-            angstrom: self.angstrom,
-            filler: self.filler.wrap_with_filler(filler),
-        }
+        AngstromApi { provider: self.provider, filler: self.filler.wrap_with_filler(filler) }
     }
 
     pub fn with_nonce_generator_filler(
         self,
     ) -> AngstromApi<P, AngstromFillProvider<F, NonceGeneratorFiller>> {
         AngstromApi {
-            eth_provider: self.eth_provider,
-            angstrom: self.angstrom,
+            provider: self.provider,
             filler: self.filler.wrap_with_filler(NonceGeneratorFiller),
         }
     }
@@ -109,8 +97,7 @@ where
         self,
     ) -> AngstromApi<P, AngstromFillProvider<F, TokenBalanceCheckFiller>> {
         AngstromApi {
-            eth_provider: self.eth_provider,
-            angstrom: self.angstrom,
+            provider: self.provider,
             filler: self.filler.wrap_with_filler(TokenBalanceCheckFiller),
         }
     }
@@ -124,8 +111,7 @@ where
         SignerFiller<S>: AngstromFiller,
     {
         AngstromApi {
-            eth_provider: self.eth_provider.with_wallet(signer.clone()),
-            angstrom: self.angstrom,
+            provider: self.provider.with_wallet(signer.clone()),
             filler: self.filler.wrap_with_filler(SignerFiller::new(signer)),
         }
     }
@@ -146,11 +132,10 @@ where
     where
         S: Signer + SignerSync + Send,
         SignerFiller<S>: AngstromFiller,
-        P: Provider + Clone,
+        P: Provider,
     {
         AngstromApi {
-            eth_provider: self.eth_provider,
-            angstrom: self.angstrom,
+            provider: self.provider,
             filler: self
                 .filler
                 .wrap_with_filler(NonceGeneratorFiller)
@@ -162,19 +147,17 @@ where
 
 impl<P, F> AngstromNodeApi for AngstromApi<P, F>
 where
-    P: Provider + Clone,
+    P: Provider,
     F: FillWrapper,
 {
-    fn rpc_provider(&self) -> HttpClient {
-        self.angstrom.rpc_provider()
+    fn angstrom_rpc_provider(&self) -> HttpClient {
+        self.provider.angstrom_rpc_provider()
     }
 
-    async fn send_order(&self, order: AllOrders) -> eyre::Result<OrderPoolNewOrderResult> {
+    async fn send_order(&self, order: AllOrders) -> eyre::Result<FixedBytes<32>> {
         let mut filler_order: FillerOrder = order.into();
-        self.filler
-            .fill(&self.eth_provider, &self.angstrom, &mut filler_order)
-            .await?;
-        self.angstrom
+        self.filler.fill(&self.provider, &mut filler_order).await?;
+        self.provider
             .send_order(filler_order.force_all_orders())
             .await
     }
@@ -182,44 +165,14 @@ where
     async fn send_orders(
         &self,
         orders: Vec<AllOrders>,
-    ) -> eyre::Result<Vec<OrderPoolNewOrderResult>> {
+    ) -> eyre::Result<Vec<eyre::Result<FixedBytes<32>>>> {
         let mut filler_orders: Vec<FillerOrder> = orders.into_iter().map(Into::into).collect();
 
         self.filler
-            .fill_many(&self.eth_provider, &self.angstrom, &mut filler_orders)
+            .fill_many(&self.provider, &mut filler_orders)
             .await?;
-        self.angstrom
+        self.provider
             .send_orders(
-                filler_orders
-                    .into_iter()
-                    .map(|order| order.force_all_orders())
-                    .collect(),
-            )
-            .await
-    }
-
-    async fn estimate_gas(&self, order: AllOrders) -> eyre::Result<GasEstimateResponse> {
-        let mut filler_order: FillerOrder = order.into();
-        self.filler
-            .fill(&self.eth_provider, &self.angstrom, &mut filler_order)
-            .await?;
-
-        self.angstrom
-            .estimate_gas(filler_order.force_all_orders())
-            .await
-    }
-
-    async fn estimate_gas_of_orders(
-        &self,
-        orders: Vec<AllOrders>,
-    ) -> eyre::Result<Vec<GasEstimateResponse>> {
-        let mut filler_orders: Vec<FillerOrder> = orders.into_iter().map(Into::into).collect();
-
-        self.filler
-            .fill_many(&self.eth_provider, &self.angstrom, &mut filler_orders)
-            .await?;
-        self.angstrom
-            .estimate_gas_of_orders(
                 filler_orders
                     .into_iter()
                     .map(|order| order.force_all_orders())
@@ -235,18 +188,18 @@ where
     F: FillWrapper,
 {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
-        self.eth_provider.all_token_pairs().await
+        self.provider.all_token_pairs().await
     }
 
     async fn all_tokens(&self) -> eyre::Result<Vec<TokenInfoWithMeta>> {
-        self.eth_provider.all_tokens().await
+        self.provider.all_tokens().await
     }
 
     async fn historical_orders(
         &self,
         filter: HistoricalOrdersFilter,
     ) -> eyre::Result<Vec<HistoricalOrders>> {
-        self.eth_provider.historical_orders(filter).await
+        self.provider.historical_orders(filter).await
     }
 
     async fn pool_data(
@@ -254,18 +207,12 @@ where
         token0: Address,
         token1: Address,
         block_number: Option<u64>,
-    ) -> eyre::Result<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>> {
-        self.eth_provider
-            .pool_data(token0, token1, block_number)
-            .await
+    ) -> eyre::Result<EnhancedUniswapPool<DataLoader>> {
+        self.provider.pool_data(token0, token1, block_number).await
     }
 
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
-        self.eth_provider.pool_key(token0, token1).await
-    }
-
-    async fn binance_price(&self, token_address: Address) -> eyre::Result<BinanceTokenPrice> {
-        self.eth_provider.binance_price(token_address).await
+        self.provider.pool_key(token0, token1).await
     }
 }
 
@@ -279,9 +226,9 @@ where
         user_address: Address,
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
         let user_positons = self
-            .eth_provider
+            .provider
             .view_call(
-                POSITION_FETCHER_ADDRESS,
+                POSITION_MANAGER_ADDRESS,
                 PositionFetcher::getPositionsCall {
                     owner: user_address,
                     tokenId: U256::from(1u8),
@@ -289,7 +236,7 @@ where
                     maxResults: U256::MAX,
                 },
             )
-            .await?;
+            .await??;
 
         let unique_pool_ids = user_positons
             ._2
@@ -299,27 +246,29 @@ where
 
         let uni_pool_id_to_ang_pool_ids =
             futures::future::try_join_all(unique_pool_ids.into_iter().map(|uni_id| {
-                self.eth_provider
+                self.provider
                     .view_call(
                         POSITION_MANAGER_ADDRESS,
                         PositionManager::poolKeysCall { poolId: uni_id },
                     )
-                    .and_then(move |ang_id| async move {
-                        Ok((
-                            uni_id,
-                            PoolKey {
-                                currency0: ang_id.currency0,
-                                currency1: ang_id.currency1,
-                                fee: ang_id.fee,
-                                tickSpacing: ang_id.tickSpacing,
-                                hooks: ang_id.hooks,
-                            },
-                        ))
+                    .and_then(async move |ang_id_res| {
+                        Ok(ang_id_res.map(|ang_id| {
+                            (
+                                uni_id,
+                                PoolKey {
+                                    currency0: ang_id.currency0,
+                                    currency1: ang_id.currency1,
+                                    fee: ang_id.fee,
+                                    tickSpacing: ang_id.tickSpacing,
+                                    hooks: ang_id.hooks,
+                                },
+                            )
+                        }))
                     })
             }))
             .await?
             .into_iter()
-            .collect::<HashMap<_, _>>();
+            .collect::<Result<HashMap<_, _>, _>>()?;
 
         Ok(user_positons
             ._2

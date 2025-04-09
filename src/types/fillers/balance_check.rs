@@ -3,79 +3,74 @@ use alloy_provider::Provider;
 use angstrom_types::{
     primitive::ERC20,
     sol_bindings::{
+        RawPoolOrder,
         grouped_orders::{AllOrders, FlashVariants, StandingVariants},
-        RawPoolOrder
-    }
+    },
 };
 
-use super::{AngstromFiller, FillerOrder};
-use crate::{
-    providers::{AngstromProvider, EthRpcProvider},
-    types::TransactionRequestWithLiquidityMeta
-};
+use super::{AngstromFiller, FillerOrder, errors::FillerError};
+use crate::{providers::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct TokenBalanceCheckFiller;
 
 impl TokenBalanceCheckFiller {
-    async fn handle_angstrom_order<P>(
+    async fn prepare_angstrom_order<P>(
         &self,
-        provider: &EthRpcProvider<P>,
-        order: &AllOrders
-    ) -> eyre::Result<()>
+        provider: &AngstromProvider<P>,
+        order: &AllOrders,
+    ) -> Result<(), FillerError>
     where
-        P: Provider + Clone
+        P: Provider,
     {
         let (token, amt) = match order {
             AllOrders::Standing(standing_variants) => match standing_variants {
                 StandingVariants::Partial(partial_standing_order) => (
                     partial_standing_order.asset_in,
                     partial_standing_order.max_amount_in
-                        + partial_standing_order.max_extra_fee_asset0
+                        + partial_standing_order.max_extra_fee_asset0,
                 ),
                 StandingVariants::Exact(exact_standing_order) => (
                     exact_standing_order.asset_in,
-                    exact_standing_order.amount + exact_standing_order.max_extra_fee_asset0
-                )
+                    exact_standing_order.amount + exact_standing_order.max_extra_fee_asset0,
+                ),
             },
             AllOrders::Flash(flash_variants) => match flash_variants {
                 FlashVariants::Partial(partial_flash_order) => (
                     partial_flash_order.asset_in,
-                    partial_flash_order.max_amount_in + partial_flash_order.max_extra_fee_asset0
+                    partial_flash_order.max_amount_in + partial_flash_order.max_extra_fee_asset0,
                 ),
                 FlashVariants::Exact(exact_flash_order) => (
                     exact_flash_order.asset_in,
-                    exact_flash_order.amount + exact_flash_order.max_extra_fee_asset0
-                )
+                    exact_flash_order.amount + exact_flash_order.max_extra_fee_asset0,
+                ),
             },
             AllOrders::TOB(top_of_block_order) => (
                 top_of_block_order.asset_in,
-                top_of_block_order.quantity_in + top_of_block_order.max_gas_asset0
-            )
+                top_of_block_order.quantity_in + top_of_block_order.max_gas_asset0,
+            ),
         };
 
         let user_balance_of = provider
             .view_call(token, ERC20::balanceOfCall { _owner: order.from() })
-            .await?
+            .await??
             .balance;
 
-        if U256::from(amt) < user_balance_of {
-            return Err(eyre::eyre!(
-                "balance of {token:?} too low. in order: {amt} - current balance: \
-                 {user_balance_of:?}"
-            ));
+        let amt_u256 = U256::from(amt);
+        if U256::from(amt_u256) < user_balance_of {
+            return Err(FillerError::InsufficientBalanceError(token, amt_u256, user_balance_of));
         }
 
         Ok(())
     }
 
-    async fn handle_liquidity_order<P>(
+    async fn prepare_eth_order<P>(
         &self,
-        provider: &EthRpcProvider<P>,
-        order: &TransactionRequestWithLiquidityMeta
-    ) -> eyre::Result<()>
+        provider: &AngstromProvider<P>,
+        order: &TransactionRequestWithLiquidityMeta,
+    ) -> Result<(), FillerError>
     where
-        P: Provider + Clone
+        P: Provider,
     {
         // todo!();
         Ok(())
@@ -87,20 +82,15 @@ impl AngstromFiller for TokenBalanceCheckFiller {
 
     async fn prepare<P>(
         &self,
-        provider: &EthRpcProvider<P>,
-        _: &AngstromProvider,
-        order: &FillerOrder
-    ) -> eyre::Result<Self::FillOutput>
+        provider: &AngstromProvider<P>,
+        order: &FillerOrder,
+    ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider + Clone
+        P: Provider,
     {
         match order {
-            FillerOrder::AngstromOrder(angstrom_order) => {
-                self.handle_angstrom_order(provider, angstrom_order).await
-            }
-            FillerOrder::RegularOrder(liquidity_order) => {
-                self.handle_liquidity_order(provider, liquidity_order).await
-            }
+            FillerOrder::AngstromOrder(order) => self.prepare_angstrom_order(provider, order).await,
+            FillerOrder::EthOrder(order) => self.prepare_eth_order(provider, order).await,
         }
     }
 }

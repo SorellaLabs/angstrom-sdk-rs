@@ -1,10 +1,11 @@
 mod balance_check;
-
+pub mod errors;
 use alloy_primitives::Address;
 use alloy_provider::Provider;
-use angstrom_types::sol_bindings::{grouped_orders::AllOrders, RawPoolOrder};
+use angstrom_types::sol_bindings::{RawPoolOrder, grouped_orders::AllOrders};
 pub use balance_check::*;
 mod signer;
+use errors::FillerError;
 pub use signer::*;
 mod nonce_generator;
 pub use nonce_generator::*;
@@ -12,11 +13,11 @@ mod chain_id;
 pub use chain_id::*;
 
 use super::TransactionRequestWithLiquidityMeta;
-use crate::providers::{AngstromProvider, EthRpcProvider};
+use crate::providers::AngstromProvider;
 
 pub struct AngstromFillProvider<L, R> {
-    left:  L,
-    right: R
+    left: L,
+    right: R,
 }
 
 impl<L, R> AngstromFillProvider<L, R> {
@@ -28,33 +29,27 @@ impl<L, R> AngstromFillProvider<L, R> {
 impl<L, R> AngstromFiller for AngstromFillProvider<L, R>
 where
     L: AngstromFiller,
-    R: AngstromFiller
+    R: AngstromFiller,
 {
     type FillOutput = ();
 
     async fn fill<P>(
         &self,
-        provider: &EthRpcProvider<P>,
-        angstrom_provider: &AngstromProvider,
-        order: &mut FillerOrder
-    ) -> eyre::Result<()>
+        provider: &AngstromProvider<P>,
+        order: &mut FillerOrder,
+    ) -> Result<(), FillerError>
     where
-        P: Provider + Clone
+        P: Provider,
     {
-        self.left.fill(provider, angstrom_provider, order).await?;
-        self.right.fill(provider, angstrom_provider, order).await?;
+        self.left.fill(provider, order).await?;
+        self.right.fill(provider, order).await?;
 
         Ok(())
     }
 
-    async fn prepare<P>(
-        &self,
-        _: &EthRpcProvider<P>,
-        _: &AngstromProvider,
-        _: &FillerOrder
-    ) -> eyre::Result<()>
+    async fn prepare<P>(&self, _: &AngstromProvider<P>, _: &FillerOrder) -> Result<(), FillerError>
     where
-        P: Provider + Clone
+        P: Provider,
     {
         Ok(())
     }
@@ -67,17 +62,16 @@ pub(crate) trait AngstromFiller: Sized {
 
     async fn fill<P>(
         &self,
-        provider: &EthRpcProvider<P>,
-        angstrom_provider: &AngstromProvider,
-        order: &mut FillerOrder
-    ) -> eyre::Result<()>
+        provider: &AngstromProvider<P>,
+        order: &mut FillerOrder,
+    ) -> Result<(), FillerError>
     where
-        P: Provider + Clone
+        P: Provider,
     {
-        let input = self.prepare(provider, angstrom_provider, order).await?;
+        let input = self.prepare(provider, order).await?;
         match order {
             FillerOrder::AngstromOrder(all_orders) => input.prepare_with(all_orders)?,
-            FillerOrder::RegularOrder(tx_request) => input.prepare_with(tx_request)?
+            FillerOrder::EthOrder(tx_request) => input.prepare_with(tx_request)?,
         }
 
         Ok(())
@@ -85,21 +79,19 @@ pub(crate) trait AngstromFiller: Sized {
 
     async fn fill_many<P>(
         &self,
-        provider: &EthRpcProvider<P>,
-        angstrom_provider: &AngstromProvider,
-        orders: &mut [FillerOrder]
-    ) -> eyre::Result<()>
+        provider: &AngstromProvider<P>,
+        orders: &mut [FillerOrder],
+    ) -> Result<(), FillerError>
     where
-        P: Provider + Clone
+        P: Provider,
     {
-        let inputs = self
-            .prepare_many(provider, angstrom_provider, orders)
-            .await?;
+        let inputs = self.prepare_many(provider, orders).await;
 
         for (order, input) in orders.iter_mut().zip(inputs) {
+            let input = input?;
             match order {
                 FillerOrder::AngstromOrder(all_orders) => input.prepare_with(all_orders)?,
-                FillerOrder::RegularOrder(tx_request) => input.prepare_with(tx_request)?
+                FillerOrder::EthOrder(tx_request) => input.prepare_with(tx_request)?,
             }
         }
 
@@ -108,44 +100,30 @@ pub(crate) trait AngstromFiller: Sized {
 
     async fn prepare<P>(
         &self,
-        provider: &EthRpcProvider<P>,
-        angstrom_provider: &AngstromProvider,
-        order: &FillerOrder
-    ) -> eyre::Result<Self::FillOutput>
+        provider: &AngstromProvider<P>,
+        order: &FillerOrder,
+    ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider + Clone;
+        P: Provider;
 
     async fn prepare_many<P>(
         &self,
-        provider: &EthRpcProvider<P>,
-        angstrom_provider: &AngstromProvider,
-        orders: &[FillerOrder]
-    ) -> eyre::Result<Vec<Self::FillOutput>>
+        provider: &AngstromProvider<P>,
+        orders: &[FillerOrder],
+    ) -> Vec<Result<Self::FillOutput, FillerError>>
     where
-        P: Provider + Clone
+        P: Provider,
     {
-        futures::future::join_all(
-            orders
-                .iter()
-                .map(|order| self.prepare(provider, angstrom_provider, order))
-        )
-        .await
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()
+        futures::future::join_all(orders.iter().map(|order| self.prepare(provider, order))).await
     }
 }
 
 impl AngstromFiller for () {
     type FillOutput = ();
 
-    async fn prepare<P>(
-        &self,
-        _: &EthRpcProvider<P>,
-        _: &AngstromProvider,
-        _: &FillerOrder
-    ) -> eyre::Result<()>
+    async fn prepare<P>(&self, _: &AngstromProvider<P>, _: &FillerOrder) -> Result<(), FillerError>
     where
-        P: Provider + Clone
+        P: Provider,
     {
         Ok(())
     }
@@ -160,39 +138,39 @@ pub(crate) trait FillWrapper: AngstromFiller {
 impl FillWrapper for () {}
 
 pub(crate) trait FillFrom<F: AngstromFiller, O> {
-    fn prepare_with(self, input_order: &mut O) -> eyre::Result<()>;
+    fn prepare_with(self, input_order: &mut O) -> Result<(), FillerError>;
 }
 
 impl<F: AngstromFiller, O> FillFrom<F, O> for () {
-    fn prepare_with(self, _: &mut O) -> eyre::Result<()> {
+    fn prepare_with(self, _: &mut O) -> Result<(), FillerError> {
         Ok(())
     }
 }
 
 pub(crate) enum FillerOrder {
     AngstromOrder(AllOrders),
-    RegularOrder(TransactionRequestWithLiquidityMeta)
+    EthOrder(TransactionRequestWithLiquidityMeta),
 }
 
 impl FillerOrder {
     pub(crate) fn force_all_orders(self) -> AllOrders {
         match self {
             FillerOrder::AngstromOrder(o) => o,
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
     pub(crate) fn force_regular_tx(self) -> TransactionRequestWithLiquidityMeta {
         match self {
-            FillerOrder::RegularOrder(o) => o,
-            _ => unreachable!()
+            FillerOrder::EthOrder(o) => o,
+            _ => unreachable!(),
         }
     }
 
     pub(crate) fn from(&self) -> Option<Address> {
         match self {
             FillerOrder::AngstromOrder(order) => Some(order.from()),
-            FillerOrder::RegularOrder(tx) => tx.tx_request.from
+            FillerOrder::EthOrder(tx) => tx.tx_request.from,
         }
     }
 }
@@ -205,6 +183,6 @@ impl From<AllOrders> for FillerOrder {
 
 impl From<TransactionRequestWithLiquidityMeta> for FillerOrder {
     fn from(value: TransactionRequestWithLiquidityMeta) -> Self {
-        FillerOrder::RegularOrder(value)
+        FillerOrder::EthOrder(value)
     }
 }

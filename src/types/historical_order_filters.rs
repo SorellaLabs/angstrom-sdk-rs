@@ -1,31 +1,27 @@
 use std::{
     collections::{HashMap, HashSet},
-    str::FromStr
+    str::FromStr,
 };
 
 use alloy_consensus::Transaction;
 use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_rpc_types::Block;
-#[cfg(feature = "neon")]
-use angstrom_sdk_rs_macros::NeonObject;
 use angstrom_types::{
     contract_payloads::angstrom::{AngstromBundle, TopOfBlockOrder, UserOrder},
-    primitive::PoolId
+    primitive::PoolId,
 };
-#[cfg(feature = "neon")]
-use neon::object::Object;
 use pade::PadeDecode;
 
 use super::PoolMetadata;
-use crate::{apis::utils::pool_config_store, providers::EthRpcProvider};
+use crate::{apis::utils::pool_config_store, providers::AngstromProvider};
 
 #[derive(Debug, Default, Clone)]
 pub struct HistoricalOrdersFilter {
-    pub order_kinds:   HashSet<OrderKind>,
+    pub order_kinds: HashSet<OrderKind>,
     pub order_filters: HashSet<OrderFilter>,
-    pub from_block:    Option<u64>,
-    pub to_block:      Option<u64>
+    pub from_block: Option<u64>,
+    pub to_block: Option<u64>,
 }
 
 impl HistoricalOrdersFilter {
@@ -66,7 +62,7 @@ impl HistoricalOrdersFilter {
     pub fn filter_block(
         &self,
         block: Block,
-        pool_stores: &AngstromPoolTokenIndexToPair
+        pool_stores: &AngstromPoolTokenIndexToPair,
     ) -> Vec<HistoricalOrders> {
         block
             .transactions
@@ -82,7 +78,7 @@ impl HistoricalOrdersFilter {
     fn apply_kinds(
         &self,
         bundle: AngstromBundle,
-        pool_stores: &AngstromPoolTokenIndexToPair
+        pool_stores: &AngstromPoolTokenIndexToPair,
     ) -> Vec<HistoricalOrders> {
         let mut all_orders = Vec::new();
 
@@ -111,7 +107,7 @@ impl HistoricalOrdersFilter {
     fn apply_filter_tob(
         &self,
         order: &TopOfBlockOrder,
-        pool_stores: &AngstromPoolTokenIndexToPair
+        pool_stores: &AngstromPoolTokenIndexToPair,
     ) -> bool {
         if self.order_filters.contains(&OrderFilter::None) {
             return true;
@@ -132,14 +128,14 @@ impl HistoricalOrdersFilter {
                     false
                 }
             }
-            OrderFilter::None => unreachable!()
+            OrderFilter::None => unreachable!(),
         })
     }
 
     fn apply_filter_user(
         &self,
         order: &UserOrder,
-        pool_stores: &AngstromPoolTokenIndexToPair
+        pool_stores: &AngstromPoolTokenIndexToPair,
     ) -> bool {
         if self.order_filters.contains(&OrderFilter::None) {
             return true;
@@ -160,17 +156,16 @@ impl HistoricalOrdersFilter {
                     false
                 }
             }
-            OrderFilter::None => unreachable!()
+            OrderFilter::None => unreachable!(),
         })
     }
 }
 
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "neon", derive(NeonObject))]
 pub enum OrderKind {
     TOB,
     User,
-    None
+    None,
 }
 
 impl FromStr for OrderKind {
@@ -182,7 +177,7 @@ impl FromStr for OrderKind {
             "tob" => Ok(Self::TOB),
             "user" => Ok(Self::User),
             "none" => Ok(Self::None),
-            _ => Err(eyre::eyre!("{s} is not a valid OrderKind"))
+            _ => Err(eyre::eyre!("{s} is not a valid OrderKind")),
         }
     }
 }
@@ -191,7 +186,7 @@ impl FromStr for OrderKind {
 pub enum OrderFilter {
     ByPoolId { pool_id: PoolId },
     ByTokens { token0: Address, token1: Address },
-    None
+    None,
 }
 
 impl OrderFilter {
@@ -207,7 +202,7 @@ impl OrderFilter {
 #[derive(Debug, Clone)]
 pub enum HistoricalOrders {
     TOB(TopOfBlockOrder),
-    User(UserOrder)
+    User(UserOrder),
 }
 
 #[derive(Debug)]
@@ -215,11 +210,11 @@ pub(crate) struct AngstromPoolTokenIndexToPair(HashMap<u16, PoolMetadata>);
 
 impl AngstromPoolTokenIndexToPair {
     pub(crate) async fn new_with_tokens<P>(
-        provider: &EthRpcProvider<P>,
-        filter: &HistoricalOrdersFilter
+        provider: &AngstromProvider<P>,
+        filter: &HistoricalOrdersFilter,
     ) -> eyre::Result<Self>
     where
-        P: Provider + Clone
+        P: Provider,
     {
         let token_pairs = filter
             .order_filters

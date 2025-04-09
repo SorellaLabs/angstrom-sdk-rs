@@ -1,71 +1,121 @@
-use alloy_provider::Provider;
-use angstrom_types::sol_bindings::grouped_orders::{AllOrders, StandingVariants};
-
-use super::{AngstromFiller, FillFrom, FillerOrder};
+use super::{AngstromFiller, FillFrom, FillerOrder, errors::FillerError};
 use crate::{
-    apis::node_api::AngstromNodeApi,
-    providers::{AngstromProvider, EthRpcProvider},
-    types::TransactionRequestWithLiquidityMeta
+    providers::AngstromProvider,
+    types::{ANGSTROM_ADDRESS, TransactionRequestWithLiquidityMeta},
 };
+use alloy_primitives::{Address, U256};
+use alloy_provider::Provider;
+use angstrom_types::sol_bindings::{
+    RawPoolOrder,
+    grouped_orders::{AllOrders, StandingVariants},
+};
+
+use validation::order::state::db_state_utils::nonces::Nonces;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct NonceGeneratorFiller;
+
+impl NonceGeneratorFiller {
+    async fn get_valid_nonce<P: Provider>(user: Address, provider: &P) -> Result<u64, FillerError> {
+        let nonce_tracker = Nonces::new(ANGSTROM_ADDRESS);
+
+        let mut nonce: u64 = rand::random();
+        loop {
+            let slot = nonce_tracker.get_nonce_word_slot(user, nonce);
+
+            let word = provider
+                .get_storage_at(ANGSTROM_ADDRESS, slot.into())
+                .await?;
+
+            let flag = U256::from(1) << (nonce as u8);
+
+            if (word ^ flag) & flag == flag {
+                break Ok(nonce);
+            } else {
+                nonce = rand::random();
+            }
+        }
+    }
+
+    async fn prepare_angstrom_order<P>(
+        &self,
+        provider: &AngstromProvider<P>,
+        order: &AllOrders,
+    ) -> Result<<Self as AngstromFiller>::FillOutput, FillerError>
+    where
+        P: Provider,
+    {
+        if !matches!(order, AllOrders::Standing(_)) {
+            return Ok(None);
+        }
+
+        let from = order.from();
+
+        let nonce = Self::get_valid_nonce(from, provider.eth_provider()).await?;
+
+        Ok(Some(nonce))
+    }
+
+    async fn prepare_eth_order<P>(
+        &self,
+        provider: &AngstromProvider<P>,
+        order: &TransactionRequestWithLiquidityMeta,
+    ) -> Result<<Self as AngstromFiller>::FillOutput, FillerError>
+    where
+        P: Provider,
+    {
+        let Some(from) = order.tx_request.from else { return Ok(None) };
+
+        let nonce = provider.eth_provider().get_transaction_count(from).await?;
+        Ok(Some(nonce))
+    }
+}
 
 impl AngstromFiller for NonceGeneratorFiller {
     type FillOutput = Option<u64>;
 
     async fn prepare<P>(
         &self,
-        provider: &EthRpcProvider<P>,
-        angstrom_provider: &AngstromProvider,
-        order: &FillerOrder
-    ) -> eyre::Result<Self::FillOutput>
+        provider: &AngstromProvider<P>,
+        order: &FillerOrder,
+    ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider + Clone
+        P: Provider,
     {
-        if !order_contains_nonce(order) {
-            return Ok(None);
+        match order {
+            FillerOrder::AngstromOrder(order) => self.prepare_angstrom_order(provider, order).await,
+            FillerOrder::EthOrder(order) => self.prepare_eth_order(provider, order).await,
         }
-
-        let Some(from) = order.from() else {
-            return Ok(None);
-        };
-
-        let current_nonce = provider.eth_provider().get_transaction_count(from).await?;
-        let pending_orders = angstrom_provider.pending_orders(vec![from]).await?.len() as u64;
-
-        Ok(Some(current_nonce + pending_orders + 1))
     }
 
     // probably need different function for this
     // async fn prepare_many<P, T>(
     //     &self,
-    //     provider: &EthRpcProvider<P, T>,
+    //     provider: &AngstromProvider<P, T>,
     //     angstrom_provider: &AngstromProvider,
     //     orders: &[FillerOrder],
     // ) -> eyre::Result<Vec<Self::FillOutput>>
     // where
-    //     P: Provider + Clone<T> + Clone,
+    //     P: Provider<T> + Clone,
     //     T: Transport + Clone,
     // {
 
     // }
 }
 
-fn order_contains_nonce(order: &FillerOrder) -> bool {
-    matches!(order, FillerOrder::AngstromOrder(AllOrders::Standing(_)))
-        || matches!(order, FillerOrder::RegularOrder(_))
-}
-
 impl FillFrom<NonceGeneratorFiller, AllOrders> for Option<u64> {
-    fn prepare_with(self, input_order: &mut AllOrders) -> eyre::Result<()> {
+    fn prepare_with(self, input_order: &mut AllOrders) -> Result<(), FillerError> {
         if let AllOrders::Standing(standing_variants) = input_order {
             match standing_variants {
                 StandingVariants::Partial(partial_standing_order) => {
-                    partial_standing_order.nonce = self.expect("expected nonce");
+                    if let Some(nonce) = self {
+                        partial_standing_order.nonce = nonce;
+                    }
                 }
                 StandingVariants::Exact(exact_standing_order) => {
-                    exact_standing_order.nonce = self.expect("expected nonce");
+                    if let Some(nonce) = self {
+                        exact_standing_order.nonce = nonce;
+                    }
                 }
             }
         };
@@ -77,9 +127,93 @@ impl FillFrom<NonceGeneratorFiller, AllOrders> for Option<u64> {
 impl FillFrom<NonceGeneratorFiller, TransactionRequestWithLiquidityMeta> for Option<u64> {
     fn prepare_with(
         self,
-        input_order: &mut TransactionRequestWithLiquidityMeta
-    ) -> eyre::Result<()> {
-        input_order.tx_request.nonce = self;
+        tx_req: &mut TransactionRequestWithLiquidityMeta,
+    ) -> Result<(), FillerError> {
+        tx_req.tx_request.nonce = self;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloy_primitives::{FixedBytes, address, aliases::I24};
+    use alloy_provider::RootProvider;
+    use alloy_rpc_types::TransactionRequest;
+    use alloy_sol_types::SolCall;
+    use angstrom_types::contract_bindings::pool_gate::PoolGate::addLiquidityCall;
+
+    use crate::{
+        AngstromApi,
+        test_utils::{AllOrdersSpecific, match_all_orders, spawn_angstrom_api},
+        types::fillers::AngstromFillProvider,
+    };
+
+    use super::*;
+
+    async fn spawn_api_with_filler()
+    -> eyre::Result<AngstromApi<RootProvider, AngstromFillProvider<(), NonceGeneratorFiller>>> {
+        Ok(spawn_angstrom_api().await?.with_nonce_generator_filler())
+    }
+
+    #[tokio::test]
+    async fn test_nonce_generator_angstrom_order() {
+        let api = spawn_api_with_filler().await.unwrap();
+        let orders = AllOrdersSpecific::default();
+
+        let provider = &api;
+        orders
+            .test_filler_order(async |order| {
+                let mut inner_order: FillerOrder = order.clone().into();
+                provider
+                    .filler
+                    .fill(&provider.provider, &mut inner_order)
+                    .await
+                    .unwrap();
+
+                let matched_orders =
+                    match_all_orders(&inner_order.force_all_orders(), &order, |o| match o {
+                        AllOrders::Standing(StandingVariants::Exact(inner_order)) => {
+                            Some(inner_order.nonce)
+                        }
+                        AllOrders::Standing(StandingVariants::Partial(inner_order)) => {
+                            Some(inner_order.nonce)
+                        }
+                        _ => None,
+                    });
+
+                if let Some((mod_nonce, nonce)) = matched_orders {
+                    nonce != mod_nonce
+                } else {
+                    true
+                }
+            })
+            .await;
+    }
+
+    #[tokio::test]
+    async fn test_nonce_generator_eth_order() {
+        let api = spawn_api_with_filler().await.unwrap();
+        let tx_req = TransactionRequest::default()
+            .from(address!("0x429fd8e0040e2c982b2f91bf5ee75ce73015ec0c"));
+
+        let mut inner_order: FillerOrder = TransactionRequestWithLiquidityMeta::new_add_liqudity(
+            tx_req.clone(),
+            addLiquidityCall::new((
+                Address::default(),
+                Address::default(),
+                I24::default(),
+                I24::default(),
+                U256::default(),
+                FixedBytes::<32>::default(),
+            )),
+        )
+        .into();
+        api.filler
+            .fill(&api.provider, &mut inner_order)
+            .await
+            .unwrap();
+
+        assert!(tx_req.nonce.is_none());
+        assert!(inner_order.force_regular_tx().tx_request.nonce.is_some());
     }
 }
