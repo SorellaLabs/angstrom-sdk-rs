@@ -50,6 +50,10 @@ impl EthRpcProvider<RootProvider> {
     }
 }
 impl<P: Provider + Clone> EthRpcProvider<P> {
+    pub fn new_with_provider(eth_provider: P) -> Self {
+        Self { eth_provider, web_provider: reqwest::Client::new() }
+    }
+
     pub fn eth_provider(&self) -> &P {
         &self.eth_provider
     }

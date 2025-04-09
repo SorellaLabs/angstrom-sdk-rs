@@ -13,12 +13,12 @@ pub trait AngstromDataApi {
 
     async fn binance_prices(
         &self,
-        token_addresses: Vec<Address>
+        token_addresses: Vec<Address>,
     ) -> eyre::Result<Vec<BinanceTokenPrice>> {
         Ok(futures::future::try_join_all(
             token_addresses
                 .into_iter()
-                .map(|addr| self.binance_price(addr))
+                .map(|addr| self.binance_price(addr)),
         )
         .await?)
     }
@@ -31,26 +31,26 @@ pub trait AngstromDataApi {
 
     async fn historical_orders(
         &self,
-        filter: HistoricalOrdersFilter
+        filter: HistoricalOrdersFilter,
     ) -> eyre::Result<Vec<HistoricalOrders>>;
 
     async fn pool_data(
         &self,
         token0: Address,
         token1: Address,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>>;
 
     async fn all_pool_data(
         &self,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<Vec<EnhancedUniswapPool<DataLoader<PoolId>, PoolId>>> {
         let token_pairs = self.all_token_pairs().await?;
 
         let pools = futures::future::try_join_all(
             token_pairs
                 .into_iter()
-                .map(|pair| self.pool_data(pair.token0, pair.token1, block_number))
+                .map(|pair| self.pool_data(pair.token0, pair.token1, block_number)),
         )
         .await?;
 
