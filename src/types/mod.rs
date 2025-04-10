@@ -44,10 +44,8 @@ pub const ANGSTROM_DEPLOYED_BLOCK: u64 = 0;
 // pub const POOL_CONFIG_STORE_SLOT: u8 = 3;
 
 #[cfg(not(feature = "testnet-sepolia"))]
-pub(crate) const ANGSTROM_HTTP_URL: &str = "ANGSTROM_HTTP_URL";
+pub const USDC: alloy_primitives::Address =
+    alloy_primitives::address!("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48");
 #[cfg(feature = "testnet-sepolia")]
-pub(crate) const ANGSTROM_HTTP_URL: &str = "ANGSTROM_SEPOLIA_HTTP_URL";
-#[cfg(not(feature = "testnet-sepolia"))]
-pub(crate) const ETH_WS_URL: &str = "ETH_WS_URL";
-#[cfg(feature = "testnet-sepolia")]
-pub(crate) const ETH_WS_URL: &str = "ETH_SEPOLIA_WS_URL";
+pub const USDC: alloy_primitives::Address =
+    alloy_primitives::address!("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238");

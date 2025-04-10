@@ -26,7 +26,6 @@ use jsonrpsee_http_client::HttpClient;
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
 use crate::{
-    FillWrapper, FillerOrder,
     apis::{data_api::AngstromDataApi, node_api::AngstromNodeApi, utils::pool_config_store},
     types::*,
 };

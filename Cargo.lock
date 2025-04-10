@@ -1541,6 +1541,8 @@ dependencies = [
  "parking_lot",
  "rand 0.9.0",
  "reqwest",
+ "revm",
+ "revm-database",
  "serde",
  "serde_json",
  "testing-tools",
@@ -9912,12 +9914,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47887f741101187d1bde69c8840eefefd6152788f5e0d4fc2eb5068a1ae16483"
 dependencies = [
  "alloy-eips 0.12.6",
+ "alloy-provider 0.12.6",
+ "alloy-transport 0.12.6",
  "auto_impl",
  "revm-bytecode",
  "revm-database-interface",
  "revm-primitives",
  "revm-state",
  "serde",
+ "tokio",
 ]
 
 [[package]]
@@ -9930,6 +9935,7 @@ dependencies = [
  "revm-primitives",
  "revm-state",
  "serde",
+ "tokio",
 ]
 
 [[package]]

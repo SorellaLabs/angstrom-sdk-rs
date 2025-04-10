@@ -59,7 +59,7 @@ impl HistoricalOrdersFilter {
         self
     }
 
-    pub fn filter_block(
+    pub(crate) fn filter_block(
         &self,
         block: Block,
         pool_stores: &AngstromPoolTokenIndexToPair,

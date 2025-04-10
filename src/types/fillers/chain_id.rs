@@ -1,7 +1,7 @@
 use alloy_provider::Provider;
 use angstrom_types::{CHAIN_ID, sol_bindings::grouped_orders::AllOrders};
 
-use super::{AngstromFiller, FillFrom, FillerOrder, errors::FillerError};
+use super::{AngstromFiller, FillFrom, FillerOrderFrom, errors::FillerError};
 use crate::{providers::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -13,7 +13,7 @@ impl AngstromFiller for ChainIdFiller {
     async fn prepare<P>(
         &self,
         _: &AngstromProvider<P>,
-        _: &FillerOrder,
+        _: &FillerOrderFrom,
     ) -> Result<Self::FillOutput, FillerError>
     where
         P: Provider,

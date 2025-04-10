@@ -97,6 +97,14 @@ rand = "0.9"
 
 [dev-dependencies]
 testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", default-features = false }
+revm = { version = "20.0.0-alpha.7", features = [
+    "std",
+    "secp256k1",
+    "optional_balance_check",
+    "optional_block_gas_limit",
+    "alloydb",
+], default-features = false }
+revm-database = { version = "1.0.0-alpha.5", default-features = false }
 
 
 [features]

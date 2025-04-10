@@ -1,6 +1,5 @@
-#![allow(async_fn_in_trait)]
-#![allow(private_interfaces)]
 #![allow(private_bounds)]
+#![allow(async_fn_in_trait)]
 
 pub mod apis;
 
@@ -20,9 +19,9 @@ use angstrom_types::{
         angstrom::Angstrom::PoolKey, position_fetcher::PositionFetcher,
         position_manager::PositionManager,
     },
-    sol_bindings::grouped_orders::AllOrders,
+    sol_bindings::{RawPoolOrder, grouped_orders::AllOrders},
 };
-use apis::user_api::AngstromUserApi;
+use apis::{user_api::AngstromUserApi, utils::FromAddress};
 use futures::TryFutureExt;
 use jsonrpsee_http_client::HttpClient;
 use providers::{AngstromProvider, RpcWalletProvider};
@@ -30,8 +29,8 @@ use types::{
     HistoricalOrders, HistoricalOrdersFilter, TokenInfoWithMeta, TokenPairInfo,
     TransactionRequestWithLiquidityMeta, UserLiquidityPosition,
     fillers::{
-        AngstromFillProvider, AngstromFiller, FillWrapper, FillerOrder, NonceGeneratorFiller,
-        SignerFiller, TokenBalanceCheckFiller,
+        AngstromFillProvider, AngstromFiller, FillWrapper, FillerOrderFrom, MakeFillerOrder,
+        NonceGeneratorFiller, SignerFiller, TokenBalanceCheckFiller,
     },
 };
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
@@ -68,12 +67,13 @@ where
         &self,
         tx_req: TransactionRequestWithLiquidityMeta,
     ) -> eyre::Result<TxHash> {
-        let mut filled_tx_req: FillerOrder = tx_req.into();
+        let from = tx_req.from_address(&self.filler);
+        let mut filled_tx_req = tx_req.convert_with_from(from);
         self.filler.fill(&self.provider, &mut filled_tx_req).await?;
 
         Ok(self
             .provider
-            .send_add_remove_liquidity_tx(filled_tx_req.force_regular_tx())
+            .send_add_remove_liquidity_tx(filled_tx_req.inner.force_regular_tx())
             .await?)
     }
 
@@ -155,10 +155,15 @@ where
     }
 
     async fn send_order(&self, order: AllOrders) -> eyre::Result<FixedBytes<32>> {
-        let mut filler_order: FillerOrder = order.into();
+        let from = self.filler.from().unwrap_or_else(|| {
+            let f = order.from();
+            assert_ne!(f, Address::default());
+            f
+        });
+        let mut filler_order: FillerOrderFrom = order.convert_with_from(from);
         self.filler.fill(&self.provider, &mut filler_order).await?;
         self.provider
-            .send_order(filler_order.force_all_orders())
+            .send_order(filler_order.inner.force_all_orders())
             .await
     }
 
@@ -166,7 +171,13 @@ where
         &self,
         orders: Vec<AllOrders>,
     ) -> eyre::Result<Vec<eyre::Result<FixedBytes<32>>>> {
-        let mut filler_orders: Vec<FillerOrder> = orders.into_iter().map(Into::into).collect();
+        let mut filler_orders: Vec<FillerOrderFrom> = orders
+            .into_iter()
+            .map(|o| {
+                let from = o.from_address(&self.filler);
+                o.convert_with_from(from)
+            })
+            .collect();
 
         self.filler
             .fill_many(&self.provider, &mut filler_orders)
@@ -175,7 +186,7 @@ where
             .send_orders(
                 filler_orders
                     .into_iter()
-                    .map(|order| order.force_all_orders())
+                    .map(|order| order.inner.force_all_orders())
                     .collect(),
             )
             .await

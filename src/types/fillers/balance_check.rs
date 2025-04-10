@@ -1,14 +1,11 @@
-use alloy_primitives::U256;
+use alloy_primitives::{Address, U256};
 use alloy_provider::Provider;
 use angstrom_types::{
     primitive::ERC20,
-    sol_bindings::{
-        RawPoolOrder,
-        grouped_orders::{AllOrders, FlashVariants, StandingVariants},
-    },
+    sol_bindings::grouped_orders::{AllOrders, FlashVariants, StandingVariants},
 };
 
-use super::{AngstromFiller, FillerOrder, errors::FillerError};
+use super::{AngstromFiller, FillerOrder, FillerOrderFrom, errors::FillerError};
 use crate::{providers::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -19,6 +16,7 @@ impl TokenBalanceCheckFiller {
         &self,
         provider: &AngstromProvider<P>,
         order: &AllOrders,
+        from: Address,
     ) -> Result<(), FillerError>
     where
         P: Provider,
@@ -52,12 +50,12 @@ impl TokenBalanceCheckFiller {
         };
 
         let user_balance_of = provider
-            .view_call(token, ERC20::balanceOfCall { _owner: order.from() })
+            .view_call(token, ERC20::balanceOfCall { _owner: from })
             .await??
             .balance;
 
         let amt_u256 = U256::from(amt);
-        if U256::from(amt_u256) < user_balance_of {
+        if U256::from(amt_u256) > user_balance_of {
             return Err(FillerError::InsufficientBalanceError(token, amt_u256, user_balance_of));
         }
 
@@ -68,6 +66,7 @@ impl TokenBalanceCheckFiller {
         &self,
         provider: &AngstromProvider<P>,
         order: &TransactionRequestWithLiquidityMeta,
+        from: Address,
     ) -> Result<(), FillerError>
     where
         P: Provider,
@@ -83,14 +82,133 @@ impl AngstromFiller for TokenBalanceCheckFiller {
     async fn prepare<P>(
         &self,
         provider: &AngstromProvider<P>,
-        order: &FillerOrder,
+        order: &FillerOrderFrom,
     ) -> Result<Self::FillOutput, FillerError>
     where
         P: Provider,
     {
-        match order {
-            FillerOrder::AngstromOrder(order) => self.prepare_angstrom_order(provider, order).await,
-            FillerOrder::EthOrder(order) => self.prepare_eth_order(provider, order).await,
+        match &order.inner {
+            FillerOrder::AngstromOrder(inner_order) => {
+                self.prepare_angstrom_order(provider, inner_order, order.from)
+                    .await
+            }
+            FillerOrder::EthOrder(inner_order) => {
+                self.prepare_eth_order(provider, inner_order, order.from)
+                    .await
+            }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloy_primitives::Address;
+
+    use crate::{
+        AngstromApi, MakeFillerOrder,
+        test_utils::{AllOrdersSpecific, AnvilAngstromProvider},
+        types::USDC,
+    };
+
+    use super::*;
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_balance_checker_angstrom_order() {
+        let provider = AnvilAngstromProvider::new().await.unwrap();
+        let api = AngstromApi::new(provider.provider.clone()).with_token_balance_filler();
+
+        let orders = AllOrdersSpecific::default();
+
+        let from = Address::random();
+        let amount = 1000000000000000;
+        let max_fee = 1000000000;
+        let asset = USDC;
+
+        let ref_api = &api;
+        orders
+            .clone()
+            .test_filler_order(async |mut order| {
+                match &mut order {
+                    AllOrders::Standing(StandingVariants::Exact(inner_order)) => {
+                        inner_order.asset_in = asset;
+                        inner_order.amount = amount;
+                        inner_order.max_extra_fee_asset0 = max_fee;
+                    }
+                    AllOrders::Standing(StandingVariants::Partial(inner_order)) => {
+                        inner_order.asset_in = asset;
+                        inner_order.max_amount_in = amount;
+                        inner_order.max_extra_fee_asset0 = max_fee;
+                    }
+                    AllOrders::Flash(FlashVariants::Exact(inner_order)) => {
+                        inner_order.asset_in = asset;
+                        inner_order.amount = amount;
+                        inner_order.max_extra_fee_asset0 = max_fee;
+                    }
+                    AllOrders::Flash(FlashVariants::Partial(inner_order)) => {
+                        inner_order.asset_in = asset;
+                        inner_order.max_amount_in = amount;
+                        inner_order.max_extra_fee_asset0 = max_fee;
+                    }
+                    AllOrders::TOB(inner_order) => {
+                        inner_order.asset_in = asset;
+                        inner_order.quantity_in = amount;
+                        inner_order.max_gas_asset0 = max_fee;
+                    }
+                }
+
+                let mut inner_order = order.clone().convert_with_from(from);
+
+                let fill = ref_api
+                    .filler
+                    .fill(&ref_api.provider, &mut inner_order)
+                    .await;
+
+                matches!(fill.err().unwrap(), FillerError::InsufficientBalanceError(_, _, _))
+            })
+            .await;
+
+        provider.overwrite_token_amounts(from, asset).await.unwrap();
+
+        let api = AngstromApi::new(provider.provider.clone()).with_token_balance_filler();
+        let ref_api = &api;
+        orders
+            .test_filler_order(async |mut order| {
+                match &mut order {
+                    AllOrders::Standing(StandingVariants::Exact(inner_order)) => {
+                        inner_order.asset_in = asset;
+                        inner_order.amount = amount;
+                        inner_order.max_extra_fee_asset0 = max_fee;
+                    }
+                    AllOrders::Standing(StandingVariants::Partial(inner_order)) => {
+                        inner_order.asset_in = asset;
+                        inner_order.max_amount_in = amount;
+                        inner_order.max_extra_fee_asset0 = max_fee;
+                    }
+                    AllOrders::Flash(FlashVariants::Exact(inner_order)) => {
+                        inner_order.asset_in = asset;
+                        inner_order.amount = amount;
+                        inner_order.max_extra_fee_asset0 = max_fee;
+                    }
+                    AllOrders::Flash(FlashVariants::Partial(inner_order)) => {
+                        inner_order.asset_in = asset;
+                        inner_order.max_amount_in = amount;
+                        inner_order.max_extra_fee_asset0 = max_fee;
+                    }
+                    AllOrders::TOB(inner_order) => {
+                        inner_order.asset_in = asset;
+                        inner_order.quantity_in = amount;
+                        inner_order.max_gas_asset0 = max_fee;
+                    }
+                }
+
+                let mut inner_order = order.clone().convert_with_from(from);
+
+                ref_api
+                    .filler
+                    .fill(&ref_api.provider, &mut inner_order)
+                    .await
+                    .is_ok()
+            })
+            .await;
     }
 }

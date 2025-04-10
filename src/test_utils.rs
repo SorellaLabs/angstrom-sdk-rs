@@ -1,28 +1,48 @@
+use alloy_eips::BlockId;
+use alloy_node_bindings::{Anvil, AnvilInstance};
+use alloy_primitives::TxKind;
+use alloy_primitives::{Address, U256, keccak256};
+use alloy_provider::{Provider, RootProvider, ext::AnvilApi};
+use alloy_sol_types::{SolCall, SolValue};
+use angstrom_types::primitive::ERC20;
+use angstrom_types::{
+    CHAIN_ID,
+    sol_bindings::{
+        grouped_orders::{AllOrders, FlashVariants, GroupedVanillaOrder, StandingVariants},
+        rpc_orders::{
+            ExactFlashOrder, ExactStandingOrder, PartialFlashOrder, PartialStandingOrder,
+            TopOfBlockOrder,
+        },
+    },
+};
+use revm::{
+    Context,
+    context::{BlockEnv, TxEnv},
+    primitives::hardfork::SpecId,
+};
+use revm::{ExecuteEvm, MainBuilder};
+use revm_database::{AlloyDB, CacheDB};
+use revm_database::{EmptyDBTyped, WrapDatabaseAsync};
 use std::{
     collections::HashMap,
     fmt::Debug,
     sync::{Arc, RwLock},
 };
-
-use alloy_provider::{Provider, RootProvider};
-use alloy_transport::BoxTransport;
-use angstrom_types::sol_bindings::{
-    grouped_orders::{AllOrders, FlashVariants, GroupedVanillaOrder, StandingVariants},
-    rpc_orders::{
-        ExactFlashOrder, ExactStandingOrder, PartialFlashOrder, PartialStandingOrder,
-        TopOfBlockOrder,
-    },
-};
 use testing_tools::order_generator::OrderGenerator;
+use tokio::runtime::Handle;
 use tokio::sync::Notify;
 use uniswap_v4::uniswap::pool_manager::{SyncedUniswapPools, TickRangeToLoad};
 
-use crate::{
-    AngstromApi, AngstromFiller,
-    apis::data_api::AngstromDataApi,
-    providers::AngstromProvider,
-    types::{ANGSTROM_HTTP_URL, ETH_WS_URL},
-};
+use crate::{AngstromApi, apis::data_api::AngstromDataApi, providers::AngstromProvider};
+
+#[cfg(not(feature = "testnet-sepolia"))]
+const ANGSTROM_HTTP_URL: &str = "ANGSTROM_HTTP_URL";
+#[cfg(feature = "testnet-sepolia")]
+const ANGSTROM_HTTP_URL: &str = "ANGSTROM_SEPOLIA_HTTP_URL";
+#[cfg(not(feature = "testnet-sepolia"))]
+const ETH_WS_URL: &str = "ETH_WS_URL";
+#[cfg(feature = "testnet-sepolia")]
+const ETH_WS_URL: &str = "ETH_SEPOLIA_WS_URL";
 
 async fn spawn_angstrom_provider() -> eyre::Result<AngstromProvider<RootProvider>> {
     dotenv::dotenv().ok();
@@ -185,4 +205,92 @@ pub fn match_all_orders<O>(
     f: impl Fn(&AllOrders) -> Option<O>,
 ) -> Option<(O, O)> {
     f(order0).zip(f(order1))
+}
+
+pub struct AnvilAngstromProvider {
+    pub provider: AngstromProvider<RootProvider>,
+    handle: Handle,
+    _anvil: AnvilInstance,
+}
+
+impl AnvilAngstromProvider {
+    pub async fn new() -> eyre::Result<Self> {
+        dotenv::dotenv().ok();
+        let angstrom_http_url = std::env::var(ANGSTROM_HTTP_URL)
+            .expect(&format!("{ANGSTROM_HTTP_URL} not found in .env"));
+        let eth_ws_url =
+            std::env::var(ETH_WS_URL).expect(&format!("{ETH_WS_URL} not found in .env"));
+
+        let seed: u16 = rand::random();
+        let eth_ipc = format!("/tmp/anvil_{seed}.ipc");
+        let anvil = Anvil::new()
+            .chain_id(CHAIN_ID)
+            .ipc_path(&eth_ipc)
+            .fork(eth_ws_url)
+            .try_spawn()?;
+
+        let provider = AngstromProvider::new(&eth_ipc, &angstrom_http_url).await?;
+
+        Ok(Self { provider, _anvil: anvil, handle: tokio::runtime::Handle::current().clone() })
+    }
+
+    pub async fn overwrite_token_amounts(&self, user: Address, token: Address) -> eyre::Result<()> {
+        let balance_slot =
+            find_slot_offset_for_balance(self.provider.eth_provider(), token, self.handle.clone())?;
+        let owner_balance_slot = keccak256((user, balance_slot).abi_encode());
+
+        self.provider
+            .eth_provider()
+            .anvil_set_storage_at(token, owner_balance_slot.into(), U256::MAX.into())
+            .await?;
+
+        Ok(())
+    }
+}
+
+fn find_slot_offset_for_balance<P: Provider>(
+    provider: &P,
+    token_address: Address,
+    handle: Handle,
+) -> eyre::Result<u64> {
+    let probe_address = Address::random();
+
+    let mut db = CacheDB::new(Arc::new(WrapDatabaseAsync::with_handle(
+        AlloyDB::new(provider.root().clone(), BlockId::latest()),
+        handle,
+    )));
+
+    // check the first 100 offsets
+    for offset in 0..100 {
+        // set balance
+        let balance_slot = keccak256((probe_address, offset as u64).abi_encode());
+        db.insert_account_storage(token_address, balance_slot.into(), U256::from(123456789))?;
+        // execute revm to see if we hit the slot
+
+        let mut evm = Context::<BlockEnv>::new(EmptyDBTyped::default(), SpecId::LATEST)
+            .with_ref_db(&db)
+            .modify_cfg_chained(|cfg| {
+                cfg.disable_balance_check = true;
+            })
+            .modify_tx_chained(|tx: &mut TxEnv| {
+                tx.caller = probe_address;
+                tx.kind = TxKind::Call(token_address);
+                tx.data = ERC20::balanceOfCall::new((probe_address,))
+                    .abi_encode()
+                    .into();
+                tx.value = U256::from(0);
+            })
+            .build_mainnet();
+
+        let binding = evm.replay().map_err(|e| eyre::eyre!("{e:?}"))?;
+        let Some(output) = binding.result.output() else {
+            continue;
+        };
+        let return_data = ERC20::balanceOfCall::abi_decode_returns(output, false)?;
+        if return_data.balance == U256::from(123456789) {
+            return Ok(offset as u64);
+        }
+    }
+
+    Err(eyre::eyre!("was not able to find balance offset"))
 }

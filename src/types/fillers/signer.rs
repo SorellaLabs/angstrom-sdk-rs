@@ -10,7 +10,7 @@ use angstrom_types::{
 };
 use pade::PadeEncode;
 
-use super::{AngstromFiller, FillFrom, FillerOrder, errors::FillerError};
+use super::{AngstromFiller, FillFrom, FillerOrder, FillerOrderFrom, errors::FillerError};
 use crate::{providers::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
 
 pub struct SignerFiller<S>(S);
@@ -33,14 +33,14 @@ impl<S: Signer + SignerSync> AngstromFiller for SignerFiller<S> {
     async fn prepare<P>(
         &self,
         _: &AngstromProvider<P>,
-        order: &FillerOrder,
+        order: &FillerOrderFrom,
     ) -> Result<Self::FillOutput, FillerError>
     where
         P: Provider,
     {
         let my_address = self.0.address();
 
-        let order_meta = if let FillerOrder::AngstromOrder(fill_order) = order {
+        let order_meta = if let FillerOrder::AngstromOrder(fill_order) = &order.inner {
             let om = match fill_order {
                 AllOrders::Standing(standing_variants) => match standing_variants {
                     StandingVariants::Partial(partial_standing_order) => {
@@ -66,6 +66,10 @@ impl<S: Signer + SignerSync> AngstromFiller for SignerFiller<S> {
         };
 
         Ok((my_address, order_meta))
+    }
+
+    fn from(&self) -> Option<Address> {
+        Some(self.0.address())
     }
 }
 

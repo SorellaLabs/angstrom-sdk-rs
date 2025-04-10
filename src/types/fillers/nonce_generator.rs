@@ -1,4 +1,4 @@
-use super::{AngstromFiller, FillFrom, FillerOrder, errors::FillerError};
+use super::{AngstromFiller, FillFrom, FillerOrder, FillerOrderFrom, errors::FillerError};
 use crate::{
     providers::AngstromProvider,
     types::{ANGSTROM_ADDRESS, TransactionRequestWithLiquidityMeta},
@@ -41,6 +41,7 @@ impl NonceGeneratorFiller {
         &self,
         provider: &AngstromProvider<P>,
         order: &AllOrders,
+        from: Address,
     ) -> Result<<Self as AngstromFiller>::FillOutput, FillerError>
     where
         P: Provider,
@@ -48,8 +49,6 @@ impl NonceGeneratorFiller {
         if !matches!(order, AllOrders::Standing(_)) {
             return Ok(None);
         }
-
-        let from = order.from();
 
         let nonce = Self::get_valid_nonce(from, provider.eth_provider()).await?;
 
@@ -59,13 +58,11 @@ impl NonceGeneratorFiller {
     async fn prepare_eth_order<P>(
         &self,
         provider: &AngstromProvider<P>,
-        order: &TransactionRequestWithLiquidityMeta,
+        from: Address,
     ) -> Result<<Self as AngstromFiller>::FillOutput, FillerError>
     where
         P: Provider,
     {
-        let Some(from) = order.tx_request.from else { return Ok(None) };
-
         let nonce = provider.eth_provider().get_transaction_count(from).await?;
         Ok(Some(nonce))
     }
@@ -77,14 +74,17 @@ impl AngstromFiller for NonceGeneratorFiller {
     async fn prepare<P>(
         &self,
         provider: &AngstromProvider<P>,
-        order: &FillerOrder,
+        order: &FillerOrderFrom,
     ) -> Result<Self::FillOutput, FillerError>
     where
         P: Provider,
     {
-        match order {
-            FillerOrder::AngstromOrder(order) => self.prepare_angstrom_order(provider, order).await,
-            FillerOrder::EthOrder(order) => self.prepare_eth_order(provider, order).await,
+        match &order.inner {
+            FillerOrder::AngstromOrder(inner_order) => {
+                self.prepare_angstrom_order(provider, inner_order, order.from)
+                    .await
+            }
+            FillerOrder::EthOrder(_) => self.prepare_eth_order(provider, order.from).await,
         }
     }
 
@@ -93,7 +93,7 @@ impl AngstromFiller for NonceGeneratorFiller {
     //     &self,
     //     provider: &AngstromProvider<P, T>,
     //     angstrom_provider: &AngstromProvider,
-    //     orders: &[FillerOrder],
+    //     orders: &[FillerOrderFrom],
     // ) -> eyre::Result<Vec<Self::FillOutput>>
     // where
     //     P: Provider<T> + Clone,
@@ -143,7 +143,7 @@ mod tests {
     use angstrom_types::contract_bindings::pool_gate::PoolGate::addLiquidityCall;
 
     use crate::{
-        AngstromApi,
+        AngstromApi, MakeFillerOrder,
         test_utils::{AllOrdersSpecific, match_all_orders, spawn_angstrom_api},
         types::fillers::AngstromFillProvider,
     };
@@ -163,7 +163,8 @@ mod tests {
         let provider = &api;
         orders
             .test_filler_order(async |order| {
-                let mut inner_order: FillerOrder = order.clone().into();
+                let mut inner_order = order.clone().convert_with_from(Address::default());
+
                 provider
                     .filler
                     .fill(&provider.provider, &mut inner_order)
@@ -171,7 +172,7 @@ mod tests {
                     .unwrap();
 
                 let matched_orders =
-                    match_all_orders(&inner_order.force_all_orders(), &order, |o| match o {
+                    match_all_orders(&inner_order.inner.force_all_orders(), &order, |o| match o {
                         AllOrders::Standing(StandingVariants::Exact(inner_order)) => {
                             Some(inner_order.nonce)
                         }
@@ -193,10 +194,11 @@ mod tests {
     #[tokio::test]
     async fn test_nonce_generator_eth_order() {
         let api = spawn_api_with_filler().await.unwrap();
-        let tx_req = TransactionRequest::default()
-            .from(address!("0x429fd8e0040e2c982b2f91bf5ee75ce73015ec0c"));
 
-        let mut inner_order: FillerOrder = TransactionRequestWithLiquidityMeta::new_add_liqudity(
+        let from = address!("0x429fd8e0040e2c982b2f91bf5ee75ce73015ec0c");
+        let tx_req = TransactionRequest::default().from(from);
+
+        let mut inner_order = TransactionRequestWithLiquidityMeta::new_add_liqudity(
             tx_req.clone(),
             addLiquidityCall::new((
                 Address::default(),
@@ -207,13 +209,20 @@ mod tests {
                 FixedBytes::<32>::default(),
             )),
         )
-        .into();
+        .convert_with_from(from);
         api.filler
             .fill(&api.provider, &mut inner_order)
             .await
             .unwrap();
 
         assert!(tx_req.nonce.is_none());
-        assert!(inner_order.force_regular_tx().tx_request.nonce.is_some());
+        assert!(
+            inner_order
+                .inner
+                .force_regular_tx()
+                .tx_request
+                .nonce
+                .is_some()
+        );
     }
 }
