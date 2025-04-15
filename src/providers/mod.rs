@@ -8,7 +8,9 @@ use alloy_primitives::{
 };
 use alloy_provider::{
     Identity, Provider, RootProvider,
-    fillers::{FillProvider, JoinFill, WalletFiller},
+    fillers::{
+        BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
+    },
 };
 use alloy_rpc_types::{TransactionInput, TransactionRequest};
 use alloy_signer::{Signer, SignerSync};
@@ -30,8 +32,16 @@ use crate::{
     types::*,
 };
 
-pub(crate) type RpcWalletProvider<P> =
-    FillProvider<JoinFill<Identity, WalletFiller<EthereumWallet>>, P, Ethereum>;
+pub type AlloyRpcProvider<P> = FillProvider<
+    JoinFill<
+        Identity,
+        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+    >,
+    P,
+>;
+
+pub type AlloyWalletRpcProvider<P> =
+    FillProvider<JoinFill<Identity, WalletFiller<EthereumWallet>>, P>;
 
 #[derive(Debug, Clone)]
 pub struct AngstromProvider<P>
@@ -42,11 +52,14 @@ where
     angstrom_provider: HttpClient,
 }
 
-impl AngstromProvider<RootProvider> {
+impl AngstromProvider<AlloyRpcProvider<RootProvider>> {
     pub async fn new(eth_url: &str, angstrom_url: &str) -> eyre::Result<Self> {
         let angstrom_provider = HttpClient::builder().build(angstrom_url)?;
         Ok(Self {
-            eth_provider: RootProvider::builder().connect(eth_url).await?,
+            eth_provider: RootProvider::builder()
+                .with_recommended_fillers()
+                .connect(eth_url)
+                .await?,
             angstrom_provider,
         })
     }
@@ -91,7 +104,7 @@ impl<P: Provider> AngstromProvider<P> {
         Ok(IC::abi_decode_returns(&data, false))
     }
 
-    pub(crate) fn with_wallet<S>(self, signer: S) -> AngstromProvider<RpcWalletProvider<P>>
+    pub(crate) fn with_wallet<S>(self, signer: S) -> AngstromProvider<AlloyWalletRpcProvider<P>>
     where
         S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Send + Sync + 'static,
     {

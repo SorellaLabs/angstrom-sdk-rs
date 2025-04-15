@@ -24,10 +24,11 @@ use angstrom_types::{
 use apis::{user_api::AngstromUserApi, utils::FromAddress};
 use futures::TryFutureExt;
 use jsonrpsee_http_client::HttpClient;
-use providers::{AngstromProvider, RpcWalletProvider};
+use providers::{AlloyWalletRpcProvider, AngstromProvider};
 use types::{
     HistoricalOrders, HistoricalOrdersFilter, TokenInfoWithMeta, TokenPairInfo,
     TransactionRequestWithLiquidityMeta, UserLiquidityPosition,
+    errors::AngstromSdkError,
     fillers::{
         AngstromFillProvider, AngstromFiller, FillWrapper, FillerOrderFrom, MakeFillerOrder,
         NonceGeneratorFiller, SignerFiller, TokenBalanceCheckFiller,
@@ -45,7 +46,7 @@ pub struct AngstromApi<P, F = ()>
 where
     P: Provider,
 {
-    pub provider: AngstromProvider<P>,
+    provider: AngstromProvider<P>,
     filler: F,
 }
 
@@ -55,6 +56,14 @@ where
 {
     pub fn new(provider: AngstromProvider<P>) -> Self {
         Self { provider, filler: () }
+    }
+
+    pub fn eth_provider(&self) -> &P {
+        self.provider.eth_provider()
+    }
+
+    pub fn angstrom_provider(&self) -> HttpClient {
+        self.provider.angstrom_rpc_provider()
     }
 }
 
@@ -105,7 +114,7 @@ where
     pub fn with_signer_filler<S>(
         self,
         signer: S,
-    ) -> AngstromApi<RpcWalletProvider<P>, AngstromFillProvider<F, SignerFiller<S>>>
+    ) -> AngstromApi<AlloyWalletRpcProvider<P>, AngstromFillProvider<F, SignerFiller<S>>>
     where
         S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Clone + Send + Sync + 'static,
         SignerFiller<S>: AngstromFiller,
@@ -154,7 +163,7 @@ where
         self.provider.angstrom_rpc_provider()
     }
 
-    async fn send_order(&self, order: AllOrders) -> eyre::Result<FixedBytes<32>> {
+    async fn send_order(&self, order: AllOrders) -> Result<FixedBytes<32>, AngstromSdkError> {
         let from = self.filler.from().unwrap_or_else(|| {
             let f = order.from();
             assert_ne!(f, Address::default());
@@ -170,7 +179,7 @@ where
     async fn send_orders(
         &self,
         orders: Vec<AllOrders>,
-    ) -> eyre::Result<Vec<eyre::Result<FixedBytes<32>>>> {
+    ) -> Result<Vec<Result<FixedBytes<32>, AngstromSdkError>>, AngstromSdkError> {
         let mut filler_orders: Vec<FillerOrderFrom> = orders
             .into_iter()
             .map(|o| {

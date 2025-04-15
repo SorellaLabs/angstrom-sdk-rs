@@ -1,0 +1,41 @@
+pub mod filler_orders;
+pub mod valid_orders;
+
+use alloy_provider::RootProvider;
+
+use crate::{
+    AngstromApi,
+    providers::{AngstromProvider, AlloyRpcProvider},
+};
+
+#[cfg(not(feature = "testnet-sepolia"))]
+const ANGSTROM_HTTP_URL: &str = "ANGSTROM_HTTP_URL";
+#[cfg(feature = "testnet-sepolia")]
+const ANGSTROM_HTTP_URL: &str = "ANGSTROM_SEPOLIA_HTTP_URL";
+#[cfg(not(feature = "testnet-sepolia"))]
+const ETH_WS_URL: &str = "ETH_WS_URL";
+#[cfg(feature = "testnet-sepolia")]
+const ETH_WS_URL: &str = "ETH_SEPOLIA_WS_URL";
+
+#[cfg(not(feature = "testnet-sepolia"))]
+const TESTING_PRIVATE_KEY_PATH: &str = "sepolia-testing-pk.json";
+#[cfg(feature = "testnet-sepolia")]
+const TESTING_PRIVATE_KEY_PATH: &str = "mainnet-testing-pk.json";
+
+pub fn angstrom_http_url() -> String {
+    dotenv::dotenv().ok();
+    std::env::var(ANGSTROM_HTTP_URL).expect(&format!("{ANGSTROM_HTTP_URL} not found in .env"))
+}
+
+pub fn eth_ws_url() -> String {
+    dotenv::dotenv().ok();
+    std::env::var(ETH_WS_URL).expect(&format!("{ETH_WS_URL} not found in .env"))
+}
+async fn spawn_angstrom_provider() -> eyre::Result<AngstromProvider<AlloyRpcProvider<RootProvider>>>
+{
+    AngstromProvider::new(&eth_ws_url(), &angstrom_http_url()).await
+}
+
+pub async fn spawn_angstrom_api() -> eyre::Result<AngstromApi<AlloyRpcProvider<RootProvider>>> {
+    Ok(AngstromApi::new(spawn_angstrom_provider().await?))
+}

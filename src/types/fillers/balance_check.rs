@@ -106,7 +106,7 @@ mod tests {
 
     use crate::{
         AngstromApi, MakeFillerOrder,
-        test_utils::{AllOrdersSpecific, AnvilAngstromProvider},
+        test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider},
         types::USDC,
     };
 

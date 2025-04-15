@@ -5,10 +5,7 @@ use crate::{
 };
 use alloy_primitives::{Address, U256};
 use alloy_provider::Provider;
-use angstrom_types::sol_bindings::{
-    RawPoolOrder,
-    grouped_orders::{AllOrders, StandingVariants},
-};
+use angstrom_types::sol_bindings::grouped_orders::{AllOrders, StandingVariants};
 
 use validation::order::state::db_state_utils::nonces::Nonces;
 
@@ -144,14 +141,19 @@ mod tests {
 
     use crate::{
         AngstromApi, MakeFillerOrder,
-        test_utils::{AllOrdersSpecific, match_all_orders, spawn_angstrom_api},
+        providers::AlloyRpcProvider,
+        test_utils::{
+            filler_orders::{AllOrdersSpecific, match_all_orders},
+            spawn_angstrom_api,
+        },
         types::fillers::AngstromFillProvider,
     };
 
     use super::*;
 
-    async fn spawn_api_with_filler()
-    -> eyre::Result<AngstromApi<RootProvider, AngstromFillProvider<(), NonceGeneratorFiller>>> {
+    async fn spawn_api_with_filler() -> eyre::Result<
+        AngstromApi<AlloyRpcProvider<RootProvider>, AngstromFillProvider<(), NonceGeneratorFiller>>,
+    > {
         Ok(spawn_angstrom_api().await?.with_nonce_generator_filler())
     }
 

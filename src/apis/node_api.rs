@@ -15,23 +15,25 @@ use angstrom_types::{
 use futures::{Stream, StreamExt, TryStreamExt};
 use jsonrpsee_http_client::HttpClient;
 
+use crate::types::errors::AngstromSdkError;
+
 pub trait AngstromNodeApi {
     fn angstrom_rpc_provider(&self) -> HttpClient;
 
-    async fn send_order(&self, order: AllOrders) -> eyre::Result<FixedBytes<32>> {
+    async fn send_order(&self, order: AllOrders) -> Result<FixedBytes<32>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
-        Ok(provider
+        provider
             .send_order(order)
             .await?
-            .map_err(|e| eyre::eyre!(e))?)
+            .map_err(AngstromSdkError::AngstromRpc)
     }
 
-    async fn pending_order(&self, from: Address) -> eyre::Result<Vec<PendingOrder>> {
+    async fn pending_order(&self, from: Address) -> Result<Vec<PendingOrder>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.pending_order(from).await?)
     }
 
-    async fn cancel_order(&self, request: CancelOrderRequest) -> eyre::Result<bool> {
+    async fn cancel_order(&self, request: CancelOrderRequest) -> Result<bool, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.cancel_order(request).await?)
     }
@@ -41,15 +43,15 @@ pub trait AngstromNodeApi {
         is_book: bool,
         token_0: Address,
         token_1: Address,
-    ) -> eyre::Result<U256> {
+    ) -> Result<U256, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
-        Ok(provider
+        provider
             .estimate_gas(is_book, token_0, token_1)
             .await?
-            .map_err(|e| eyre::eyre!(e))?)
+            .map_err(AngstromSdkError::AngstromRpc)
     }
 
-    async fn order_status(&self, order_hash: B256) -> eyre::Result<OrderStatus> {
+    async fn order_status(&self, order_hash: B256) -> Result<OrderStatus, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.order_status(order_hash).await?)
     }
@@ -58,7 +60,7 @@ pub trait AngstromNodeApi {
         &self,
         pool_id: PoolId,
         location: OrderLocation,
-    ) -> eyre::Result<Vec<AllOrders>> {
+    ) -> Result<Vec<AllOrders>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.orders_by_pool_id(pool_id, location).await?)
     }
@@ -67,35 +69,44 @@ pub trait AngstromNodeApi {
         &self,
         kind: HashSet<OrderSubscriptionKind>,
         filters: HashSet<OrderSubscriptionFilter>,
-    ) -> eyre::Result<impl Stream<Item = eyre::Result<OrderSubscriptionResult>>> {
+    ) -> Result<
+        impl Stream<Item = Result<OrderSubscriptionResult, AngstromSdkError>>,
+        AngstromSdkError,
+    > {
         let provider = self.angstrom_rpc_provider();
 
         Ok(provider
             .subscribe_orders(kind, filters)
             .await?
-            .map(|order| Ok(order?))
+            .map(|order| order.map_err(|e| AngstromSdkError::AngstromRpc(e.to_string())))
             .into_stream())
     }
 
     async fn send_orders(
         &self,
         orders: Vec<AllOrders>,
-    ) -> eyre::Result<Vec<eyre::Result<FixedBytes<32>>>> {
+    ) -> Result<Vec<Result<FixedBytes<32>, AngstromSdkError>>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider
             .send_orders(orders)
             .await?
             .into_iter()
-            .map(|r| r.map_err(|e| eyre::eyre!(e)))
+            .map(|order| order.map_err(AngstromSdkError::AngstromRpc))
             .collect())
     }
 
-    async fn pending_orders(&self, from: Vec<Address>) -> eyre::Result<Vec<PendingOrder>> {
+    async fn pending_orders(
+        &self,
+        from: Vec<Address>,
+    ) -> Result<Vec<PendingOrder>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.pending_orders(from).await?)
     }
 
-    async fn cancel_orders(&self, request: Vec<CancelOrderRequest>) -> eyre::Result<Vec<bool>> {
+    async fn cancel_orders(
+        &self,
+        request: Vec<CancelOrderRequest>,
+    ) -> Result<Vec<bool>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.cancel_orders(request).await?)
     }
@@ -103,17 +114,20 @@ pub trait AngstromNodeApi {
     async fn estimate_gas_of_orders(
         &self,
         orders: Vec<(bool, Address, Address)>,
-    ) -> eyre::Result<Vec<eyre::Result<U256>>> {
+    ) -> Result<Vec<Result<U256, AngstromSdkError>>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider
             .estimate_gas_of_orders(orders)
             .await?
             .into_iter()
-            .map(|r| r.map_err(|e| eyre::eyre!(e)))
+            .map(|r| r.map_err(AngstromSdkError::AngstromRpc))
             .collect())
     }
 
-    async fn status_of_orders(&self, order_hashes: Vec<B256>) -> eyre::Result<Vec<OrderStatus>> {
+    async fn status_of_orders(
+        &self,
+        order_hashes: Vec<B256>,
+    ) -> Result<Vec<OrderStatus>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.status_of_orders(order_hashes).await?)
     }
@@ -121,7 +135,7 @@ pub trait AngstromNodeApi {
     async fn orders_by_pool_ids(
         &self,
         pool_ids_with_location: Vec<(PoolId, OrderLocation)>,
-    ) -> eyre::Result<Vec<AllOrders>> {
+    ) -> Result<Vec<AllOrders>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.orders_by_pool_ids(pool_ids_with_location).await?)
     }
@@ -145,7 +159,7 @@ mod tests {
     use crate::{
         apis::data_api::AngstromDataApi,
         providers::AngstromProvider,
-        test_utils::{make_order_generator, spawn_angstrom_api},
+        test_utils::{filler_orders::make_order_generator, spawn_angstrom_api},
         types::sort_tokens,
     };
 
@@ -171,7 +185,7 @@ mod tests {
     }
 
     impl AllOrdersSent {
-        async fn send_orders<P>(provider: &AngstromProvider<P>) -> eyre::Result<Self>
+        async fn send_orders<P>(provider: &AngstromProvider<P>) -> Result<Self, AngstromSdkError>
         where
             P: Provider + Clone,
         {

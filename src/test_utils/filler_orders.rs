@@ -1,3 +1,5 @@
+use crate::providers::AlloyRpcProvider;
+use crate::test_utils::{ANGSTROM_HTTP_URL, ETH_WS_URL};
 use alloy_eips::BlockId;
 use alloy_node_bindings::{Anvil, AnvilInstance};
 use alloy_primitives::TxKind;
@@ -23,8 +25,8 @@ use revm::{
 use revm::{ExecuteEvm, MainBuilder};
 use revm_database::{AlloyDB, CacheDB};
 use revm_database::{EmptyDBTyped, WrapDatabaseAsync};
+use rust_utils::ToHashMapByKey;
 use std::{
-    collections::HashMap,
     fmt::Debug,
     sync::{Arc, RwLock},
 };
@@ -33,29 +35,7 @@ use tokio::runtime::Handle;
 use tokio::sync::Notify;
 use uniswap_v4::uniswap::pool_manager::{SyncedUniswapPools, TickRangeToLoad};
 
-use crate::{AngstromApi, apis::data_api::AngstromDataApi, providers::AngstromProvider};
-
-#[cfg(not(feature = "testnet-sepolia"))]
-const ANGSTROM_HTTP_URL: &str = "ANGSTROM_HTTP_URL";
-#[cfg(feature = "testnet-sepolia")]
-const ANGSTROM_HTTP_URL: &str = "ANGSTROM_SEPOLIA_HTTP_URL";
-#[cfg(not(feature = "testnet-sepolia"))]
-const ETH_WS_URL: &str = "ETH_WS_URL";
-#[cfg(feature = "testnet-sepolia")]
-const ETH_WS_URL: &str = "ETH_SEPOLIA_WS_URL";
-
-async fn spawn_angstrom_provider() -> eyre::Result<AngstromProvider<RootProvider>> {
-    dotenv::dotenv().ok();
-    let angstrom_http_url =
-        std::env::var(ANGSTROM_HTTP_URL).expect(&format!("{ANGSTROM_HTTP_URL} not found in .env"));
-
-    let eth_ws_url = std::env::var(ETH_WS_URL).expect(&format!("{ETH_WS_URL} not found in .env"));
-    AngstromProvider::new(&eth_ws_url, &angstrom_http_url).await
-}
-
-pub async fn spawn_angstrom_api() -> eyre::Result<AngstromApi<RootProvider>> {
-    Ok(AngstromApi::new(spawn_angstrom_provider().await?))
-}
+use crate::{apis::data_api::AngstromDataApi, providers::AngstromProvider};
 
 pub async fn make_order_generator<P>(
     provider: &AngstromProvider<P>,
@@ -64,17 +44,12 @@ where
     P: Provider + Clone,
 {
     let block_number = provider.eth_provider().get_block_number().await?;
-    let pairs = provider.all_token_pairs().await?;
 
-    let uniswap_pools = futures::future::join_all(pairs.into_iter().map(|pair| async move {
-        let pool = provider
-            .pool_data(pair.token0, pair.token1, Some(block_number))
-            .await?;
-        Ok::<_, eyre::ErrReport>((pool.address(), Arc::new(RwLock::new(pool))))
-    }))
-    .await
-    .into_iter()
-    .collect::<Result<HashMap<_, _>, _>>()?;
+    let uniswap_pools = provider
+        .all_pool_data(Some(block_number))
+        .await?
+        .into_iter()
+        .hashmap_by_key_val(|pool| (pool.address(), Arc::new(RwLock::new(pool))));
 
     let (tx, rx) = tokio::sync::mpsc::channel(100);
     let generator = OrderGenerator::new(
@@ -87,7 +62,7 @@ where
     Ok((generator, rx))
 }
 
-pub fn generate_order_for_all(order_generator: &OrderGenerator) -> AllOrdersSpecific {
+pub fn generate_any_order_for_all(order_generator: &OrderGenerator) -> AllOrdersSpecific {
     let mut bitmap = 0x0000;
     let mut all_orders = Vec::new();
 
@@ -208,7 +183,7 @@ pub fn match_all_orders<O>(
 }
 
 pub struct AnvilAngstromProvider {
-    pub provider: AngstromProvider<RootProvider>,
+    pub provider: AngstromProvider<AlloyRpcProvider<RootProvider>>,
     handle: Handle,
     _anvil: AnvilInstance,
 }

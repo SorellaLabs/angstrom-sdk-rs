@@ -7,14 +7,14 @@ use crate::types::UserLiquidityPosition;
 pub trait AngstromUserApi: AngstromDataApi {
     async fn get_positions(
         &self,
-        user_address: Address
+        user_address: Address,
     ) -> eyre::Result<Vec<UserLiquidityPosition>>;
 
     async fn get_positions_in_pool(
         &self,
         user_address: Address,
         token0: Address,
-        token1: Address
+        token1: Address,
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
         let all_positions = self.get_positions(user_address).await?;
         let pool_id = self.pool_id(token0, token1).await?;
@@ -25,12 +25,3 @@ pub trait AngstromUserApi: AngstromDataApi {
             .collect())
     }
 }
-
-/*
-
-price
-tick range
-size of position
-pool exchange rate
-
-*/
