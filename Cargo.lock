@@ -1364,7 +1364,7 @@ dependencies = [
  "auto_impl",
  "futures",
  "futures-util",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "pade",
  "reth-ethereum-primitives",
  "reth-primitives",
@@ -1420,7 +1420,7 @@ dependencies = [
  "futures",
  "homedir",
  "humantime-serde",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "k256",
  "linked-hash-map",
  "linked_hash_set",
@@ -1579,7 +1579,7 @@ dependencies = [
  "foldhash",
  "futures",
  "hex-literal",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "k256",
  "malachite",
  "num-traits",
@@ -2053,7 +2053,7 @@ dependencies = [
  "bitflags 2.8.0",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "proc-macro2",
  "quote",
  "regex",
@@ -2805,7 +2805,7 @@ dependencies = [
  "eyre",
  "futures",
  "hex-literal",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "matching-engine",
  "order-pool",
  "pade",
@@ -5659,7 +5659,7 @@ dependencies = [
  "eyre",
  "futures",
  "futures-util",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "malachite",
  "malachite-q",
  "num-bigfloat",
@@ -6468,7 +6468,7 @@ name = "pade-macro"
 version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/pade#131e59ef14be3b870ca3daf94df94b9e4a7e4f50"
 dependencies = [
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "proc-macro2",
  "quote",
  "syn 2.0.98",
@@ -10597,7 +10597,7 @@ dependencies = [
  "consensus",
  "eyre",
  "futures",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "jsonrpsee",
  "matching-engine",
  "order-pool",
@@ -11233,7 +11233,7 @@ dependencies = [
  "enr",
  "eyre",
  "futures",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "jsonrpsee",
  "matching-engine",
  "order-pool",
@@ -11449,9 +11449,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.43.0"
+version = "1.43.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d61fa4ffa3de412bfea335c6ecff681de2b609ba3c77ef3e00e521813a9ed9e"
+checksum = "492a604e2fd7f814268a378409e6c92b5525d747d10db9a229723f55a417958c"
 dependencies = [
  "backtrace",
  "bytes",
@@ -11999,7 +11999,7 @@ dependencies = [
  "futures",
  "futures-util",
  "hex",
- "itertools 0.12.1",
+ "itertools 0.14.0",
  "malachite",
  "malachite-q",
  "num-bigfloat",

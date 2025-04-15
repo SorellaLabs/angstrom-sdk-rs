@@ -70,7 +70,7 @@ alloy-rpc-client = { version = "0.12.6", default-features = false }
 # alloy-multicall = "0.12.6"
 
 # async
-tokio = { version = "1.0", features = ["full"] }
+tokio = { version = "1.43", features = ["full"] }
 tokio-tungstenite = { version = "0.24", features = [] }
 futures = "0.3.26"
 
