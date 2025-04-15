@@ -6,10 +6,7 @@ use angstrom_types::{
     sol_bindings::{RawPoolOrder, grouped_orders::AllOrders},
 };
 
-use crate::{
-    FillWrapper,
-    types::{ANGSTROM_ADDRESS, TransactionRequestWithLiquidityMeta},
-};
+use crate::types::{ANGSTROM_ADDRESS, TransactionRequestWithLiquidityMeta, fillers::FillWrapper};
 
 pub async fn pool_config_store<P>(provider: &P) -> eyre::Result<AngstromPoolConfigStore>
 where

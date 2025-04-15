@@ -2,7 +2,7 @@ use alloy_provider::Provider;
 use angstrom_types::{CHAIN_ID, sol_bindings::grouped_orders::AllOrders};
 
 use super::{AngstromFiller, FillFrom, FillerOrderFrom, errors::FillerError};
-use crate::{providers::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
+use crate::{providers::backend::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ChainIdFiller;

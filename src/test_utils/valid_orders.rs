@@ -1,6 +1,5 @@
 use alloy_provider::{Provider, RootProvider};
 use angstrom_types::{primitive::AngstromSigner, sol_bindings::testnet::MockERC20::balanceOfCall};
-use sepolia_bundle_lander::cli::JsonPKs;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use uniswap_v4::uniswap::pool::EnhancedUniswapPool;
 
@@ -21,11 +20,11 @@ use uniswap_v4::uniswap::pool::SwapResult;
 use crate::{
     AngstromApi,
     apis::{data_api::AngstromDataApi, node_api::AngstromNodeApi},
-    providers::AlloyRpcProvider,
+    providers::backend::AlloyRpcProvider,
     types::errors::AngstromSdkError,
 };
 
-use super::{TESTING_PRIVATE_KEY_PATH, spawn_angstrom_api};
+use super::{spawn_angstrom_api, testing_private_key};
 
 pub struct ValidOrderGenerator {
     angstrom_api: AngstromApi<AlloyRpcProvider<RootProvider>>,
@@ -38,19 +37,11 @@ impl ValidOrderGenerator {
     pub async fn init() -> eyre::Result<Self> {
         let angstrom_api = spawn_angstrom_api().await?;
 
-        let key =
-            serde_json::from_str::<JsonPKs>(&std::fs::read_to_string(TESTING_PRIVATE_KEY_PATH)?)?
-                .keys
-                .iter()
-                .map(|key| AngstromSigner::new(key.parse().unwrap()))
-                .collect::<Vec<_>>()[0]
-                .clone();
-
         let block_number = angstrom_api.eth_provider().get_block_number().await?;
         let pools = angstrom_api.all_pool_data(Some(block_number)).await?;
 
         let block_number = angstrom_api.eth_provider().get_block_number().await?;
-        Ok(Self { pool: pools[0].clone(), block_number, key, angstrom_api })
+        Ok(Self { pool: pools[0].clone(), block_number, key: testing_private_key(), angstrom_api })
     }
 
     pub async fn submit_new_orders_to_angstrom(

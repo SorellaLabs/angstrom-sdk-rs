@@ -13,7 +13,7 @@ mod chain_id;
 pub use chain_id::*;
 
 use super::TransactionRequestWithLiquidityMeta;
-use crate::providers::AngstromProvider;
+use crate::providers::backend::AngstromProvider;
 
 pub struct AngstromFillProvider<L, R> {
     left: L,

@@ -6,7 +6,7 @@ use angstrom_types::{
 };
 
 use super::{AngstromFiller, FillerOrder, FillerOrderFrom, errors::FillerError};
-use crate::{providers::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
+use crate::{providers::backend::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct TokenBalanceCheckFiller;
@@ -64,9 +64,9 @@ impl TokenBalanceCheckFiller {
 
     async fn prepare_eth_order<P>(
         &self,
-        provider: &AngstromProvider<P>,
-        order: &TransactionRequestWithLiquidityMeta,
-        from: Address,
+        _provider: &AngstromProvider<P>,
+        _order: &TransactionRequestWithLiquidityMeta,
+        _from: Address,
     ) -> Result<(), FillerError>
     where
         P: Provider,
@@ -105,9 +105,9 @@ mod tests {
     use alloy_primitives::Address;
 
     use crate::{
-        AngstromApi, MakeFillerOrder,
+        AngstromApi,
         test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider},
-        types::USDC,
+        types::{USDC, fillers::MakeFillerOrder},
     };
 
     use super::*;
@@ -158,10 +158,7 @@ mod tests {
 
                 let mut inner_order = order.clone().convert_with_from(from);
 
-                let fill = ref_api
-                    .filler
-                    .fill(&ref_api.provider, &mut inner_order)
-                    .await;
+                let fill = ref_api.fill(&mut inner_order).await;
 
                 matches!(fill.err().unwrap(), FillerError::InsufficientBalanceError(_, _, _))
             })
@@ -203,11 +200,7 @@ mod tests {
 
                 let mut inner_order = order.clone().convert_with_from(from);
 
-                ref_api
-                    .filler
-                    .fill(&ref_api.provider, &mut inner_order)
-                    .await
-                    .is_ok()
+                ref_api.fill(&mut inner_order).await.is_ok()
             })
             .await;
     }

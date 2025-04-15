@@ -11,7 +11,7 @@ use angstrom_types::{
 use pade::PadeEncode;
 
 use super::{AngstromFiller, FillFrom, FillerOrder, FillerOrderFrom, errors::FillerError};
-use crate::{providers::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
+use crate::{providers::backend::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
 
 pub struct SignerFiller<S>(S);
 

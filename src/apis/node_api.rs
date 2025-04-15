@@ -158,7 +158,7 @@ mod tests {
     use super::*;
     use crate::{
         apis::data_api::AngstromDataApi,
-        providers::AngstromProvider,
+        providers::backend::AngstromProvider,
         test_utils::{filler_orders::make_order_generator, spawn_angstrom_api},
         types::sort_tokens,
     };
@@ -208,7 +208,7 @@ mod tests {
     async fn test_send_order() {
         let provider = spawn_angstrom_api().await.unwrap();
 
-        let _ = AllOrdersSent::send_orders(&provider.provider)
+        let _ = AllOrdersSent::send_orders(&provider.angstrom_provider())
             .await
             .unwrap();
     }
@@ -217,7 +217,7 @@ mod tests {
     async fn test_pending_order() {
         let provider = spawn_angstrom_api().await.unwrap();
 
-        let orders = AllOrdersSent::send_orders(&provider.provider)
+        let orders = AllOrdersSent::send_orders(&provider.angstrom_provider())
             .await
             .unwrap();
 
@@ -238,7 +238,7 @@ mod tests {
     async fn test_cancel_order() {
         let provider = spawn_angstrom_api().await.unwrap();
 
-        let orders = AllOrdersSent::send_orders(&provider.provider)
+        let orders = AllOrdersSent::send_orders(&provider.angstrom_provider())
             .await
             .unwrap();
 
@@ -267,7 +267,9 @@ mod tests {
     async fn test_estimate_gas() {
         let provider = spawn_angstrom_api().await.unwrap();
 
-        let (generator, _rx) = make_order_generator(&provider.provider).await.unwrap();
+        let (generator, _rx) = make_order_generator(&provider.angstrom_provider())
+            .await
+            .unwrap();
         let orders = generator.generate_orders();
 
         let tob_order = AllOrders::TOB(get_tob_order(&orders));
@@ -291,7 +293,7 @@ mod tests {
     async fn test_order_status() {
         let provider = spawn_angstrom_api().await.unwrap();
 
-        let orders = AllOrdersSent::send_orders(&provider.provider)
+        let orders = AllOrdersSent::send_orders(&provider.angstrom_provider())
             .await
             .unwrap();
 
@@ -312,7 +314,7 @@ mod tests {
     async fn test_order_by_pool_id() {
         let provider = spawn_angstrom_api().await.unwrap();
 
-        let orders = AllOrdersSent::send_orders(&provider.provider)
+        let orders = AllOrdersSent::send_orders(&provider.angstrom_provider())
             .await
             .unwrap();
 
@@ -364,7 +366,7 @@ mod tests {
 
         let order_send_fut = async {
             for _ in 0..order_cycles {
-                let _ = AllOrdersSent::send_orders(&provider.provider)
+                let _ = AllOrdersSent::send_orders(&provider.angstrom_provider())
                     .await
                     .unwrap();
             }

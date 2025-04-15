@@ -50,3 +50,17 @@ pub const USDC: alloy_primitives::Address =
 #[cfg(feature = "testnet-sepolia")]
 pub const USDC: alloy_primitives::Address =
     alloy_primitives::address!("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238");
+
+#[cfg(not(feature = "testnet-sepolia"))]
+pub const WETH: alloy_primitives::Address =
+    alloy_primitives::address!("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
+#[cfg(feature = "testnet-sepolia")]
+pub const WETH: alloy_primitives::Address =
+    alloy_primitives::address!("0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14");
+
+#[cfg(not(feature = "testnet-sepolia"))]
+pub const UNI: alloy_primitives::Address =
+    alloy_primitives::address!("0x1f9840a85d5af5bf1d1762f925bdaddc4201f984");
+#[cfg(feature = "testnet-sepolia")]
+pub const UNI: alloy_primitives::Address =
+    alloy_primitives::address!("0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984");

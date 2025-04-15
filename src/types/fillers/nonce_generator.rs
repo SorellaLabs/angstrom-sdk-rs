@@ -1,6 +1,6 @@
 use super::{AngstromFiller, FillFrom, FillerOrder, FillerOrderFrom, errors::FillerError};
 use crate::{
-    providers::AngstromProvider,
+    providers::backend::AngstromProvider,
     types::{ANGSTROM_ADDRESS, TransactionRequestWithLiquidityMeta},
 };
 use alloy_primitives::{Address, U256};
@@ -140,13 +140,13 @@ mod tests {
     use angstrom_types::contract_bindings::pool_gate::PoolGate::addLiquidityCall;
 
     use crate::{
-        AngstromApi, MakeFillerOrder,
-        providers::AlloyRpcProvider,
+        AngstromApi,
+        providers::backend::AlloyRpcProvider,
         test_utils::{
             filler_orders::{AllOrdersSpecific, match_all_orders},
             spawn_angstrom_api,
         },
-        types::fillers::AngstromFillProvider,
+        types::fillers::{AngstromFillProvider, MakeFillerOrder},
     };
 
     use super::*;
@@ -167,11 +167,7 @@ mod tests {
             .test_filler_order(async |order| {
                 let mut inner_order = order.clone().convert_with_from(Address::default());
 
-                provider
-                    .filler
-                    .fill(&provider.provider, &mut inner_order)
-                    .await
-                    .unwrap();
+                provider.fill(&mut inner_order).await.unwrap();
 
                 let matched_orders =
                     match_all_orders(&inner_order.inner.force_all_orders(), &order, |o| match o {
@@ -212,10 +208,8 @@ mod tests {
             )),
         )
         .convert_with_from(from);
-        api.filler
-            .fill(&api.provider, &mut inner_order)
-            .await
-            .unwrap();
+
+        api.fill(&mut inner_order).await.unwrap();
 
         assert!(tx_req.nonce.is_none());
         assert!(

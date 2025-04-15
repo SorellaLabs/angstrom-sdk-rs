@@ -1,4 +1,4 @@
-use crate::providers::AlloyRpcProvider;
+use crate::providers::backend::AlloyRpcProvider;
 use crate::test_utils::{ANGSTROM_HTTP_URL, ETH_WS_URL};
 use alloy_eips::BlockId;
 use alloy_node_bindings::{Anvil, AnvilInstance};
@@ -35,7 +35,7 @@ use tokio::runtime::Handle;
 use tokio::sync::Notify;
 use uniswap_v4::uniswap::pool_manager::{SyncedUniswapPools, TickRangeToLoad};
 
-use crate::{apis::data_api::AngstromDataApi, providers::AngstromProvider};
+use crate::{apis::data_api::AngstromDataApi, providers::backend::AngstromProvider};
 
 pub async fn make_order_generator<P>(
     provider: &AngstromProvider<P>,

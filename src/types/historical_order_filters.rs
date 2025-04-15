@@ -14,7 +14,7 @@ use angstrom_types::{
 use pade::PadeDecode;
 
 use super::PoolMetadata;
-use crate::{apis::utils::pool_config_store, providers::AngstromProvider};
+use crate::{apis::utils::pool_config_store, providers::backend::AngstromProvider};
 
 #[derive(Debug, Default, Clone)]
 pub struct HistoricalOrdersFilter {
