@@ -13,7 +13,6 @@ use alloy_network::TxSigner;
 use alloy_primitives::{Address, FixedBytes, PrimitiveSignature, TxHash};
 use alloy_provider::{Provider, RootProvider};
 use alloy_signer::{Signer, SignerSync};
-use angstrom_types::primitive::AngstromSigner;
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
     sol_bindings::{RawPoolOrder, grouped_orders::AllOrders},
@@ -76,6 +75,8 @@ where
         let from = tx_req.from_address(&self.filler);
         let mut filled_tx_req = tx_req.convert_with_from(from);
         self.filler.fill(&self.provider, &mut filled_tx_req).await?;
+
+        filled_tx_req.maybe_fill_modify_liquidity_call();
 
         Ok(self
             .provider
@@ -153,10 +154,6 @@ where
     pub fn from_address(&self) -> Option<Address> {
         self.filler.from()
     }
-
-    pub fn angstrom_signer(&self) -> Option<&AngstromSigner> {
-        self.filler.angstrom_signer()
-    }
 }
 
 impl<P, F> AngstromNodeApi for AngstromApi<P, F>
@@ -176,6 +173,9 @@ where
         });
         let mut filler_order: FillerOrderFrom = order.convert_with_from(from);
         self.filler.fill(&self.provider, &mut filler_order).await?;
+
+        println!("ORDER: {filler_order:?}");
+
         self.provider
             .send_order(filler_order.inner.force_all_orders())
             .await

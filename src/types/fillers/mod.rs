@@ -2,7 +2,7 @@ mod balance_check;
 pub mod errors;
 use alloy_primitives::Address;
 use alloy_provider::Provider;
-use angstrom_types::{primitive::AngstromSigner, sol_bindings::grouped_orders::AllOrders};
+use angstrom_types::sol_bindings::grouped_orders::AllOrders;
 pub use balance_check::*;
 mod signer;
 use errors::FillerError;
@@ -45,8 +45,6 @@ where
         self.left.fill(provider, order).await?;
         self.right.fill(provider, order).await?;
 
-        order.maybe_fill_modify_liquidity_call();
-
         Ok(())
     }
 
@@ -63,14 +61,6 @@ where
 
     fn from(&self) -> Option<Address> {
         if let Some(l) = self.left.from() { Some(l) } else { self.right.from() }
-    }
-
-    fn angstrom_signer(&self) -> Option<&AngstromSigner> {
-        if let Some(l) = self.left.angstrom_signer() {
-            Some(l)
-        } else {
-            self.right.angstrom_signer()
-        }
     }
 }
 
@@ -139,10 +129,6 @@ pub(crate) trait AngstromFiller: Clone + Sized {
     fn from(&self) -> Option<Address> {
         None
     }
-
-    fn angstrom_signer(&self) -> Option<&AngstromSigner> {
-        None
-    }
 }
 
 impl AngstromFiller for () {
@@ -182,13 +168,14 @@ impl<F: AngstromFiller, O> FillFrom<F, O> for () {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct FillerOrderFrom {
     pub from: Address,
     pub inner: FillerOrder,
 }
 
 impl FillerOrderFrom {
-    fn maybe_fill_modify_liquidity_call(&mut self) {
+    pub(crate) fn maybe_fill_modify_liquidity_call(&mut self) {
         match &mut self.inner {
             FillerOrder::EthOrder(call) => call.fill_modify_liquidity_call(),
             _ => (),
@@ -196,6 +183,7 @@ impl FillerOrderFrom {
     }
 }
 
+#[derive(Debug)]
 pub(crate) enum FillerOrder {
     AngstromOrder(AllOrders),
     EthOrder(TransactionRequestWithLiquidityMeta),

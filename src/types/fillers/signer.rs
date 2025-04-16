@@ -2,7 +2,7 @@ use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::{
-    primitive::{ANGSTROM_DOMAIN, AngstromSigner},
+    primitive::ANGSTROM_DOMAIN,
     sol_bindings::{
         grouped_orders::{AllOrders, FlashVariants, StandingVariants},
         rpc_orders::{OmitOrderMeta, OrderMeta},
@@ -22,25 +22,11 @@ impl<S: Signer + SignerSync + Clone> SignerFiller<S> {
     }
 
     fn sign_into_meta<O: OmitOrderMeta>(&self, order: &O) -> Result<OrderMeta, FillerError> {
-        // let angstrom_signer = AngstromSigner::new(self.0);
         let hash = order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
         let sig = self.0.sign_hash_sync(&hash)?;
         Ok(OrderMeta { isEcdsa: true, from: self.0.address(), signature: sig.pade_encode().into() })
     }
 }
-
-// impl<S: Signer + SignerSync + Clone> SignerFiller<S> {
-//     pub fn new(signer: S) -> Self {
-//         Self(signer)
-//     }
-
-//     fn sign_into_meta<O: OmitOrderMeta>(&self, order: &O) -> Result<OrderMeta, FillerError> {
-//         let angstrom_signer = AngstromSigner::new(self.0);
-//         let hash = order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
-//         let sig = angstrom_signer.sign_hash_sync(&hash)?;
-//         Ok(OrderMeta { isEcdsa: true, from: self.0.address(), signature: sig.pade_encode().into() })
-//     }
-// }
 
 impl<S: Signer + SignerSync + Clone> AngstromFiller for SignerFiller<S> {
     type FillOutput = (Address, Option<OrderMeta>);
