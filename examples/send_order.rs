@@ -9,6 +9,7 @@ use angstrom_sdk_rs::{
     types::{USDC, WETH},
 };
 
+use angstrom_types::sol_bindings::RawPoolOrder;
 use order_gen::ValidOrderGenerator;
 
 #[tokio::main]
@@ -31,6 +32,8 @@ async fn main() -> eyre::Result<()> {
     let order_generator = ValidOrderGenerator::new(angstrom_api.clone());
 
     let tob_order = order_generator.generate_valid_tob_order(USDC, WETH).await?;
+
+    println!("SIG: {:?}", tob_order.order_signature());
     let tob_order_hash = angstrom_api.send_order(tob_order).await?;
     println!("TOB Order Hash: {tob_order_hash:?}");
 
