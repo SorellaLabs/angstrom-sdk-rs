@@ -2,7 +2,7 @@ use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::{
-    primitive::ANGSTROM_DOMAIN,
+    primitive::{ANGSTROM_DOMAIN, AngstromSigner},
     sol_bindings::{
         grouped_orders::{AllOrders, FlashVariants, StandingVariants},
         rpc_orders::{OmitOrderMeta, OrderMeta},
@@ -13,21 +13,36 @@ use pade::PadeEncode;
 use super::{AngstromFiller, FillFrom, FillerOrder, FillerOrderFrom, errors::FillerError};
 use crate::{providers::backend::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
 
+#[derive(Clone)]
 pub struct SignerFiller<S>(S);
 
-impl<S: Signer + SignerSync> SignerFiller<S> {
+impl<S: Signer + SignerSync + Clone> SignerFiller<S> {
     pub fn new(signer: S) -> Self {
         Self(signer)
     }
 
     fn sign_into_meta<O: OmitOrderMeta>(&self, order: &O) -> Result<OrderMeta, FillerError> {
+        // let angstrom_signer = AngstromSigner::new(self.0);
         let hash = order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
         let sig = self.0.sign_hash_sync(&hash)?;
         Ok(OrderMeta { isEcdsa: true, from: self.0.address(), signature: sig.pade_encode().into() })
     }
 }
 
-impl<S: Signer + SignerSync> AngstromFiller for SignerFiller<S> {
+// impl<S: Signer + SignerSync + Clone> SignerFiller<S> {
+//     pub fn new(signer: S) -> Self {
+//         Self(signer)
+//     }
+
+//     fn sign_into_meta<O: OmitOrderMeta>(&self, order: &O) -> Result<OrderMeta, FillerError> {
+//         let angstrom_signer = AngstromSigner::new(self.0);
+//         let hash = order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
+//         let sig = angstrom_signer.sign_hash_sync(&hash)?;
+//         Ok(OrderMeta { isEcdsa: true, from: self.0.address(), signature: sig.pade_encode().into() })
+//     }
+// }
+
+impl<S: Signer + SignerSync + Clone> AngstromFiller for SignerFiller<S> {
     type FillOutput = (Address, Option<OrderMeta>);
 
     async fn prepare<P>(
@@ -73,7 +88,9 @@ impl<S: Signer + SignerSync> AngstromFiller for SignerFiller<S> {
     }
 }
 
-impl<S: Signer + SignerSync> FillFrom<SignerFiller<S>, AllOrders> for (Address, Option<OrderMeta>) {
+impl<S: Signer + SignerSync + Clone> FillFrom<SignerFiller<S>, AllOrders>
+    for (Address, Option<OrderMeta>)
+{
     fn prepare_with(self, input_order: &mut AllOrders) -> Result<(), FillerError> {
         let (recipient, order_meta) = (self.0, self.1.expect("expected order meta"));
         match input_order {
@@ -107,7 +124,7 @@ impl<S: Signer + SignerSync> FillFrom<SignerFiller<S>, AllOrders> for (Address, 
     }
 }
 
-impl<S: Signer + SignerSync> FillFrom<SignerFiller<S>, TransactionRequestWithLiquidityMeta>
+impl<S: Signer + SignerSync + Clone> FillFrom<SignerFiller<S>, TransactionRequestWithLiquidityMeta>
     for (Address, Option<OrderMeta>)
 {
     fn prepare_with(

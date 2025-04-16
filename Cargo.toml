@@ -67,6 +67,7 @@ alloy-transport-ipc = { version = "0.12.6", default-features = false }
 alloy-pubsub = { version = "0.12.6", default-features = false }
 alloy-json-rpc = { version = "0.12.6", default-features = false }
 alloy-rpc-client = { version = "0.12.6", default-features = false }
+testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", default-features = false }
 # alloy-multicall = "0.12.6"
 
 # async
@@ -97,7 +98,6 @@ rust-utils = { git = "https://github.com/jnoorchashm37/rust-utils.git" }
 
 
 [dev-dependencies]
-testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package = "testing-tools", default-features = false }
 sepolia-bundle-lander = { git = "https://github.com/SorellaLabs/angstrom.git", package = "sepolia-bundle-lander", default-features = false }
 uniswap_v3_math = { git = "https://github.com/0xKitsune/uniswap-v3-math.git", version = "0.6" }
 revm = { version = "20.0.0-alpha.7", features = [

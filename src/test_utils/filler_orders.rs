@@ -49,7 +49,7 @@ where
         .all_pool_data(Some(block_number))
         .await?
         .into_iter()
-        .hashmap_by_key_val(|pool| (pool.address(), Arc::new(RwLock::new(pool))));
+        .hashmap_by_key_val(|(_, pool)| (pool.address(), Arc::new(RwLock::new(pool))));
 
     let (tx, rx) = tokio::sync::mpsc::channel(100);
     let generator = OrderGenerator::new(

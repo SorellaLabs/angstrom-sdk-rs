@@ -13,7 +13,10 @@ use validation::order::state::db_state_utils::nonces::Nonces;
 pub struct NonceGeneratorFiller;
 
 impl NonceGeneratorFiller {
-    async fn get_valid_nonce<P: Provider>(user: Address, provider: &P) -> Result<u64, FillerError> {
+    async fn get_valid_angstrom_nonce<P: Provider>(
+        user: Address,
+        provider: &P,
+    ) -> Result<u64, FillerError> {
         let nonce_tracker = Nonces::new(ANGSTROM_ADDRESS);
 
         let mut nonce: u64 = rand::random();
@@ -47,7 +50,7 @@ impl NonceGeneratorFiller {
             return Ok(None);
         }
 
-        let nonce = Self::get_valid_nonce(from, provider.eth_provider()).await?;
+        let nonce = Self::get_valid_angstrom_nonce(from, provider.eth_provider()).await?;
 
         Ok(Some(nonce))
     }
@@ -133,11 +136,10 @@ impl FillFrom<NonceGeneratorFiller, TransactionRequestWithLiquidityMeta> for Opt
 
 #[cfg(test)]
 mod tests {
-    use alloy_primitives::{FixedBytes, address, aliases::I24};
+    use alloy_primitives::address;
     use alloy_provider::RootProvider;
     use alloy_rpc_types::TransactionRequest;
-    use alloy_sol_types::SolCall;
-    use angstrom_types::contract_bindings::pool_gate::PoolGate::addLiquidityCall;
+    use angstrom_types::contract_bindings::pool_manager::{IPoolManager, PoolManager::PoolKey};
 
     use crate::{
         AngstromApi,
@@ -198,14 +200,8 @@ mod tests {
 
         let mut inner_order = TransactionRequestWithLiquidityMeta::new_add_liqudity(
             tx_req.clone(),
-            addLiquidityCall::new((
-                Address::default(),
-                Address::default(),
-                I24::default(),
-                I24::default(),
-                U256::default(),
-                FixedBytes::<32>::default(),
-            )),
+            PoolKey::default(),
+            IPoolManager::ModifyLiquidityParams::default(),
         )
         .convert_with_from(from);
 

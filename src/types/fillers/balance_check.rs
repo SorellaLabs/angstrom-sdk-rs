@@ -115,7 +115,8 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn test_balance_checker_angstrom_order() {
         let provider = AnvilAngstromProvider::new().await.unwrap();
-        let api = AngstromApi::new(provider.provider.clone()).with_token_balance_filler();
+        let api =
+            AngstromApi::new_with_provider(provider.provider.clone()).with_token_balance_filler();
 
         let orders = AllOrdersSpecific::default();
 
@@ -166,7 +167,8 @@ mod tests {
 
         provider.overwrite_token_amounts(from, asset).await.unwrap();
 
-        let api = AngstromApi::new(provider.provider.clone()).with_token_balance_filler();
+        let api =
+            AngstromApi::new_with_provider(provider.provider.clone()).with_token_balance_filler();
         let ref_api = &api;
         orders
             .test_filler_order(async |mut order| {

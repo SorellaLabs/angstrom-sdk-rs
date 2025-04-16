@@ -11,8 +11,9 @@ use crate::types::{
 };
 use alloy_network::TxSigner;
 use alloy_primitives::{Address, FixedBytes, PrimitiveSignature, TxHash};
-use alloy_provider::Provider;
+use alloy_provider::{Provider, RootProvider};
 use alloy_signer::{Signer, SignerSync};
+use angstrom_types::primitive::AngstromSigner;
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
     sol_bindings::{RawPoolOrder, grouped_orders::AllOrders},
@@ -21,6 +22,8 @@ use jsonrpsee_http_client::HttpClient;
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
 use crate::apis::{data_api::AngstromDataApi, node_api::AngstromNodeApi};
+
+use super::backend::AlloyRpcProvider;
 
 #[derive(Clone)]
 pub struct AngstromApi<P, F = ()>
@@ -31,11 +34,20 @@ where
     filler: F,
 }
 
+impl AngstromApi<AlloyRpcProvider<RootProvider>> {
+    pub async fn new(eth_ws_url: &str, angstrom_http_url: &str) -> eyre::Result<Self> {
+        Ok(Self {
+            provider: AngstromProvider::new(eth_ws_url, angstrom_http_url).await?,
+            filler: (),
+        })
+    }
+}
+
 impl<P> AngstromApi<P>
 where
     P: Provider,
 {
-    pub fn new(provider: AngstromProvider<P>) -> Self {
+    pub fn new_with_provider(provider: AngstromProvider<P>) -> Self {
         Self { provider, filler: () }
     }
 }
@@ -124,7 +136,7 @@ where
         >,
     >
     where
-        S: Signer + SignerSync + Send,
+        S: Signer + SignerSync + Send + Clone,
         SignerFiller<S>: AngstromFiller,
         P: Provider,
     {
@@ -136,6 +148,14 @@ where
                 .wrap_with_filler(TokenBalanceCheckFiller)
                 .wrap_with_filler(SignerFiller::new(signer)),
         }
+    }
+
+    pub fn from_address(&self) -> Option<Address> {
+        self.filler.from()
+    }
+
+    pub fn angstrom_signer(&self) -> Option<&AngstromSigner> {
+        self.filler.angstrom_signer()
     }
 }
 
@@ -176,6 +196,7 @@ where
         self.filler
             .fill_many(&self.provider, &mut filler_orders)
             .await?;
+
         self.provider
             .send_orders(
                 filler_orders
@@ -212,7 +233,7 @@ where
         token0: Address,
         token1: Address,
         block_number: Option<u64>,
-    ) -> eyre::Result<EnhancedUniswapPool<DataLoader>> {
+    ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
         self.provider.pool_data(token0, token1, block_number).await
     }
 
@@ -233,6 +254,12 @@ where
         self.provider.get_positions(user_address).await
     }
 }
+
+// impl<P: Provider + Clone, F: Clone> Clone for AngstromApi<P, F> {
+//     fn clone(&self) -> Self {
+//         Self { provider: self.provider.clone(), filler: self.filler.clone() }
+//     }
+// }
 
 #[cfg(test)]
 impl<P, F> AngstromApi<P, F>

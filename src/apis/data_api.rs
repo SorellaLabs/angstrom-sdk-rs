@@ -25,12 +25,12 @@ pub trait AngstromDataApi {
         token0: Address,
         token1: Address,
         block_number: Option<u64>,
-    ) -> eyre::Result<EnhancedUniswapPool<DataLoader>>;
+    ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)>;
 
     async fn all_pool_data(
         &self,
         block_number: Option<u64>,
-    ) -> eyre::Result<Vec<EnhancedUniswapPool<DataLoader>>> {
+    ) -> eyre::Result<Vec<(u64, EnhancedUniswapPool<DataLoader>)>> {
         let token_pairs = self.all_token_pairs().await?;
 
         let pools = futures::future::try_join_all(

@@ -227,7 +227,7 @@ where
         token0: Address,
         token1: Address,
         block_number: Option<u64>,
-    ) -> eyre::Result<EnhancedUniswapPool<DataLoader>> {
+    ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
         let (token0, token1) = sort_tokens(token0, token1);
 
         let mut pool_key = self.pool_key(token0, token1).await?;
@@ -249,7 +249,7 @@ where
             .initialize(Some(block_number), Arc::new(self.eth_provider.clone()))
             .await?;
 
-        Ok(enhanced_uni_pool)
+        Ok((block_number, enhanced_uni_pool))
     }
 }
 

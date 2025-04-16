@@ -44,7 +44,7 @@ async fn spawn_angstrom_provider() -> eyre::Result<AngstromProvider<AlloyRpcProv
 }
 
 pub async fn spawn_angstrom_api() -> eyre::Result<AngstromApi<AlloyRpcProvider<RootProvider>>> {
-    Ok(AngstromApi::new(spawn_angstrom_provider().await?))
+    Ok(AngstromApi::new_with_provider(spawn_angstrom_provider().await?))
 }
 
 pub trait OrderExecutor {

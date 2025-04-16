@@ -1,198 +1,105 @@
 use alloy_primitives::{
-    Address, TxKind, U256,
-    aliases::{I24, U40},
+    Address, I256, TxKind,
+    aliases::{I24, U24},
 };
-use alloy_rpc_types::{TransactionInput, TransactionRequest};
-use alloy_sol_types::{Eip712Domain, SolCall};
+use alloy_rpc_types::TransactionRequest;
 use angstrom_types::{
-    contract_bindings::pool_gate::PoolGate,
-    matching::Ray,
-    primitive::ANGSTROM_DOMAIN,
-    sol_bindings::rpc_orders::{
-        ExactFlashOrder, ExactStandingOrder, PartialFlashOrder, PartialStandingOrder,
-        TopOfBlockOrder,
+    contract_bindings::pool_manager::{IPoolManager, PoolManager},
+    sol_bindings::{
+        grouped_orders::{AllOrders, GroupedVanillaOrder},
+        rpc_orders::TopOfBlockOrder,
     },
 };
+use testing_tools::type_generator::orders::{ToBOrderBuilder, UserOrderBuilder};
 
-use crate::types::{POOL_GATE_ADDRESS, TransactionRequestWithLiquidityMeta};
+use crate::types::{ANGSTROM_ADDRESS, POOL_MANAGER_ADDRESS, TransactionRequestWithLiquidityMeta};
 
-pub fn add_liquidity(
-    token0: Address,
-    token1: Address,
-    tick_lower: i32,
-    tick_upper: i32,
-    liquidity: U256,
-    max_fee_per_gas: Option<u128>,
-    max_priority_fee_per_gas: Option<u128>,
-) -> TransactionRequestWithLiquidityMeta {
-    let call = PoolGate::addLiquidityCall {
-        asset0: token0,
-        asset1: token1,
-        tickLower: I24::unchecked_from(tick_lower),
-        tickUpper: I24::unchecked_from(tick_upper),
-        liquidity,
-        salt: Default::default(),
-    };
+pub struct AngstromOrderBuilder;
 
-    let tx = TransactionRequest {
-        to: Some(TxKind::Call(POOL_GATE_ADDRESS)),
-        input: TransactionInput::both(call.abi_encode().into()),
-        max_fee_per_gas,
-        max_priority_fee_per_gas,
-        ..Default::default()
-    };
-
-    TransactionRequestWithLiquidityMeta::new_add_liqudity(tx, call)
-}
-
-pub fn remove_liquidity(
-    token0: Address,
-    token1: Address,
-    tick_lower: i32,
-    tick_upper: i32,
-    liquidity: U256,
-    max_fee_per_gas: Option<u128>,
-    max_priority_fee_per_gas: Option<u128>,
-) -> TransactionRequestWithLiquidityMeta {
-    let call = PoolGate::removeLiquidityCall {
-        asset0: token0,
-        asset1: token1,
-        tickLower: I24::unchecked_from(tick_lower),
-        tickUpper: I24::unchecked_from(tick_upper),
-        liquidity,
-        salt: Default::default(),
-    };
-
-    let tx = TransactionRequest {
-        to: Some(TxKind::Call(POOL_GATE_ADDRESS)),
-        input: TransactionInput::both(call.abi_encode().into()),
-        max_fee_per_gas,
-        max_priority_fee_per_gas,
-        ..Default::default()
-    };
-
-    TransactionRequestWithLiquidityMeta::new_remove_liqudity(tx, call)
-}
-
-pub fn top_of_block_order(
-    asset_in: Address,
-    asset_out: Address,
-    quantity_in: u128,
-    quantity_out: u128,
-    max_gas_asset0: u128,
-    valid_for_block: u64,
-    recipient: Address,
-) -> TopOfBlockOrder {
-    TopOfBlockOrder {
-        asset_in,
-        asset_out,
-        quantity_in,
-        quantity_out,
-        valid_for_block,
-        max_gas_asset0,
-        recipient,
-        ..Default::default()
+impl AngstromOrderBuilder {
+    pub fn tob_order(f: impl Fn(ToBOrderBuilder) -> TopOfBlockOrder) -> AllOrders {
+        AllOrders::TOB(f(ToBOrderBuilder::new()))
     }
-}
 
-pub fn partial_standing_order(
-    asset_in: Address,
-    asset_out: Address,
-    min_amount_in: u128,
-    max_amount_in: u128,
-    min_price: U256,
-    deadline: Option<u64>,
-    recipient: Address,
-) -> PartialStandingOrder {
-    PartialStandingOrder {
-        asset_in,
-        asset_out,
-        max_amount_in,
-        min_amount_in,
-        min_price,
-        max_extra_fee_asset0: max_amount_in,
-        deadline: deadline.map(|d| U40::from(d)).unwrap_or_default(),
-        recipient,
-        ..Default::default()
+    pub fn flash_order(f: impl Fn(UserOrderBuilder) -> GroupedVanillaOrder) -> AllOrders {
+        let order = f(UserOrderBuilder::new().kill_or_fill());
+
+        match order {
+            GroupedVanillaOrder::KillOrFill(order) => AllOrders::Flash(order),
+            _ => unreachable!("must be a flash order"),
+        }
     }
-}
 
-pub fn exact_standing_order(
-    asset_in: Address,
-    asset_out: Address,
-    exact_in: bool,
-    amount: u128,
-    min_price: U256,
-    deadline: Option<u64>,
-    recipient: Address,
-) -> ExactStandingOrder {
-    ExactStandingOrder {
-        asset_in,
-        asset_out,
-        min_price,
-        max_extra_fee_asset0: if exact_in {
-            amount
+    pub fn standing_order(f: impl Fn(UserOrderBuilder) -> GroupedVanillaOrder) -> AllOrders {
+        let order = f(UserOrderBuilder::new().standing());
+
+        match order {
+            GroupedVanillaOrder::Standing(order) => AllOrders::Standing(order),
+            _ => unreachable!("must be a flash order"),
+        }
+    }
+
+    pub fn modify_liquidity(
+        token0: Address,
+        token1: Address,
+        tick_lower: i32,
+        tick_upper: i32,
+        pool_tick_spacing: i32,
+        liquidity_delta: I256,
+        max_fee_per_gas: Option<u128>,
+        max_priority_fee_per_gas: Option<u128>,
+        is_add: bool,
+    ) -> TransactionRequestWithLiquidityMeta {
+        let params = IPoolManager::ModifyLiquidityParams {
+            tickLower: I24::unchecked_from(tick_lower),
+            tickUpper: I24::unchecked_from(tick_upper),
+            liquidityDelta: liquidity_delta,
+            salt: Default::default(),
+        };
+
+        let tx = TransactionRequest {
+            to: Some(TxKind::Call(POOL_MANAGER_ADDRESS)),
+            max_fee_per_gas,
+            max_priority_fee_per_gas,
+            ..Default::default()
+        };
+
+        let pool_key = PoolManager::PoolKey {
+            currency0: token0,
+            currency1: token1,
+            fee: U24::from(0x800000),
+            tickSpacing: I24::unchecked_from(pool_tick_spacing),
+            hooks: ANGSTROM_ADDRESS,
+        };
+
+        if is_add {
+            TransactionRequestWithLiquidityMeta::new_add_liqudity(tx, pool_key, params)
         } else {
-            Ray::from(min_price)
-                .mul_quantity(U256::from(amount))
-                .saturating_to::<u128>()
-        },
-        deadline: deadline.map(|d| U40::from(d)).unwrap_or_default(),
-        exact_in,
-        amount,
-        recipient,
-        ..Default::default()
+            TransactionRequestWithLiquidityMeta::new_remove_liqudity(tx, pool_key, params)
+        }
     }
 }
 
-pub fn partial_flash_order(
-    asset_in: Address,
-    asset_out: Address,
-    min_amount_in: u128,
-    max_amount_in: u128,
-    min_price: U256,
-    valid_for_block: u64,
-    recipient: Address,
-) -> PartialFlashOrder {
-    PartialFlashOrder {
-        asset_in,
-        asset_out,
-        max_amount_in,
-        min_amount_in,
-        min_price,
-        max_extra_fee_asset0: max_amount_in,
-        valid_for_block,
-        recipient,
-        ..Default::default()
-    }
-}
+mod _liquidity_calls {
+    use alloy::sol;
 
-pub fn exact_flash_order(
-    asset_in: Address,
-    asset_out: Address,
-    exact_in: bool,
-    amount: u128,
-    min_price: U256,
-    recipient: Address,
-) -> ExactFlashOrder {
-    ExactFlashOrder {
-        asset_in,
-        asset_out,
-        min_price,
-        max_extra_fee_asset0: if exact_in {
-            amount
-        } else {
-            Ray::from(min_price)
-                .mul_quantity(U256::from(amount))
-                .saturating_to::<u128>()
-        },
-        exact_in,
-        amount,
-        recipient,
-        ..Default::default()
-    }
-}
+    sol! {
+        function addLiquidity(
+            address asset0,
+            address asset1,
+            int24 tickLower,
+            int24 tickUpper,
+            uint256 liquidity,
+            bytes32 salt
+        ) public returns (int256 callerDelta, int256 feesAccrued);
 
-pub fn angstrom_eip712_domain() -> Eip712Domain {
-    ANGSTROM_DOMAIN
+        function removeLiquidity(
+            address asset0,
+            address asset1,
+            int24 tickLower,
+            int24 tickUpper,
+            uint256 liquidity,
+            bytes32 salt
+        ) public returns (int256 callerDelta, int256 feesAccrued);
+    }
 }

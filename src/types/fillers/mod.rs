@@ -2,7 +2,7 @@ mod balance_check;
 pub mod errors;
 use alloy_primitives::Address;
 use alloy_provider::Provider;
-use angstrom_types::sol_bindings::grouped_orders::AllOrders;
+use angstrom_types::{primitive::AngstromSigner, sol_bindings::grouped_orders::AllOrders};
 pub use balance_check::*;
 mod signer;
 use errors::FillerError;
@@ -15,6 +15,7 @@ pub use chain_id::*;
 use super::TransactionRequestWithLiquidityMeta;
 use crate::providers::backend::AngstromProvider;
 
+#[derive(Clone)]
 pub struct AngstromFillProvider<L, R> {
     left: L,
     right: R,
@@ -44,6 +45,8 @@ where
         self.left.fill(provider, order).await?;
         self.right.fill(provider, order).await?;
 
+        order.maybe_fill_modify_liquidity_call();
+
         Ok(())
     }
 
@@ -61,11 +64,19 @@ where
     fn from(&self) -> Option<Address> {
         if let Some(l) = self.left.from() { Some(l) } else { self.right.from() }
     }
+
+    fn angstrom_signer(&self) -> Option<&AngstromSigner> {
+        if let Some(l) = self.left.angstrom_signer() {
+            Some(l)
+        } else {
+            self.right.angstrom_signer()
+        }
+    }
 }
 
 impl<L: AngstromFiller, R: AngstromFiller> FillWrapper for AngstromFillProvider<L, R> {}
 
-pub(crate) trait AngstromFiller: Sized {
+pub(crate) trait AngstromFiller: Clone + Sized {
     type FillOutput: FillFrom<Self, AllOrders> + FillFrom<Self, TransactionRequestWithLiquidityMeta>;
 
     async fn fill<P>(
@@ -128,6 +139,10 @@ pub(crate) trait AngstromFiller: Sized {
     fn from(&self) -> Option<Address> {
         None
     }
+
+    fn angstrom_signer(&self) -> Option<&AngstromSigner> {
+        None
+    }
 }
 
 impl AngstromFiller for () {
@@ -149,7 +164,7 @@ impl AngstromFiller for () {
     }
 }
 
-pub(crate) trait FillWrapper: AngstromFiller {
+pub trait FillWrapper: AngstromFiller + Clone {
     fn wrap_with_filler<F: AngstromFiller>(self, filler: F) -> AngstromFillProvider<Self, F> {
         AngstromFillProvider::new(self, filler)
     }
@@ -170,6 +185,15 @@ impl<F: AngstromFiller, O> FillFrom<F, O> for () {
 pub(crate) struct FillerOrderFrom {
     pub from: Address,
     pub inner: FillerOrder,
+}
+
+impl FillerOrderFrom {
+    fn maybe_fill_modify_liquidity_call(&mut self) {
+        match &mut self.inner {
+            FillerOrder::EthOrder(call) => call.fill_modify_liquidity_call(),
+            _ => (),
+        }
+    }
 }
 
 pub(crate) enum FillerOrder {

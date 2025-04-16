@@ -1,11 +1,14 @@
 use alloy_primitives::{
-    Address, U256,
+    Address, Bytes, U256,
     aliases::{I24, U24},
 };
-use alloy_rpc_types::TransactionRequest;
-
+use alloy_rpc_types::{TransactionInput, TransactionRequest};
+use alloy_sol_types::SolCall;
 use angstrom_types::{
-    contract_bindings::{angstrom::Angstrom::PoolKey, pool_gate::PoolGate},
+    contract_bindings::{
+        angstrom::Angstrom::PoolKey,
+        pool_manager::{IPoolManager, PoolManager},
+    },
     contract_payloads::angstrom::AngPoolConfigEntry,
     primitive::PoolId,
 };
@@ -29,7 +32,6 @@ pub struct TokenInfoWithMeta {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PoolMetadata {
-    // pub pool_ticker: String,
     pub pool_id: PoolId,
     pub token0: Address,
     pub token1: Address,
@@ -62,43 +64,38 @@ impl PoolMetadata {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionRequestWithLiquidityMeta {
     pub tx_request: TransactionRequest,
-    pub token0: Address,
-    pub token1: Address,
-    pub tick_lower: i32,
-    pub tick_upper: i32,
-    pub liquidity: U256,
+    pub pool_key: PoolManager::PoolKey,
+    pub params: IPoolManager::ModifyLiquidityParams,
     pub is_add: bool,
 }
 
 impl TransactionRequestWithLiquidityMeta {
     pub fn new_add_liqudity(
         tx_request: TransactionRequest,
-        call: PoolGate::addLiquidityCall,
+        pool_key: PoolManager::PoolKey,
+        params: IPoolManager::ModifyLiquidityParams,
     ) -> Self {
-        Self {
-            tx_request,
-            token0: call.asset0,
-            token1: call.asset1,
-            tick_lower: call.tickLower.try_into().unwrap(),
-            tick_upper: call.tickUpper.try_into().unwrap(),
-            liquidity: call.liquidity,
-            is_add: true,
-        }
+        Self { tx_request, pool_key, is_add: true, params }
     }
 
     pub fn new_remove_liqudity(
         tx_request: TransactionRequest,
-        call: PoolGate::removeLiquidityCall,
+        pool_key: PoolManager::PoolKey,
+        params: IPoolManager::ModifyLiquidityParams,
     ) -> Self {
-        Self {
-            tx_request,
-            token0: call.asset0,
-            token1: call.asset1,
-            tick_lower: call.tickLower.try_into().unwrap(),
-            tick_upper: call.tickUpper.try_into().unwrap(),
-            liquidity: call.liquidity,
-            is_add: false,
-        }
+        Self { tx_request, pool_key, is_add: false, params }
+    }
+
+    pub(crate) fn fill_modify_liquidity_call(&mut self) {
+        let modify_liq_call = PoolManager::modifyLiquidityCall {
+            key: self.pool_key.clone(),
+            params: self.params.clone(),
+            hookData: Bytes::default(),
+        };
+
+        let unlock_call = PoolManager::unlockCall { data: modify_liq_call.abi_encode().into() };
+
+        self.tx_request.input = TransactionInput::both(unlock_call.abi_encode().into());
     }
 }
 
