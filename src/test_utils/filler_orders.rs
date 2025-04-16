@@ -75,7 +75,6 @@ pub fn generate_any_order_for_all(order_generator: &OrderGenerator) -> AllOrders
             for book_order in &order.book {
                 match book_order {
                     GroupedVanillaOrder::KillOrFill(FlashVariants::Partial(partial_flash)) => {
-                        // check if bitmap contains a 1 in the first digit
                         if bitmap & 0b0001 != 0 {
                             all_orders.push(AllOrders::Flash(FlashVariants::Partial(
                                 partial_flash.clone(),
@@ -84,7 +83,6 @@ pub fn generate_any_order_for_all(order_generator: &OrderGenerator) -> AllOrders
                         }
                     }
                     GroupedVanillaOrder::KillOrFill(FlashVariants::Exact(exact_flash)) => {
-                        // check if bitmap contains a 1 in the second digit
                         if bitmap & 0b0010 != 0 {
                             all_orders
                                 .push(AllOrders::Flash(FlashVariants::Exact(exact_flash.clone())));
@@ -92,7 +90,6 @@ pub fn generate_any_order_for_all(order_generator: &OrderGenerator) -> AllOrders
                         }
                     }
                     GroupedVanillaOrder::Standing(StandingVariants::Partial(partial_standing)) => {
-                        // check if bitmap contains a 1 in the third digit
                         if bitmap & 0b0100 != 0 {
                             all_orders.push(AllOrders::Standing(StandingVariants::Partial(
                                 partial_standing.clone(),
@@ -101,7 +98,6 @@ pub fn generate_any_order_for_all(order_generator: &OrderGenerator) -> AllOrders
                         }
                     }
                     GroupedVanillaOrder::Standing(StandingVariants::Exact(exact_standing)) => {
-                        // check if bitmap contains a 1 in the fourth digit
                         if bitmap & 0b1000 != 0 {
                             all_orders.push(AllOrders::Standing(StandingVariants::Exact(
                                 exact_standing.clone(),
