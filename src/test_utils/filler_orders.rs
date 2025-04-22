@@ -238,7 +238,7 @@ fn find_slot_offset_for_balance<P: Provider>(
         db.insert_account_storage(token_address, balance_slot.into(), U256::from(123456789))?;
         // execute revm to see if we hit the slot
 
-        let mut evm = Context::<BlockEnv>::new(EmptyDBTyped::default(), SpecId::LATEST)
+        let mut evm = Context::<BlockEnv>::new(EmptyDBTyped::default(), SpecId::default())
             .with_ref_db(&db)
             .modify_cfg_chained(|cfg| {
                 cfg.disable_balance_check = true;
@@ -257,8 +257,8 @@ fn find_slot_offset_for_balance<P: Provider>(
         let Some(output) = binding.result.output() else {
             continue;
         };
-        let return_data = ERC20::balanceOfCall::abi_decode_returns(output, false)?;
-        if return_data.balance == U256::from(123456789) {
+        let return_data = ERC20::balanceOfCall::abi_decode_returns(output)?;
+        if return_data == U256::from(123456789) {
             return Ok(offset as u64);
         }
     }

@@ -10,7 +10,7 @@ use crate::types::{
     },
 };
 use alloy_network::TxSigner;
-use alloy_primitives::{Address, FixedBytes, PrimitiveSignature, TxHash};
+use alloy_primitives::{Address, FixedBytes, Signature, TxHash};
 use alloy_provider::{Provider, RootProvider};
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::{
@@ -114,7 +114,7 @@ where
         signer: S,
     ) -> AngstromApi<AlloyWalletRpcProvider<P>, AngstromFillProvider<F, AngstromSignerFiller<S>>>
     where
-        S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Clone + Send + Sync + 'static,
+        S: Signer + SignerSync + TxSigner<Signature> + Clone + Send + Sync + 'static,
         AngstromSignerFiller<S>: AngstromFiller,
     {
         AngstromApi {

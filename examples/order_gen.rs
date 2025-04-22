@@ -111,8 +111,8 @@ impl<P: Provider, F: FillWrapper> ValidOrderGenerator<P, F> {
             self.view_call(token1, _private::balanceOfCall::new((from,)))
         )?;
 
-        let token0_bal = token0_bal?.result;
-        let token1_bal = token1_bal?.result;
+        let token0_bal = token0_bal?;
+        let token1_bal = token1_bal?;
 
         if token0_bal.is_zero() || token1_bal.is_zero() {
             panic!(
@@ -175,7 +175,7 @@ impl<P: Provider, F: FillWrapper> ValidOrderGenerator<P, F> {
         };
 
         let data = self.angstrom_api.eth_provider().call(tx).await?;
-        Ok(IC::abi_decode_returns(&data, false))
+        Ok(IC::abi_decode_returns(&data))
     }
 }
 

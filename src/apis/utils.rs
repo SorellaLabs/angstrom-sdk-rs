@@ -37,7 +37,7 @@ where
     };
 
     let data = provider.call(tx).await?;
-    Ok(IC::abi_decode_returns(&data, false))
+    Ok(IC::abi_decode_returns(&data))
 }
 
 pub(crate) trait FromAddress {

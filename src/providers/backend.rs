@@ -5,7 +5,7 @@ use std::{
 
 use alloy_network::{Ethereum, EthereumWallet, TxSigner};
 use alloy_primitives::{
-    Address, FixedBytes, PrimitiveSignature, TxHash, U256,
+    Address, FixedBytes, Signature, TxHash, U256,
     aliases::{I24, U24},
 };
 use alloy_provider::{
@@ -94,7 +94,7 @@ impl<P: Provider> AngstromProvider<P> {
 
     pub(crate) fn with_wallet<S>(self, signer: S) -> AngstromProvider<AlloyWalletRpcProvider<P>>
     where
-        S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Send + Sync + 'static,
+        S: Signer + SignerSync + TxSigner<Signature> + Send + Sync + 'static,
     {
         let eth_provider = alloy_provider::builder::<Ethereum>()
             .wallet(EthereumWallet::new(signer))
@@ -191,7 +191,7 @@ impl<P: Provider> AngstromDataApi for P {
         Ok(futures::future::try_join_all(all_tokens_addresses.into_iter().map(|address| {
             view_call(self, address, MintableMockERC20::symbolCall {}).and_then(
                 async move |val_res| {
-                    Ok(val_res.map(|val| TokenInfoWithMeta { address, symbol: val._0 }))
+                    Ok(val_res.map(|val| TokenInfoWithMeta { address, symbol: val }))
                 },
             )
         }))

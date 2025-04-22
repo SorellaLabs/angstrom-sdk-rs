@@ -22,8 +22,7 @@ impl TokenBalanceCheckFiller {
     ) -> Result<(), FillerError> {
         let user_balance_of =
             view_call(provider.eth_provider(), token, ERC20::balanceOfCall { _owner: user })
-                .await??
-                .balance;
+                .await??;
 
         if requested_amount > user_balance_of {
             return Err(FillerError::InsufficientBalanceError(
