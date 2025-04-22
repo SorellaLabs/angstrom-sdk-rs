@@ -1,5 +1,5 @@
 use alloy_network::{Ethereum, EthereumWallet, TxSigner};
-use alloy_primitives::{Address, Signature, TxHash};
+use alloy_primitives::{Address, Signature};
 use alloy_provider::{
     Identity, Provider, RootProvider,
     fillers::{
@@ -61,18 +61,6 @@ impl<P: Provider> AngstromProvider<P> {
 
     pub fn eth_provider(&self) -> &P {
         &self.eth_provider
-    }
-
-    pub async fn send_add_remove_liquidity_tx(
-        &self,
-        tx_req: TransactionRequestWithLiquidityMeta,
-    ) -> eyre::Result<TxHash> {
-        Ok(self
-            .eth_provider
-            .send_transaction(tx_req.tx_request)
-            .await?
-            .watch()
-            .await?)
     }
 
     pub(crate) fn with_wallet<S>(self, signer: S) -> AngstromProvider<AlloyWalletRpcProvider<P>>

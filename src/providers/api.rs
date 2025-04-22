@@ -1,22 +1,21 @@
-use crate::apis::{user_api::AngstromUserApi, utils::FromAddress};
+use crate::apis::user_api::AngstromUserApi;
 use crate::providers::backend::{AlloyWalletRpcProvider, AngstromProvider};
 use crate::types::{
     HistoricalOrders, HistoricalOrdersFilter, TokenInfoWithMeta, TokenPairInfo,
-    TransactionRequestWithLiquidityMeta, UserLiquidityPosition,
+    UserLiquidityPosition,
     errors::AngstromSdkError,
     fillers::{
-        AngstromFillProvider, AngstromFiller, AngstromSignerFiller, FillWrapper, FillerOrderFrom,
-        MakeFillerOrder, NonceGeneratorFiller, TokenBalanceCheckFiller,
+        AngstromFillProvider, AngstromFiller, AngstromSignerFiller, FillWrapper,
+        NonceGeneratorFiller, TokenBalanceCheckFiller,
     },
 };
 use alloy_network::TxSigner;
-use alloy_primitives::{Address, FixedBytes, Signature, TxHash};
+use alloy_primitives::{Address, FixedBytes, Signature};
 use alloy_provider::{Provider, RootProvider};
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::contract_payloads::angstrom::AngstromPoolConfigStore;
 use angstrom_types::{
-    contract_bindings::angstrom::Angstrom::PoolKey,
-    sol_bindings::{RawPoolOrder, grouped_orders::AllOrders},
+    contract_bindings::angstrom::Angstrom::PoolKey, sol_bindings::grouped_orders::AllOrders,
 };
 use jsonrpsee_http_client::HttpClient;
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
@@ -67,22 +66,6 @@ where
 
     pub fn angstrom_provider(&self) -> &AngstromProvider<P> {
         &self.provider
-    }
-
-    pub async fn send_add_remove_liquidity_tx(
-        &self,
-        tx_req: TransactionRequestWithLiquidityMeta,
-    ) -> eyre::Result<TxHash> {
-        let from = tx_req.from_address(&self.filler);
-        let mut filled_tx_req = tx_req.convert_with_from(from);
-        self.filler.fill(&self.provider, &mut filled_tx_req).await?;
-
-        filled_tx_req.maybe_fill_modify_liquidity_call();
-
-        self
-            .provider
-            .send_add_remove_liquidity_tx(filled_tx_req.inner.force_regular_tx())
-            .await
     }
 
     pub fn with_filler<F1: FillWrapper>(
@@ -168,44 +151,19 @@ where
         self.provider.angstrom_rpc_provider()
     }
 
-    async fn send_order(&self, order: AllOrders) -> Result<FixedBytes<32>, AngstromSdkError> {
-        let from = self.filler.from().unwrap_or_else(|| {
-            let f = order.from();
-            assert_ne!(f, Address::default());
-            f
-        });
-        let mut filler_order: FillerOrderFrom = order.convert_with_from(from);
-        self.filler.fill(&self.provider, &mut filler_order).await?;
+    async fn send_order(&self, mut order: AllOrders) -> Result<FixedBytes<32>, AngstromSdkError> {
+        self.filler.fill(&self.provider, &mut order).await?;
 
-        self.provider
-            .send_order(filler_order.inner.force_angstrom_order())
-            .await
+        self.provider.send_order(order).await
     }
 
     async fn send_orders(
         &self,
-        orders: Vec<AllOrders>,
+        mut orders: Vec<AllOrders>,
     ) -> Result<Vec<Result<FixedBytes<32>, AngstromSdkError>>, AngstromSdkError> {
-        let mut filler_orders: Vec<FillerOrderFrom> = orders
-            .into_iter()
-            .map(|o| {
-                let from = o.from_address(&self.filler);
-                o.convert_with_from(from)
-            })
-            .collect();
+        self.filler.fill_many(&self.provider, &mut orders).await?;
 
-        self.filler
-            .fill_many(&self.provider, &mut filler_orders)
-            .await?;
-
-        self.provider
-            .send_orders(
-                filler_orders
-                    .into_iter()
-                    .map(|order| order.inner.force_angstrom_order())
-                    .collect(),
-            )
-            .await
+        self.provider.send_orders(orders).await
     }
 }
 
@@ -270,7 +228,7 @@ where
 {
     pub(crate) async fn fill(
         &self,
-        order: &mut FillerOrderFrom,
+        order: &mut AllOrders,
     ) -> Result<(), crate::types::fillers::errors::FillerError> {
         self.filler.fill(&self.provider, order).await
     }

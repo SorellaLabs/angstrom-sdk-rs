@@ -1,16 +1,10 @@
 use alloy_primitives::{
-    Address, Bytes, U256,
+    Address, U256,
     aliases::{I24, U24},
 };
-use alloy_rpc_types::{TransactionInput, TransactionRequest};
-use alloy_sol_types::SolCall;
 use angstrom_types::{
-    contract_bindings::{
-        angstrom::Angstrom::PoolKey,
-        pool_manager::{IPoolManager, PoolManager},
-    },
-    contract_payloads::angstrom::AngPoolConfigEntry,
-    primitive::PoolId,
+    contract_bindings::angstrom::Angstrom::PoolKey,
+    contract_payloads::angstrom::AngPoolConfigEntry, primitive::PoolId,
 };
 
 use serde::{Deserialize, Serialize};
@@ -58,44 +52,6 @@ impl PoolMetadata {
             tick_spacing: config_store.tick_spacing,
             storage_idx: config_store.store_index as u64,
         }
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TransactionRequestWithLiquidityMeta {
-    pub tx_request: TransactionRequest,
-    pub pool_key: PoolManager::PoolKey,
-    pub params: IPoolManager::ModifyLiquidityParams,
-    pub is_add: bool,
-}
-
-impl TransactionRequestWithLiquidityMeta {
-    pub fn new_add_liqudity(
-        tx_request: TransactionRequest,
-        pool_key: PoolManager::PoolKey,
-        params: IPoolManager::ModifyLiquidityParams,
-    ) -> Self {
-        Self { tx_request, pool_key, is_add: true, params }
-    }
-
-    pub fn new_remove_liqudity(
-        tx_request: TransactionRequest,
-        pool_key: PoolManager::PoolKey,
-        params: IPoolManager::ModifyLiquidityParams,
-    ) -> Self {
-        Self { tx_request, pool_key, is_add: false, params }
-    }
-
-    pub(crate) fn fill_modify_liquidity_call(&mut self) {
-        let modify_liq_call = PoolManager::modifyLiquidityCall {
-            key: self.pool_key.clone(),
-            params: self.params.clone(),
-            hookData: Bytes::default(),
-        };
-
-        let unlock_call = PoolManager::unlockCall { data: modify_liq_call.abi_encode().into() };
-
-        self.tx_request.input = TransactionInput::both(unlock_call.abi_encode().into());
     }
 }
 

@@ -8,8 +8,8 @@ use angstrom_types::sol_bindings::{
 };
 use pade::PadeEncode;
 
-use super::{AngstromFiller, FillFrom, FillerOrder, FillerOrderFrom, errors::FillerError};
-use crate::{providers::backend::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
+use super::{AngstromFiller, FillFrom, errors::FillerError};
+use crate::providers::backend::AngstromProvider;
 
 #[derive(Clone)]
 pub struct AngstromSignerFiller<S>(S);
@@ -27,57 +27,52 @@ impl<S: Signer + SignerSync + Clone> AngstromSignerFiller<S> {
 }
 
 impl<S: Signer + SignerSync + Clone> AngstromFiller for AngstromSignerFiller<S> {
-    type FillOutput = (Address, Option<OrderMeta>);
+    type FillOutput = (Address, OrderMeta);
 
     async fn prepare<P>(
         &self,
         _: &AngstromProvider<P>,
-        order: &FillerOrderFrom,
+        order: &AllOrders,
     ) -> Result<Self::FillOutput, FillerError>
     where
         P: Provider,
     {
         let my_address = self.0.address();
 
-        let order_meta = if let FillerOrder::AngstromOrder(fill_order) = &order.inner {
-            let om = match fill_order {
-                AllOrders::Standing(standing_variants) => match standing_variants {
-                    StandingVariants::Partial(inner_order) => {
-                        let mut inner_order = inner_order.clone();
-                        inner_order.recipient = self.0.address();
-                        self.sign_into_meta(&inner_order)?
-                    }
-                    StandingVariants::Exact(inner_order) => {
-                        let mut inner_order = inner_order.clone();
-                        inner_order.recipient = self.0.address();
-                        self.sign_into_meta(&inner_order)?
-                    }
-                },
-                AllOrders::Flash(flash_variants) => match flash_variants {
-                    FlashVariants::Partial(inner_order) => {
-                        let mut inner_order = inner_order.clone();
-                        inner_order.recipient = self.0.address();
-                        self.sign_into_meta(&inner_order)?
-                    }
-                    FlashVariants::Exact(inner_order) => {
-                        let mut inner_order = inner_order.clone();
-                        inner_order.recipient = self.0.address();
-                        self.sign_into_meta(&inner_order)?
-                    }
-                },
-                AllOrders::TOB(inner_order) => {
+        let om = match order {
+            AllOrders::Standing(standing_variants) => match standing_variants {
+                StandingVariants::Partial(inner_order) => {
                     let mut inner_order = inner_order.clone();
                     inner_order.recipient = self.0.address();
-
                     self.sign_into_meta(&inner_order)?
                 }
-            };
-            Some(om)
-        } else {
-            None
+                StandingVariants::Exact(inner_order) => {
+                    let mut inner_order = inner_order.clone();
+                    inner_order.recipient = self.0.address();
+                    self.sign_into_meta(&inner_order)?
+                }
+            },
+            AllOrders::Flash(flash_variants) => match flash_variants {
+                FlashVariants::Partial(inner_order) => {
+                    let mut inner_order = inner_order.clone();
+                    inner_order.recipient = self.0.address();
+                    self.sign_into_meta(&inner_order)?
+                }
+                FlashVariants::Exact(inner_order) => {
+                    let mut inner_order = inner_order.clone();
+                    inner_order.recipient = self.0.address();
+                    self.sign_into_meta(&inner_order)?
+                }
+            },
+            AllOrders::TOB(inner_order) => {
+                let mut inner_order = inner_order.clone();
+                inner_order.recipient = self.0.address();
+
+                self.sign_into_meta(&inner_order)?
+            }
         };
 
-        Ok((my_address, order_meta))
+        Ok((my_address, om))
     }
 
     fn from(&self) -> Option<Address> {
@@ -85,11 +80,9 @@ impl<S: Signer + SignerSync + Clone> AngstromFiller for AngstromSignerFiller<S> 
     }
 }
 
-impl<S: Signer + SignerSync + Clone> FillFrom<AngstromSignerFiller<S>, AllOrders>
-    for (Address, Option<OrderMeta>)
-{
+impl<S: Signer + SignerSync + Clone> FillFrom<AngstromSignerFiller<S>> for (Address, OrderMeta) {
     fn prepare_with(self, input_order: &mut AllOrders) -> Result<(), FillerError> {
-        let (recipient, order_meta) = (self.0, self.1.expect("expected order meta"));
+        let (recipient, order_meta) = (self.0, self.1);
         match input_order {
             AllOrders::Standing(standing_variants) => match standing_variants {
                 StandingVariants::Partial(partial_standing_order) => {
@@ -121,19 +114,6 @@ impl<S: Signer + SignerSync + Clone> FillFrom<AngstromSignerFiller<S>, AllOrders
     }
 }
 
-impl<S: Signer + SignerSync + Clone>
-    FillFrom<AngstromSignerFiller<S>, TransactionRequestWithLiquidityMeta>
-    for (Address, Option<OrderMeta>)
-{
-    fn prepare_with(
-        self,
-        input_order: &mut TransactionRequestWithLiquidityMeta,
-    ) -> Result<(), FillerError> {
-        input_order.tx_request.from = Some(self.0);
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use alloy_signer_local::LocalSigner;
@@ -141,7 +121,6 @@ mod tests {
     use crate::{
         AngstromApi,
         test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider},
-        types::fillers::MakeFillerOrder,
     };
 
     use super::*;
@@ -163,7 +142,7 @@ mod tests {
         let ref_api = &api;
         orders
             .test_filler_order(async |mut order| {
-                let mut inner_order = order.clone().convert_with_from(signer.address());
+                let mut inner_order = order.clone();
                 ref_api.fill(&mut inner_order).await.unwrap();
 
                 match &mut order {
@@ -194,7 +173,7 @@ mod tests {
                     }
                 }
 
-                inner_order.inner.force_angstrom_order() == order
+                inner_order == order
             })
             .await;
     }

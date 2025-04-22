@@ -1,8 +1,9 @@
 use alloy_primitives::{
-    Address, I256, TxKind,
+    Address, Bytes, I256, TxKind,
     aliases::{I24, U24},
 };
-use alloy_rpc_types::TransactionRequest;
+use alloy_rpc_types::{TransactionInput, TransactionRequest};
+use alloy_sol_types::SolCall;
 use angstrom_types::{
     contract_bindings::pool_manager::{IPoolManager, PoolManager},
     sol_bindings::{
@@ -12,7 +13,7 @@ use angstrom_types::{
 };
 use testing_tools::type_generator::orders::{ToBOrderBuilder, UserOrderBuilder};
 
-use crate::types::{ANGSTROM_ADDRESS, POOL_MANAGER_ADDRESS, TransactionRequestWithLiquidityMeta};
+use crate::types::{ANGSTROM_ADDRESS, POOL_MANAGER_ADDRESS};
 
 pub struct AngstromOrderBuilder;
 
@@ -46,22 +47,12 @@ impl AngstromOrderBuilder {
         tick_upper: i32,
         pool_tick_spacing: i32,
         liquidity_delta: I256,
-        max_fee_per_gas: Option<u128>,
-        max_priority_fee_per_gas: Option<u128>,
-        is_add: bool,
-    ) -> TransactionRequestWithLiquidityMeta {
+    ) -> TransactionRequest {
         let params = IPoolManager::ModifyLiquidityParams {
             tickLower: I24::unchecked_from(tick_lower),
             tickUpper: I24::unchecked_from(tick_upper),
             liquidityDelta: liquidity_delta,
             salt: Default::default(),
-        };
-
-        let tx = TransactionRequest {
-            to: Some(TxKind::Call(POOL_MANAGER_ADDRESS)),
-            max_fee_per_gas,
-            max_priority_fee_per_gas,
-            ..Default::default()
         };
 
         let pool_key = PoolManager::PoolKey {
@@ -72,10 +63,15 @@ impl AngstromOrderBuilder {
             hooks: ANGSTROM_ADDRESS,
         };
 
-        if is_add {
-            TransactionRequestWithLiquidityMeta::new_add_liqudity(tx, pool_key, params)
-        } else {
-            TransactionRequestWithLiquidityMeta::new_remove_liqudity(tx, pool_key, params)
+        let modify_liq_call =
+            PoolManager::modifyLiquidityCall { key: pool_key, params, hookData: Bytes::default() };
+
+        let unlock_call = PoolManager::unlockCall { data: modify_liq_call.abi_encode().into() };
+
+        TransactionRequest {
+            to: Some(TxKind::Call(POOL_MANAGER_ADDRESS)),
+            input: TransactionInput::both(unlock_call.abi_encode().into()),
+            ..Default::default()
         }
     }
 }
