@@ -1241,6 +1241,7 @@ dependencies = [
  "alloy-transport-ws",
  "angstrom-rpc",
  "angstrom-types",
+ "auto_impl",
  "dotenv",
  "eyre",
  "futures",

@@ -3,6 +3,7 @@ use angstrom_types::primitive::PoolId;
 
 use super::data_api::AngstromDataApi;
 use crate::types::UserLiquidityPosition;
+use auto_impl::auto_impl;
 
 pub trait AngstromUserApi: AngstromDataApi {
     async fn get_positions(

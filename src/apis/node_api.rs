@@ -12,11 +12,13 @@ use angstrom_types::{
     primitive::PoolId,
     sol_bindings::grouped_orders::AllOrders,
 };
+use auto_impl::auto_impl;
 use futures::{Stream, StreamExt, TryStreamExt};
 use jsonrpsee_http_client::HttpClient;
 
 use crate::types::errors::AngstromSdkError;
 
+#[auto_impl(&, Box, Arc)]
 pub trait AngstromNodeApi {
     fn angstrom_rpc_provider(&self) -> HttpClient;
 

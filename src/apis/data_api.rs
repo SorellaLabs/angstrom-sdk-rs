@@ -1,5 +1,6 @@
 use alloy_primitives::Address;
 use angstrom_types::{contract_bindings::angstrom::Angstrom::PoolKey, primitive::PoolId};
+use auto_impl::auto_impl;
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
 use crate::types::*;
