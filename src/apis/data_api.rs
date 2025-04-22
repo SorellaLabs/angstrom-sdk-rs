@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::types::*;
 use alloy_eips::BlockId;
@@ -22,6 +22,38 @@ pub trait AngstromDataApi {
     async fn all_tokens(&self) -> eyre::Result<Vec<TokenInfoWithMeta>>;
 
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey>;
+
+    async fn all_pool_key(&self) -> eyre::Result<Vec<PoolKey>> {
+        let (config_store, all_token_pairs) =
+            tokio::try_join!(self.pool_config_store(None), self.all_token_pairs())?;
+
+        let tokens_to_partial_keys = all_token_pairs
+            .into_iter()
+            .map(|tokens| {
+                (
+                    AngstromPoolConfigStore::derive_store_key(tokens.token0, tokens.token1),
+                    (tokens.token0, tokens.token1),
+                )
+            })
+            .collect::<HashMap<_, _>>();
+
+        Ok(config_store
+            .all_entries()
+            .into_iter()
+            .map(|entry| {
+                let (k, v) = entry.pair();
+                let (token0, token1) = tokens_to_partial_keys.get(k).unwrap();
+
+                PoolKey {
+                    currency0: *token0,
+                    currency1: *token1,
+                    fee: U24::from(v.fee_in_e6),
+                    tickSpacing: I24::unchecked_from(v.tick_spacing),
+                    hooks: ANGSTROM_ADDRESS,
+                }
+            })
+            .collect())
+    }
 
     async fn pool_id(&self, token0: Address, token1: Address) -> eyre::Result<PoolId> {
         self.pool_key(token0, token1).await.map(Into::into)
