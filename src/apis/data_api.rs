@@ -16,7 +16,6 @@ use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoade
 
 use super::utils::*;
 
-// #[auto_impl::auto_impl(&)]
 pub trait AngstromDataApi {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>>;
 
@@ -157,6 +156,7 @@ impl<P: Provider> AngstromDataApi for P {
         })
     }
 
+    /// this needs to change
     async fn historical_orders(
         &self,
         filter: HistoricalOrdersFilter,
@@ -167,6 +167,10 @@ impl<P: Provider> AngstromDataApi for P {
         let start_block = filter.from_block.unwrap_or(ANGSTROM_DEPLOYED_BLOCK);
         let end_block =
             if let Some(e) = filter.to_block { e } else { self.get_block_number().await? };
+
+        // let eth_filter = filter.as_eth_filter();
+
+        // self.get_logs(&eth_filter);
 
         let mut block_stream = futures::stream::iter(start_block..end_block)
             .map(|bn| async move {
@@ -226,5 +230,76 @@ impl<P: Provider> AngstromDataApi for P {
         )
         .await
         .map_err(|e| eyre::eyre!("{e:?}"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use alloy_primitives::aliases::I24;
+    use alloy_primitives::aliases::U24;
+
+    use crate::test_utils::spawn_angstrom_api;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_all_token_pairs() {
+        let provider = spawn_angstrom_api().await.unwrap();
+
+        let all_pairs = provider.all_token_pairs().await.unwrap();
+        assert!(!all_pairs.is_empty());
+
+        let contains = all_pairs
+            .into_iter()
+            .any(|pair| USDC == pair.token0 && WETH == pair.token1);
+        assert!(contains);
+    }
+
+    #[tokio::test]
+    async fn test_all_tokens() {
+        let provider = spawn_angstrom_api().await.unwrap();
+
+        let pool_keys = provider.all_tokens().await.unwrap();
+        assert!(!pool_keys.is_empty());
+
+        let contains_usdc = pool_keys
+            .iter()
+            .any(|token| token.address == USDC && &token.symbol == "USDC");
+        let contains_weth = pool_keys
+            .iter()
+            .any(|token| token.address == WETH && &token.symbol == "WETH");
+
+        assert!(contains_usdc);
+        assert!(contains_weth);
+    }
+
+    #[tokio::test]
+    async fn test_pool_key() {
+        let provider = spawn_angstrom_api().await.unwrap();
+        let token0 = USDC;
+        let token1 = WETH;
+
+        let pool_key = provider.pool_key(token0, token1).await.unwrap();
+        let expected_pool_key = PoolKey {
+            currency0: token0,
+            currency1: token1,
+            fee: U24::ZERO,
+            tickSpacing: I24::unchecked_from(30),
+            hooks: ANGSTROM_ADDRESS,
+        };
+
+        assert_eq!(pool_key, expected_pool_key);
+    }
+
+    #[tokio::test]
+    async fn test_historical_orders() {
+        todo!()
+    }
+
+    #[tokio::test]
+    async fn test_pool_data() {
+        let provider = spawn_angstrom_api().await.unwrap();
+        let _ = provider.pool_data(USDC, WETH, None).await.unwrap();
     }
 }

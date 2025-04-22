@@ -101,3 +101,30 @@ impl<P: Provider> AngstromUserApi for P {
             .collect())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    // use alloy_primitives::address;
+
+    // use super::*;
+    // use crate::test_utils::spawn_angstrom_api;
+
+    #[tokio::test]
+    async fn test_get_positions() {
+        // let angstrom_api = spawn_angstrom_api().await.unwrap();
+
+        // let positions = angstrom_api
+        //     .get_positions(address!("0x796fB50EAe1456A523F869f6135dd557eeaEE226"))
+        //     .await
+        //     .unwrap();
+
+        // println!("{positions:?}");
+
+        todo!()
+    }
+
+    #[tokio::test]
+    async fn test_get_positions_in_pool() {
+        todo!()
+    }
+}

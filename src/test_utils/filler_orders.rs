@@ -236,7 +236,6 @@ fn find_slot_offset_for_balance<P: Provider>(
         // set balance
         let balance_slot = keccak256((probe_address, offset as u64).abi_encode());
         db.insert_account_storage(token_address, balance_slot.into(), U256::from(123456789))?;
-        // execute revm to see if we hit the slot
 
         let mut evm = Context::<BlockEnv>::new(EmptyDBTyped::default(), SpecId::default())
             .with_ref_db(&db)

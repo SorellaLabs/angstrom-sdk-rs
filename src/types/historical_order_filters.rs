@@ -7,14 +7,14 @@ use crate::apis::data_api::AngstromDataApi;
 use alloy_consensus::Transaction;
 use alloy_primitives::Address;
 use alloy_provider::Provider;
-use alloy_rpc_types::Block;
+use alloy_rpc_types::{Block, Filter};
 use angstrom_types::{
     contract_payloads::angstrom::{AngstromBundle, TopOfBlockOrder, UserOrder},
     primitive::PoolId,
 };
 use pade::PadeDecode;
 
-use super::PoolMetadata;
+use super::{ANGSTROM_ADDRESS, PoolMetadata};
 
 #[derive(Debug, Default, Clone)]
 pub struct HistoricalOrdersFilter {
@@ -57,6 +57,18 @@ impl HistoricalOrdersFilter {
     pub fn order_kinds(mut self, order_kinds: impl IntoIterator<Item = OrderKind>) -> Self {
         self.order_kinds.extend(order_kinds);
         self
+    }
+
+    pub(crate) fn as_eth_filter(&self) -> Filter {
+        let mut filter = Filter::new().address(ANGSTROM_ADDRESS);
+        if let Some(block) = self.from_block {
+            filter = filter.from_block(block)
+        }
+        if let Some(block) = self.to_block {
+            filter = filter.to_block(block)
+        }
+
+        filter
     }
 
     pub(crate) fn filter_block(
