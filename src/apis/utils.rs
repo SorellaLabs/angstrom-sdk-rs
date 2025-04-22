@@ -27,6 +27,7 @@ where
     Ok(IC::abi_decode_returns(&data))
 }
 
+#[allow(clippy::wrong_self_convention)]
 pub(crate) trait FromAddress {
     fn from_address<F: FillWrapper>(&self, filler: &F) -> Address;
 }
