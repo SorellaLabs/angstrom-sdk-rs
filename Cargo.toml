@@ -71,7 +71,6 @@ testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package =
 
 # async
 tokio = { version = "1", features = ["full"] }
-tokio-tungstenite = { version = "0.24", features = [] }
 futures = "0.3.26"
 
 
@@ -98,7 +97,6 @@ auto_impl = "1.3"
 
 
 [dev-dependencies]
-sepolia-bundle-lander = { git = "https://github.com/SorellaLabs/angstrom.git", package = "sepolia-bundle-lander", default-features = false }
 uniswap_v3_math = { git = "https://github.com/SorellaLabs/v3-math", branch = "main" }
 revm = { version = "22.0.1", features = [
     "std",
@@ -123,5 +121,4 @@ testnet-sepolia = [
     "angstrom-rpc/testnet-sepolia",
     "uniswap-v4/testnet-sepolia",
     "testing-tools/testnet-sepolia",
-    "sepolia-bundle-lander/testnet-sepolia",
 ]
