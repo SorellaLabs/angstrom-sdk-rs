@@ -16,6 +16,7 @@ use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoade
 
 use super::utils::*;
 
+// #[auto_impl::auto_impl(&)]
 pub trait AngstromDataApi {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>>;
 
