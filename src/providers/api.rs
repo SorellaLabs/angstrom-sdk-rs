@@ -5,8 +5,8 @@ use crate::types::{
     TransactionRequestWithLiquidityMeta, UserLiquidityPosition,
     errors::AngstromSdkError,
     fillers::{
-        AngstromFillProvider, AngstromFiller, FillWrapper, FillerOrderFrom, MakeFillerOrder,
-        NonceGeneratorFiller, SignerFiller, TokenBalanceCheckFiller,
+        AngstromFillProvider, AngstromFiller, AngstromSignerFiller, FillWrapper, FillerOrderFrom,
+        MakeFillerOrder, NonceGeneratorFiller, TokenBalanceCheckFiller,
     },
 };
 use alloy_network::TxSigner;
@@ -109,17 +109,19 @@ where
         }
     }
 
-    pub fn with_signer_filler<S>(
+    pub fn with_angstrom_signer_filler<S>(
         self,
         signer: S,
-    ) -> AngstromApi<AlloyWalletRpcProvider<P>, AngstromFillProvider<F, SignerFiller<S>>>
+    ) -> AngstromApi<AlloyWalletRpcProvider<P>, AngstromFillProvider<F, AngstromSignerFiller<S>>>
     where
         S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Clone + Send + Sync + 'static,
-        SignerFiller<S>: AngstromFiller,
+        AngstromSignerFiller<S>: AngstromFiller,
     {
         AngstromApi {
             provider: self.provider.with_wallet(signer.clone()),
-            filler: self.filler.wrap_with_filler(SignerFiller::new(signer)),
+            filler: self
+                .filler
+                .wrap_with_filler(AngstromSignerFiller::new(signer)),
         }
     }
 
@@ -133,12 +135,12 @@ where
                 AngstromFillProvider<F, NonceGeneratorFiller>,
                 TokenBalanceCheckFiller,
             >,
-            SignerFiller<S>,
+            AngstromSignerFiller<S>,
         >,
     >
     where
         S: Signer + SignerSync + Send + Clone,
-        SignerFiller<S>: AngstromFiller,
+        AngstromSignerFiller<S>: AngstromFiller,
         P: Provider,
     {
         AngstromApi {
@@ -147,7 +149,7 @@ where
                 .filler
                 .wrap_with_filler(NonceGeneratorFiller)
                 .wrap_with_filler(TokenBalanceCheckFiller)
-                .wrap_with_filler(SignerFiller::new(signer)),
+                .wrap_with_filler(AngstromSignerFiller::new(signer)),
         }
     }
 
@@ -174,10 +176,10 @@ where
         let mut filler_order: FillerOrderFrom = order.convert_with_from(from);
         self.filler.fill(&self.provider, &mut filler_order).await?;
 
-        println!("ORDER: {filler_order:?}");
+        println!("{:?}", filler_order.inner);
 
         self.provider
-            .send_order(filler_order.inner.force_all_orders())
+            .send_order(filler_order.inner.force_angstrom_order())
             .await
     }
 
@@ -201,7 +203,7 @@ where
             .send_orders(
                 filler_orders
                     .into_iter()
-                    .map(|order| order.inner.force_all_orders())
+                    .map(|order| order.inner.force_angstrom_order())
                     .collect(),
             )
             .await
@@ -210,7 +212,7 @@ where
 
 impl<P, F> AngstromDataApi for AngstromApi<P, F>
 where
-    P: Provider + Clone,
+    P: Provider,
     F: FillWrapper,
 {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
@@ -244,7 +246,7 @@ where
 
 impl<P, F> AngstromUserApi for AngstromApi<P, F>
 where
-    P: Provider + Clone,
+    P: Provider,
     F: FillWrapper,
 {
     async fn get_positions(
@@ -254,12 +256,6 @@ where
         self.provider.get_positions(user_address).await
     }
 }
-
-// impl<P: Provider + Clone, F: Clone> Clone for AngstromApi<P, F> {
-//     fn clone(&self) -> Self {
-//         Self { provider: self.provider.clone(), filler: self.filler.clone() }
-//     }
-// }
 
 #[cfg(test)]
 impl<P, F> AngstromApi<P, F>

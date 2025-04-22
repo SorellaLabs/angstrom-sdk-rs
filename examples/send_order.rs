@@ -22,7 +22,6 @@ async fn main() -> eyre::Result<()> {
         &std::env::var("TESTING_PRIVATE_KEY").expect("TESTING_PRIVATE_KEY not found in .env");
 
     let signer = PrivateKeySigner::from_str(&signer_pk)?;
-    println!("FROM: {:?}", signer.address());
 
     let angstrom_api = AngstromApi::new(&eth_ws_url, &angstrom_http_url)
         .await?

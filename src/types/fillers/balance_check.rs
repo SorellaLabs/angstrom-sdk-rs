@@ -1,26 +1,49 @@
+use super::{AngstromFiller, FillerOrder, FillerOrderFrom, errors::FillerError};
+use crate::apis::utils::view_call;
+use crate::{providers::backend::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
 use alloy_primitives::{Address, U256};
 use alloy_provider::Provider;
+use angstrom_types::contract_bindings::pool_manager::IPoolManager::ModifyLiquidityParams;
+use angstrom_types::contract_bindings::pool_manager::PoolManager;
 use angstrom_types::{
     primitive::ERC20,
     sol_bindings::grouped_orders::{AllOrders, FlashVariants, StandingVariants},
 };
 
-use super::{AngstromFiller, FillerOrder, FillerOrderFrom, errors::FillerError};
-use crate::{providers::backend::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
-
 #[derive(Clone, Copy, Debug, Default)]
 pub struct TokenBalanceCheckFiller;
 
 impl TokenBalanceCheckFiller {
-    async fn prepare_angstrom_order<P>(
+    async fn check_balance<P: Provider>(
+        provider: &AngstromProvider<P>,
+        user: Address,
+        token: Address,
+        requested_amount: U256,
+    ) -> Result<(), FillerError> {
+        let user_balance_of =
+            view_call(provider.eth_provider(), token, ERC20::balanceOfCall { _owner: user })
+                .await??
+                .balance;
+
+        if requested_amount > user_balance_of {
+            return Err(FillerError::InsufficientBalanceError(
+                token,
+                requested_amount,
+                user_balance_of,
+            ));
+        }
+
+        Ok(())
+    }
+}
+
+impl TokenBalanceCheckFiller {
+    async fn prepare_angstrom_order<P: Provider>(
         &self,
         provider: &AngstromProvider<P>,
         order: &AllOrders,
         from: Address,
-    ) -> Result<(), FillerError>
-    where
-        P: Provider,
-    {
+    ) -> Result<(), FillerError> {
         let (token, amt) = match order {
             AllOrders::Standing(standing_variants) => match standing_variants {
                 StandingVariants::Partial(partial_standing_order) => (
@@ -49,29 +72,24 @@ impl TokenBalanceCheckFiller {
             ),
         };
 
-        let user_balance_of = provider
-            .view_call(token, ERC20::balanceOfCall { _owner: from })
-            .await??
-            .balance;
-
-        let amt_u256 = U256::from(amt);
-        if U256::from(amt_u256) > user_balance_of {
-            return Err(FillerError::InsufficientBalanceError(token, amt_u256, user_balance_of));
-        }
+        Self::check_balance(provider, from, token, U256::from(amt)).await?;
 
         Ok(())
     }
 
-    async fn prepare_eth_order<P>(
+    async fn prepare_eth_order<P: Provider>(
         &self,
         _provider: &AngstromProvider<P>,
         _order: &TransactionRequestWithLiquidityMeta,
         _from: Address,
-    ) -> Result<(), FillerError>
-    where
-        P: Provider,
-    {
-        // todo!();
+    ) -> Result<(), FillerError> {
+        // if order.params.liquidityDelta.is_negative() {
+        //     return Ok(());
+        // }
+
+        // let ModifyLiquidityParams { tickLower, tickUpper, liquidityDelta, salt } = order.params;
+        // let PoolManager::PoolKey { currency0, currency1, fee, tickSpacing, hooks } = order.pool_key;
+
         Ok(())
     }
 }
@@ -79,14 +97,11 @@ impl TokenBalanceCheckFiller {
 impl AngstromFiller for TokenBalanceCheckFiller {
     type FillOutput = ();
 
-    async fn prepare<P>(
+    async fn prepare<P: Provider>(
         &self,
         provider: &AngstromProvider<P>,
         order: &FillerOrderFrom,
-    ) -> Result<Self::FillOutput, FillerError>
-    where
-        P: Provider,
-    {
+    ) -> Result<Self::FillOutput, FillerError> {
         match &order.inner {
             FillerOrder::AngstromOrder(inner_order) => {
                 self.prepare_angstrom_order(provider, inner_order, order.from)

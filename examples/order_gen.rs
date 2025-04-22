@@ -26,7 +26,7 @@ pub struct ValidOrderGenerator<P: Provider, F: FillWrapper> {
     angstrom_api: AngstromApi<P, F>,
 }
 
-impl<P: Provider + Clone, F: FillWrapper> ValidOrderGenerator<P, F> {
+impl<P: Provider, F: FillWrapper> ValidOrderGenerator<P, F> {
     pub fn new(provider: AngstromApi<P, F>) -> Self {
         Self { angstrom_api: provider }
     }
@@ -83,7 +83,7 @@ impl<P: Provider + Clone, F: FillWrapper> ValidOrderGenerator<P, F> {
 
         let (token_in, token_out) = if zfo { (token0, token1) } else { (token1, token0) };
 
-        let order = AngstromOrderBuilder::tob_order(|builder| {
+        let order = AngstromOrderBuilder::tob_order(move |builder| {
             builder
                 .asset_in(token_in)
                 .asset_out(token_out)

@@ -41,7 +41,7 @@ pub async fn make_order_generator<P>(
     provider: &AngstromProvider<P>,
 ) -> eyre::Result<(OrderGenerator, tokio::sync::mpsc::Receiver<(TickRangeToLoad, Arc<Notify>)>)>
 where
-    P: Provider + Clone,
+    P: Provider,
 {
     let block_number = provider.eth_provider().get_block_number().await?;
 

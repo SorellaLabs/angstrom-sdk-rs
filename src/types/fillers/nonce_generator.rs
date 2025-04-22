@@ -171,8 +171,10 @@ mod tests {
 
                 provider.fill(&mut inner_order).await.unwrap();
 
-                let matched_orders =
-                    match_all_orders(&inner_order.inner.force_all_orders(), &order, |o| match o {
+                let matched_orders = match_all_orders(
+                    &inner_order.inner.force_angstrom_order(),
+                    &order,
+                    |o| match o {
                         AllOrders::Standing(StandingVariants::Exact(inner_order)) => {
                             Some(inner_order.nonce)
                         }
@@ -180,7 +182,8 @@ mod tests {
                             Some(inner_order.nonce)
                         }
                         _ => None,
-                    });
+                    },
+                );
 
                 if let Some((mod_nonce, nonce)) = matched_orders {
                     nonce != mod_nonce

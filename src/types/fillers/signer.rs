@@ -1,12 +1,10 @@
+use crate::types::ANGSTROM_DOMAIN;
 use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
-use angstrom_types::{
-    primitive::ANGSTROM_DOMAIN,
-    sol_bindings::{
-        grouped_orders::{AllOrders, FlashVariants, StandingVariants},
-        rpc_orders::{OmitOrderMeta, OrderMeta},
-    },
+use angstrom_types::sol_bindings::{
+    grouped_orders::{AllOrders, FlashVariants, StandingVariants},
+    rpc_orders::{OmitOrderMeta, OrderMeta},
 };
 use pade::PadeEncode;
 
@@ -14,9 +12,9 @@ use super::{AngstromFiller, FillFrom, FillerOrder, FillerOrderFrom, errors::Fill
 use crate::{providers::backend::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
 
 #[derive(Clone)]
-pub struct SignerFiller<S>(S);
+pub struct AngstromSignerFiller<S>(S);
 
-impl<S: Signer + SignerSync + Clone> SignerFiller<S> {
+impl<S: Signer + SignerSync + Clone> AngstromSignerFiller<S> {
     pub fn new(signer: S) -> Self {
         Self(signer)
     }
@@ -28,7 +26,7 @@ impl<S: Signer + SignerSync + Clone> SignerFiller<S> {
     }
 }
 
-impl<S: Signer + SignerSync + Clone> AngstromFiller for SignerFiller<S> {
+impl<S: Signer + SignerSync + Clone> AngstromFiller for AngstromSignerFiller<S> {
     type FillOutput = (Address, Option<OrderMeta>);
 
     async fn prepare<P>(
@@ -44,22 +42,35 @@ impl<S: Signer + SignerSync + Clone> AngstromFiller for SignerFiller<S> {
         let order_meta = if let FillerOrder::AngstromOrder(fill_order) = &order.inner {
             let om = match fill_order {
                 AllOrders::Standing(standing_variants) => match standing_variants {
-                    StandingVariants::Partial(partial_standing_order) => {
-                        self.sign_into_meta(partial_standing_order)?
+                    StandingVariants::Partial(inner_order) => {
+                        let mut inner_order = inner_order.clone();
+                        inner_order.recipient = self.0.address();
+                        self.sign_into_meta(&inner_order)?
                     }
-                    StandingVariants::Exact(exact_standing_order) => {
-                        self.sign_into_meta(exact_standing_order)?
+                    StandingVariants::Exact(inner_order) => {
+                        let mut inner_order = inner_order.clone();
+                        inner_order.recipient = self.0.address();
+                        self.sign_into_meta(&inner_order)?
                     }
                 },
                 AllOrders::Flash(flash_variants) => match flash_variants {
-                    FlashVariants::Partial(partial_flash_order) => {
-                        self.sign_into_meta(partial_flash_order)?
+                    FlashVariants::Partial(inner_order) => {
+                        let mut inner_order = inner_order.clone();
+                        inner_order.recipient = self.0.address();
+                        self.sign_into_meta(&inner_order)?
                     }
-                    FlashVariants::Exact(exact_flash_order) => {
-                        self.sign_into_meta(exact_flash_order)?
+                    FlashVariants::Exact(inner_order) => {
+                        let mut inner_order = inner_order.clone();
+                        inner_order.recipient = self.0.address();
+                        self.sign_into_meta(&inner_order)?
                     }
                 },
-                AllOrders::TOB(top_of_block_order) => self.sign_into_meta(top_of_block_order)?,
+                AllOrders::TOB(inner_order) => {
+                    let mut inner_order = inner_order.clone();
+                    inner_order.recipient = self.0.address();
+
+                    self.sign_into_meta(&inner_order)?
+                }
             };
             Some(om)
         } else {
@@ -74,7 +85,7 @@ impl<S: Signer + SignerSync + Clone> AngstromFiller for SignerFiller<S> {
     }
 }
 
-impl<S: Signer + SignerSync + Clone> FillFrom<SignerFiller<S>, AllOrders>
+impl<S: Signer + SignerSync + Clone> FillFrom<AngstromSignerFiller<S>, AllOrders>
     for (Address, Option<OrderMeta>)
 {
     fn prepare_with(self, input_order: &mut AllOrders) -> Result<(), FillerError> {
@@ -110,7 +121,8 @@ impl<S: Signer + SignerSync + Clone> FillFrom<SignerFiller<S>, AllOrders>
     }
 }
 
-impl<S: Signer + SignerSync + Clone> FillFrom<SignerFiller<S>, TransactionRequestWithLiquidityMeta>
+impl<S: Signer + SignerSync + Clone>
+    FillFrom<AngstromSignerFiller<S>, TransactionRequestWithLiquidityMeta>
     for (Address, Option<OrderMeta>)
 {
     fn prepare_with(
@@ -119,5 +131,71 @@ impl<S: Signer + SignerSync + Clone> FillFrom<SignerFiller<S>, TransactionReques
     ) -> Result<(), FillerError> {
         input_order.tx_request.from = Some(self.0);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloy_signer_local::LocalSigner;
+
+    use crate::{
+        AngstromApi,
+        test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider},
+        types::fillers::MakeFillerOrder,
+    };
+
+    use super::*;
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_signer_angstrom_order() {
+        let signer = LocalSigner::random();
+        let provider = AnvilAngstromProvider::new().await.unwrap();
+        let api = AngstromApi::new_with_provider(provider.provider.clone())
+            .with_angstrom_signer_filler(signer.clone());
+
+        let orders = AllOrdersSpecific::default();
+
+        let sig_f = |hash| {
+            let sig = signer.sign_hash_sync(&hash).unwrap();
+            OrderMeta { isEcdsa: true, from: signer.address(), signature: sig.pade_encode().into() }
+        };
+
+        let ref_api = &api;
+        orders
+            .test_filler_order(async |mut order| {
+                let mut inner_order = order.clone().convert_with_from(signer.address());
+                ref_api.fill(&mut inner_order).await.unwrap();
+
+                match &mut order {
+                    AllOrders::Standing(StandingVariants::Exact(inner_order)) => {
+                        let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
+                        inner_order.meta = sig_f(hash);
+                        inner_order.recipient = signer.address();
+                    }
+                    AllOrders::Standing(StandingVariants::Partial(inner_order)) => {
+                        let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
+                        inner_order.meta = sig_f(hash);
+                        inner_order.recipient = signer.address();
+                    }
+                    AllOrders::Flash(FlashVariants::Exact(inner_order)) => {
+                        let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
+                        inner_order.meta = sig_f(hash);
+                        inner_order.recipient = signer.address();
+                    }
+                    AllOrders::Flash(FlashVariants::Partial(inner_order)) => {
+                        let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
+                        inner_order.meta = sig_f(hash);
+                        inner_order.recipient = signer.address();
+                    }
+                    AllOrders::TOB(inner_order) => {
+                        let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
+                        inner_order.meta = sig_f(hash);
+                        inner_order.recipient = signer.address();
+                    }
+                }
+
+                inner_order.inner.force_angstrom_order() == order
+            })
+            .await;
     }
 }

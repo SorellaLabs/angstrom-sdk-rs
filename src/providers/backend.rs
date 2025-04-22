@@ -3,10 +3,9 @@ use std::{
     sync::Arc,
 };
 
-use alloy::transports::TransportErrorKind;
 use alloy_network::{Ethereum, EthereumWallet, TxSigner};
 use alloy_primitives::{
-    Address, FixedBytes, PrimitiveSignature, TxHash, TxKind, U256,
+    Address, FixedBytes, PrimitiveSignature, TxHash, U256,
     aliases::{I24, U24},
 };
 use alloy_provider::{
@@ -15,10 +14,8 @@ use alloy_provider::{
         BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
     },
 };
-use alloy_rpc_types::{TransactionInput, TransactionRequest};
 use alloy_signer::{Signer, SignerSync};
-use alloy_sol_types::SolCall;
-use alloy_transport::RpcError;
+
 use angstrom_types::{
     contract_bindings::{
         angstrom::Angstrom::PoolKey, controller_v_1::ControllerV1,
@@ -33,8 +30,10 @@ use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoade
 
 use crate::{
     apis::{
-        data_api::AngstromDataApi, node_api::AngstromNodeApi, user_api::AngstromUserApi,
-        utils::pool_config_store,
+        data_api::AngstromDataApi,
+        node_api::AngstromNodeApi,
+        user_api::AngstromUserApi,
+        utils::{pool_config_store, view_call},
     },
     types::*,
 };
@@ -93,24 +92,6 @@ impl<P: Provider> AngstromProvider<P> {
             .await?)
     }
 
-    pub(crate) async fn view_call<IC>(
-        &self,
-        contract: Address,
-        call: IC,
-    ) -> Result<Result<IC::Return, alloy_sol_types::Error>, RpcError<TransportErrorKind>>
-    where
-        IC: SolCall + Send,
-    {
-        let tx = TransactionRequest {
-            to: Some(TxKind::Call(contract)),
-            input: TransactionInput::both(call.abi_encode().into()),
-            ..Default::default()
-        };
-
-        let data = self.eth_provider().call(tx).await?;
-        Ok(IC::abi_decode_returns(&data, false))
-    }
-
     pub(crate) fn with_wallet<S>(self, signer: S) -> AngstromProvider<AlloyWalletRpcProvider<P>>
     where
         S: Signer + SignerSync + TxSigner<PrimitiveSignature> + Send + Sync + 'static,
@@ -125,14 +106,62 @@ impl<P: Provider> AngstromProvider<P> {
 
 impl<P> AngstromDataApi for AngstromProvider<P>
 where
-    P: Provider + Clone,
+    P: Provider,
 {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
-        let config_store = pool_config_store(self.eth_provider()).await?;
+        self.eth_provider.all_token_pairs().await
+    }
+
+    async fn all_tokens(&self) -> eyre::Result<Vec<TokenInfoWithMeta>> {
+        self.eth_provider.all_tokens().await
+    }
+
+    async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
+        self.eth_provider.pool_key(token0, token1).await
+    }
+
+    async fn historical_orders(
+        &self,
+        filter: HistoricalOrdersFilter,
+    ) -> eyre::Result<Vec<HistoricalOrders>> {
+        self.eth_provider.historical_orders(filter).await
+    }
+
+    async fn pool_data(
+        &self,
+        token0: Address,
+        token1: Address,
+        block_number: Option<u64>,
+    ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
+        self.eth_provider
+            .pool_data(token0, token1, block_number)
+            .await
+    }
+}
+
+impl<P: Provider> AngstromUserApi for AngstromProvider<P> {
+    async fn get_positions(
+        &self,
+        user_address: Address,
+    ) -> eyre::Result<Vec<UserLiquidityPosition>> {
+        self.eth_provider.get_positions(user_address).await
+    }
+}
+
+impl<P: Provider> AngstromNodeApi for AngstromProvider<P> {
+    fn angstrom_rpc_provider(&self) -> HttpClient {
+        self.angstrom_provider.clone()
+    }
+}
+
+impl<P: Provider> AngstromDataApi for P {
+    async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
+        let config_store = pool_config_store(self).await?;
         let partial_key_entries = config_store.all_entries();
 
         let all_pools_call = futures::future::try_join_all(partial_key_entries.iter().map(|key| {
-            self.view_call(
+            view_call(
+                self,
                 CONTROLLER_V1_ADDRESS,
                 ControllerV1::poolsCall { key: FixedBytes::from(*key.pool_partial_key) },
             )
@@ -160,10 +189,11 @@ where
             .collect::<HashSet<_>>();
 
         Ok(futures::future::try_join_all(all_tokens_addresses.into_iter().map(|address| {
-            self.view_call(address, MintableMockERC20::symbolCall {})
-                .and_then(async move |val_res| {
+            view_call(self, address, MintableMockERC20::symbolCall {}).and_then(
+                async move |val_res| {
                     Ok(val_res.map(|val| TokenInfoWithMeta { address, symbol: val._0 }))
-                })
+                },
+            )
         }))
         .await?
         .into_iter()
@@ -173,7 +203,7 @@ where
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
         let (token0, token1) = sort_tokens(token0, token1);
 
-        let config_store = pool_config_store(self.eth_provider()).await?;
+        let config_store = pool_config_store(self).await?;
         let pool_config_store = config_store
             .get_entry(token0, token1)
             .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
@@ -195,16 +225,12 @@ where
         let pool_stores = &AngstromPoolTokenIndexToPair::new_with_tokens(self, filter).await?;
 
         let start_block = filter.from_block.unwrap_or(ANGSTROM_DEPLOYED_BLOCK);
-        let end_block = if let Some(e) = filter.to_block {
-            e
-        } else {
-            self.eth_provider.get_block_number().await?
-        };
+        let end_block =
+            if let Some(e) = filter.to_block { e } else { self.get_block_number().await? };
 
         let mut block_stream = futures::stream::iter(start_block..end_block)
             .map(|bn| async move {
                 let block = self
-                    .eth_provider
                     .get_block(bn.into())
                     .full()
                     .await?
@@ -239,36 +265,33 @@ where
 
         let mut enhanced_uni_pool = EnhancedUniswapPool::new(data_loader, 200);
 
-        let block_number = if let Some(bn) = block_number {
-            bn
-        } else {
-            self.eth_provider.get_block_number().await?
-        };
+        let block_number =
+            if let Some(bn) = block_number { bn } else { self.get_block_number().await? };
 
         enhanced_uni_pool
-            .initialize(Some(block_number), Arc::new(self.eth_provider.clone()))
+            .initialize(Some(block_number), Arc::new(self))
             .await?;
 
         Ok((block_number, enhanced_uni_pool))
     }
 }
 
-impl<P: Provider + Clone> AngstromUserApi for AngstromProvider<P> {
+impl<P: Provider> AngstromUserApi for P {
     async fn get_positions(
         &self,
         user_address: Address,
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
-        let user_positons = self
-            .view_call(
-                POSITION_MANAGER_ADDRESS,
-                PositionFetcher::getPositionsCall {
-                    owner: user_address,
-                    tokenId: U256::from(1u8),
-                    lastTokenId: U256::ZERO,
-                    maxResults: U256::MAX,
-                },
-            )
-            .await??;
+        let user_positons = view_call(
+            self,
+            POSITION_MANAGER_ADDRESS,
+            PositionFetcher::getPositionsCall {
+                owner: user_address,
+                tokenId: U256::from(1u8),
+                lastTokenId: U256::ZERO,
+                maxResults: U256::MAX,
+            },
+        )
+        .await??;
 
         let unique_pool_ids = user_positons
             ._2
@@ -278,7 +301,8 @@ impl<P: Provider + Clone> AngstromUserApi for AngstromProvider<P> {
 
         let uni_pool_id_to_ang_pool_ids =
             futures::future::try_join_all(unique_pool_ids.into_iter().map(|uni_id| {
-                self.view_call(
+                view_call(
+                    self,
                     POSITION_MANAGER_ADDRESS,
                     PositionManager::poolKeysCall { poolId: uni_id },
                 )
@@ -314,12 +338,6 @@ impl<P: Provider + Clone> AngstromUserApi for AngstromProvider<P> {
                 )
             })
             .collect())
-    }
-}
-
-impl<P: Provider> AngstromNodeApi for AngstromProvider<P> {
-    fn angstrom_rpc_provider(&self) -> HttpClient {
-        self.angstrom_provider.clone()
     }
 }
 

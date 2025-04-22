@@ -190,7 +190,7 @@ pub(crate) enum FillerOrder {
 }
 
 impl FillerOrder {
-    pub(crate) fn force_all_orders(self) -> AllOrders {
+    pub(crate) fn force_angstrom_order(self) -> AllOrders {
         match self {
             FillerOrder::AngstromOrder(o) => o,
             _ => unreachable!(),

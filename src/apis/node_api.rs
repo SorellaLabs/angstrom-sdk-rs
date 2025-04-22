@@ -187,7 +187,7 @@ mod tests {
     impl AllOrdersSent {
         async fn send_orders<P>(provider: &AngstromProvider<P>) -> Result<Self, AngstromSdkError>
         where
-            P: Provider + Clone,
+            P: Provider,
         {
             let (generator, _rx) = make_order_generator(provider).await.unwrap();
             let orders = generator.generate_orders();

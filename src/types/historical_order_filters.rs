@@ -14,7 +14,7 @@ use angstrom_types::{
 use pade::PadeDecode;
 
 use super::PoolMetadata;
-use crate::{apis::utils::pool_config_store, providers::backend::AngstromProvider};
+use crate::apis::utils::pool_config_store;
 
 #[derive(Debug, Default, Clone)]
 pub struct HistoricalOrdersFilter {
@@ -210,7 +210,7 @@ pub(crate) struct AngstromPoolTokenIndexToPair(HashMap<u16, PoolMetadata>);
 
 impl AngstromPoolTokenIndexToPair {
     pub(crate) async fn new_with_tokens<P>(
-        provider: &AngstromProvider<P>,
+        provider: &P,
         filter: &HistoricalOrdersFilter,
     ) -> eyre::Result<Self>
     where
@@ -225,7 +225,7 @@ impl AngstromPoolTokenIndexToPair {
             return Ok(Self(HashMap::default()));
         }
 
-        let config_store = pool_config_store(provider.eth_provider()).await?;
+        let config_store = pool_config_store(provider).await?;
         let pools = token_pairs
             .map(|(token0, token1)| {
                 let pool_config = config_store.get_entry(token0, token1).ok_or(eyre::eyre!(
