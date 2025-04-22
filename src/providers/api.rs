@@ -176,8 +176,6 @@ where
         let mut filler_order: FillerOrderFrom = order.convert_with_from(from);
         self.filler.fill(&self.provider, &mut filler_order).await?;
 
-        println!("{:?}", filler_order.inner);
-
         self.provider
             .send_order(filler_order.inner.force_angstrom_order())
             .await
