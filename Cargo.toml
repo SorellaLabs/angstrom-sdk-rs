@@ -71,7 +71,7 @@ testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", package =
 # alloy-multicall = "0.12.6"
 
 # async
-tokio = { version = "1.0", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
 tokio-tungstenite = { version = "0.24", features = [] }
 futures = "0.3.26"
 
