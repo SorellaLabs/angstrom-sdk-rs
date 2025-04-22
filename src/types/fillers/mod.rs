@@ -176,10 +176,7 @@ pub(crate) struct FillerOrderFrom {
 
 impl FillerOrderFrom {
     pub(crate) fn maybe_fill_modify_liquidity_call(&mut self) {
-        match &mut self.inner {
-            FillerOrder::EthOrder(call) => call.fill_modify_liquidity_call(),
-            _ => (),
-        }
+        if let FillerOrder::EthOrder(call) = &mut self.inner { call.fill_modify_liquidity_call() }
     }
 }
 

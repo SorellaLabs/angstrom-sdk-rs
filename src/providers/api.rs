@@ -79,10 +79,10 @@ where
 
         filled_tx_req.maybe_fill_modify_liquidity_call();
 
-        Ok(self
+        self
             .provider
             .send_add_remove_liquidity_tx(filled_tx_req.inner.force_regular_tx())
-            .await?)
+            .await
     }
 
     pub fn with_filler<F1: FillWrapper>(

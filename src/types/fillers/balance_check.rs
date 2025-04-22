@@ -3,8 +3,6 @@ use crate::apis::utils::view_call;
 use crate::{providers::backend::AngstromProvider, types::TransactionRequestWithLiquidityMeta};
 use alloy_primitives::{Address, U256};
 use alloy_provider::Provider;
-use angstrom_types::contract_bindings::pool_manager::IPoolManager::ModifyLiquidityParams;
-use angstrom_types::contract_bindings::pool_manager::PoolManager;
 use angstrom_types::{
     primitive::ERC20,
     sol_bindings::grouped_orders::{AllOrders, FlashVariants, StandingVariants},

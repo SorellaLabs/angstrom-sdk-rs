@@ -55,7 +55,7 @@ impl AngstromProvider<AlloyRpcProvider<RootProvider>> {
 }
 impl<P: Provider> AngstromProvider<P> {
     pub fn new_with_provider(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
-        let angstrom_provider = HttpClient::builder().build(angstrom_url.to_string())?;
+        let angstrom_provider = HttpClient::builder().build(angstrom_url)?;
         Ok(Self { eth_provider, angstrom_provider })
     }
 
