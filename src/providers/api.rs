@@ -13,6 +13,7 @@ use alloy_network::TxSigner;
 use alloy_primitives::{Address, FixedBytes, Signature, TxHash};
 use alloy_provider::{Provider, RootProvider};
 use alloy_signer::{Signer, SignerSync};
+use angstrom_types::contract_payloads::angstrom::AngstromPoolConfigStore;
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
     sol_bindings::{RawPoolOrder, grouped_orders::AllOrders},
@@ -239,6 +240,12 @@ where
 
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
         self.provider.pool_key(token0, token1).await
+    }
+    async fn pool_config_store(
+        &self,
+        block_number: Option<u64>,
+    ) -> eyre::Result<AngstromPoolConfigStore> {
+        self.provider.pool_config_store(block_number).await
     }
 }
 

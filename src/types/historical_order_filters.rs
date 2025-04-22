@@ -3,6 +3,7 @@ use std::{
     str::FromStr,
 };
 
+use crate::apis::data_api::AngstromDataApi;
 use alloy_consensus::Transaction;
 use alloy_primitives::Address;
 use alloy_provider::Provider;
@@ -14,7 +15,6 @@ use angstrom_types::{
 use pade::PadeDecode;
 
 use super::PoolMetadata;
-use crate::apis::utils::pool_config_store;
 
 #[derive(Debug, Default, Clone)]
 pub struct HistoricalOrdersFilter {
@@ -225,7 +225,7 @@ impl AngstromPoolTokenIndexToPair {
             return Ok(Self(HashMap::default()));
         }
 
-        let config_store = pool_config_store(provider).await?;
+        let config_store = provider.pool_config_store(None).await?;
         let pools = token_pairs
             .map(|(token0, token1)| {
                 let pool_config = config_store.get_entry(token0, token1).ok_or(eyre::eyre!(

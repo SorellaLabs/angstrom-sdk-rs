@@ -11,7 +11,6 @@ use angstrom_types::{
     },
     primitive::PoolId,
 };
-use auto_impl::auto_impl;
 use futures::TryFutureExt;
 use std::collections::HashMap;
 use std::collections::HashSet;

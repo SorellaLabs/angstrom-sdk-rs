@@ -8,7 +8,10 @@ use alloy_provider::{
 };
 use alloy_signer::{Signer, SignerSync};
 
-use angstrom_types::contract_bindings::angstrom::Angstrom::PoolKey;
+use angstrom_types::{
+    contract_bindings::angstrom::Angstrom::PoolKey,
+    contract_payloads::angstrom::AngstromPoolConfigStore,
+};
 
 use jsonrpsee_http_client::HttpClient;
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
@@ -116,6 +119,13 @@ where
         self.eth_provider
             .pool_data(token0, token1, block_number)
             .await
+    }
+
+    async fn pool_config_store(
+        &self,
+        block_number: Option<u64>,
+    ) -> eyre::Result<AngstromPoolConfigStore> {
+        self.eth_provider.pool_config_store(block_number).await
     }
 }
 

@@ -1,14 +1,15 @@
 use std::collections::HashSet;
 
 use crate::types::*;
+use alloy_eips::BlockId;
 use alloy_primitives::aliases::{I24, U24};
 use alloy_primitives::{Address, FixedBytes};
 use alloy_provider::Provider;
 use angstrom_types::contract_bindings::{
     controller_v_1::ControllerV1, mintable_mock_erc_20::MintableMockERC20,
 };
+use angstrom_types::contract_payloads::angstrom::AngstromPoolConfigStore;
 use angstrom_types::{contract_bindings::angstrom::Angstrom::PoolKey, primitive::PoolId};
-use auto_impl::auto_impl;
 use futures::{StreamExt, TryFutureExt};
 use std::sync::Arc;
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
@@ -53,11 +54,16 @@ pub trait AngstromDataApi {
 
         Ok(pools)
     }
+
+    async fn pool_config_store(
+        &self,
+        block_number: Option<u64>,
+    ) -> eyre::Result<AngstromPoolConfigStore>;
 }
 
 impl<P: Provider> AngstromDataApi for P {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
-        let config_store = pool_config_store(self).await?;
+        let config_store = self.pool_config_store(None).await?;
         let partial_key_entries = config_store.all_entries();
 
         let all_pools_call = futures::future::try_join_all(partial_key_entries.iter().map(|key| {
@@ -104,7 +110,7 @@ impl<P: Provider> AngstromDataApi for P {
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
         let (token0, token1) = sort_tokens(token0, token1);
 
-        let config_store = pool_config_store(self).await?;
+        let config_store = self.pool_config_store(None).await?;
         let pool_config_store = config_store
             .get_entry(token0, token1)
             .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
@@ -174,5 +180,18 @@ impl<P: Provider> AngstromDataApi for P {
             .await?;
 
         Ok((block_number, enhanced_uni_pool))
+    }
+
+    async fn pool_config_store(
+        &self,
+        block_number: Option<u64>,
+    ) -> eyre::Result<AngstromPoolConfigStore> {
+        AngstromPoolConfigStore::load_from_chain(
+            ANGSTROM_ADDRESS,
+            block_number.map(Into::into).unwrap_or(BlockId::latest()),
+            self,
+        )
+        .await
+        .map_err(|e| eyre::eyre!("{e:?}"))
     }
 }
