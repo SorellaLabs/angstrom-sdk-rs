@@ -23,7 +23,7 @@ pub trait AngstromDataApi {
 
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey>;
 
-    async fn all_pool_key(&self) -> eyre::Result<Vec<PoolKey>> {
+    async fn all_pool_keys(&self) -> eyre::Result<Vec<PoolKey>> {
         let (config_store, all_token_pairs) =
             tokio::try_join!(self.pool_config_store(None), self.all_token_pairs())?;
 
