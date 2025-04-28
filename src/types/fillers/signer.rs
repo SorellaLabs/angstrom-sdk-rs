@@ -2,7 +2,7 @@ use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::sol_bindings::{
-    grouped_orders::{AllOrders, FlashVariants, StandingVariants},
+    grouped_orders::AllOrders,
     rpc_orders::{OmitOrderMeta, OrderMeta}
 };
 use pade::PadeEncode;
@@ -43,30 +43,26 @@ impl<S: Signer + SignerSync + Clone> AngstromFiller for AngstromSignerFiller<S> 
         let my_address = self.0.address();
 
         let om = match order {
-            AllOrders::Standing(standing_variants) => match standing_variants {
-                StandingVariants::Partial(inner_order) => {
-                    let mut inner_order = inner_order.clone();
-                    inner_order.recipient = self.0.address();
-                    self.sign_into_meta(&inner_order)?
-                }
-                StandingVariants::Exact(inner_order) => {
-                    let mut inner_order = inner_order.clone();
-                    inner_order.recipient = self.0.address();
-                    self.sign_into_meta(&inner_order)?
-                }
-            },
-            AllOrders::Flash(flash_variants) => match flash_variants {
-                FlashVariants::Partial(inner_order) => {
-                    let mut inner_order = inner_order.clone();
-                    inner_order.recipient = self.0.address();
-                    self.sign_into_meta(&inner_order)?
-                }
-                FlashVariants::Exact(inner_order) => {
-                    let mut inner_order = inner_order.clone();
-                    inner_order.recipient = self.0.address();
-                    self.sign_into_meta(&inner_order)?
-                }
-            },
+            AllOrders::PartialStanding(inner_order) => {
+                let mut inner_order = inner_order.clone();
+                inner_order.recipient = self.0.address();
+                self.sign_into_meta(&inner_order)?
+            }
+            AllOrders::ExactStanding(inner_order) => {
+                let mut inner_order = inner_order.clone();
+                inner_order.recipient = self.0.address();
+                self.sign_into_meta(&inner_order)?
+            }
+            AllOrders::PartialFlash(inner_order) => {
+                let mut inner_order = inner_order.clone();
+                inner_order.recipient = self.0.address();
+                self.sign_into_meta(&inner_order)?
+            }
+            AllOrders::ExactFlash(inner_order) => {
+                let mut inner_order = inner_order.clone();
+                inner_order.recipient = self.0.address();
+                self.sign_into_meta(&inner_order)?
+            }
             AllOrders::TOB(inner_order) => {
                 let mut inner_order = inner_order.clone();
                 inner_order.recipient = self.0.address();
@@ -87,26 +83,22 @@ impl<S: Signer + SignerSync + Clone> FillFrom<AngstromSignerFiller<S>> for (Addr
     fn prepare_with(self, input_order: &mut AllOrders) -> Result<(), FillerError> {
         let (recipient, order_meta) = (self.0, self.1);
         match input_order {
-            AllOrders::Standing(standing_variants) => match standing_variants {
-                StandingVariants::Partial(partial_standing_order) => {
-                    partial_standing_order.meta = order_meta;
-                    partial_standing_order.recipient = recipient;
-                }
-                StandingVariants::Exact(exact_standing_order) => {
-                    exact_standing_order.meta = order_meta;
-                    exact_standing_order.recipient = recipient;
-                }
-            },
-            AllOrders::Flash(flash_variants) => match flash_variants {
-                FlashVariants::Partial(partial_flash_order) => {
-                    partial_flash_order.meta = order_meta;
-                    partial_flash_order.recipient = recipient;
-                }
-                FlashVariants::Exact(exact_flash_order) => {
-                    exact_flash_order.meta = order_meta;
-                    exact_flash_order.recipient = recipient;
-                }
-            },
+            AllOrders::PartialStanding(inner_order) => {
+                inner_order.meta = order_meta;
+                inner_order.recipient = recipient;
+            }
+            AllOrders::ExactStanding(inner_order) => {
+                inner_order.meta = order_meta;
+                inner_order.recipient = recipient;
+            }
+            AllOrders::PartialFlash(inner_order) => {
+                inner_order.meta = order_meta;
+                inner_order.recipient = recipient;
+            }
+            AllOrders::ExactFlash(inner_order) => {
+                inner_order.meta = order_meta;
+                inner_order.recipient = recipient;
+            }
             AllOrders::TOB(top_of_block_order) => {
                 top_of_block_order.meta = order_meta;
                 top_of_block_order.recipient = recipient;
