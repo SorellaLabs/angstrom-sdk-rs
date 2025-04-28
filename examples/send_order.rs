@@ -6,9 +6,8 @@ use alloy_signer_local::PrivateKeySigner;
 use angstrom_sdk_rs::{
     AngstromApi,
     apis::node_api::AngstromNodeApi,
-    types::{USDC, WETH},
+    types::{USDC, WETH}
 };
-
 use order_gen::ValidOrderGenerator;
 
 #[tokio::main]
@@ -21,9 +20,9 @@ async fn main() -> eyre::Result<()> {
     let signer_pk =
         &std::env::var("TESTING_PRIVATE_KEY").expect("TESTING_PRIVATE_KEY not found in .env");
 
-    let signer = PrivateKeySigner::from_str(&signer_pk)?;
+    let signer = PrivateKeySigner::from_str(signer_pk)?;
 
-    let angstrom_api = AngstromApi::new(&eth_ws_url, &angstrom_http_url)
+    let angstrom_api = AngstromApi::new(eth_ws_url, angstrom_http_url)
         .await?
         .with_all_fillers(signer.clone());
     let order_generator = ValidOrderGenerator::new(angstrom_api.clone());

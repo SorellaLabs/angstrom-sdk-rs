@@ -14,8 +14,8 @@ use crate::providers::backend::AngstromProvider;
 
 #[derive(Clone)]
 pub struct AngstromFillProvider<L, R> {
-    left: L,
-    right: R,
+    left:  L,
+    right: R
 }
 
 impl<L, R> AngstromFillProvider<L, R> {
@@ -27,17 +27,17 @@ impl<L, R> AngstromFillProvider<L, R> {
 impl<L, R> AngstromFiller for AngstromFillProvider<L, R>
 where
     L: AngstromFiller,
-    R: AngstromFiller,
+    R: AngstromFiller
 {
     type FillOutput = ();
 
     async fn fill<P>(
         &self,
         provider: &AngstromProvider<P>,
-        order: &mut AllOrders,
+        order: &mut AllOrders
     ) -> Result<(), FillerError>
     where
-        P: Provider,
+        P: Provider
     {
         self.left.fill(provider, order).await?;
         self.right.fill(provider, order).await?;
@@ -47,7 +47,7 @@ where
 
     async fn prepare<P>(&self, _: &AngstromProvider<P>, _: &AllOrders) -> Result<(), FillerError>
     where
-        P: Provider,
+        P: Provider
     {
         Ok(())
     }
@@ -65,10 +65,10 @@ pub(crate) trait AngstromFiller: Clone + Sized {
     async fn fill<P>(
         &self,
         provider: &AngstromProvider<P>,
-        order: &mut AllOrders,
+        order: &mut AllOrders
     ) -> Result<(), FillerError>
     where
-        P: Provider,
+        P: Provider
     {
         let input = self.prepare(provider, order).await?;
         input.prepare_with(order)?;
@@ -79,10 +79,10 @@ pub(crate) trait AngstromFiller: Clone + Sized {
     async fn fill_many<P>(
         &self,
         provider: &AngstromProvider<P>,
-        orders: &mut [AllOrders],
+        orders: &mut [AllOrders]
     ) -> Result<(), FillerError>
     where
-        P: Provider,
+        P: Provider
     {
         let inputs = self.prepare_many(provider, orders).await;
 
@@ -97,7 +97,7 @@ pub(crate) trait AngstromFiller: Clone + Sized {
     async fn prepare<P>(
         &self,
         provider: &AngstromProvider<P>,
-        order: &AllOrders,
+        order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError>
     where
         P: Provider;
@@ -105,10 +105,10 @@ pub(crate) trait AngstromFiller: Clone + Sized {
     async fn prepare_many<P>(
         &self,
         provider: &AngstromProvider<P>,
-        orders: &[AllOrders],
+        orders: &[AllOrders]
     ) -> Vec<Result<Self::FillOutput, FillerError>>
     where
-        P: Provider,
+        P: Provider
     {
         futures::future::join_all(orders.iter().map(|order| self.prepare(provider, order))).await
     }
@@ -123,7 +123,7 @@ impl AngstromFiller for () {
 
     async fn prepare<P>(&self, _: &AngstromProvider<P>, _: &AllOrders) -> Result<(), FillerError>
     where
-        P: Provider,
+        P: Provider
     {
         Ok(())
     }

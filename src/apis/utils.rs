@@ -8,11 +8,11 @@ use alloy_sol_types::SolCall;
 pub(crate) async fn view_call<P, IC>(
     provider: &P,
     contract: Address,
-    call: IC,
+    call: IC
 ) -> Result<Result<IC::Return, alloy_sol_types::Error>, RpcError<TransportErrorKind>>
 where
     P: Provider,
-    IC: SolCall + Send,
+    IC: SolCall + Send
 {
     let tx = TransactionRequest {
         to: Some(TxKind::Call(contract)),

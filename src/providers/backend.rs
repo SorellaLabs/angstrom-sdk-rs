@@ -3,30 +3,28 @@ use alloy_primitives::{Address, Signature};
 use alloy_provider::{
     Identity, Provider, RootProvider,
     fillers::{
-        BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
-    },
+        BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller
+    }
 };
 use alloy_signer::{Signer, SignerSync};
-
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
-    contract_payloads::angstrom::AngstromPoolConfigStore,
+    contract_payloads::angstrom::AngstromPoolConfigStore
 };
-
 use jsonrpsee_http_client::HttpClient;
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
 use crate::{
     apis::{data_api::AngstromDataApi, node_api::AngstromNodeApi, user_api::AngstromUserApi},
-    types::*,
+    types::*
 };
 
 pub type AlloyRpcProvider<P> = FillProvider<
     JoinFill<
         Identity,
-        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>
     >,
-    P,
+    P
 >;
 
 pub type AlloyWalletRpcProvider<P> =
@@ -35,10 +33,10 @@ pub type AlloyWalletRpcProvider<P> =
 #[derive(Debug, Clone)]
 pub struct AngstromProvider<P>
 where
-    P: Provider,
+    P: Provider
 {
-    eth_provider: P,
-    angstrom_provider: HttpClient,
+    eth_provider:      P,
+    angstrom_provider: HttpClient
 }
 
 impl AngstromProvider<AlloyRpcProvider<RootProvider>> {
@@ -49,7 +47,7 @@ impl AngstromProvider<AlloyRpcProvider<RootProvider>> {
                 .with_recommended_fillers()
                 .connect(eth_url)
                 .await?,
-            angstrom_provider,
+            angstrom_provider
         })
     }
 }
@@ -65,7 +63,7 @@ impl<P: Provider> AngstromProvider<P> {
 
     pub(crate) fn with_wallet<S>(self, signer: S) -> AngstromProvider<AlloyWalletRpcProvider<P>>
     where
-        S: Signer + SignerSync + TxSigner<Signature> + Send + Sync + 'static,
+        S: Signer + SignerSync + TxSigner<Signature> + Send + Sync + 'static
     {
         let eth_provider = alloy_provider::builder::<Ethereum>()
             .wallet(EthereumWallet::new(signer))
@@ -77,7 +75,7 @@ impl<P: Provider> AngstromProvider<P> {
 
 impl<P> AngstromDataApi for AngstromProvider<P>
 where
-    P: Provider,
+    P: Provider
 {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
         self.eth_provider.all_token_pairs().await
@@ -93,7 +91,7 @@ where
 
     async fn historical_orders(
         &self,
-        filter: HistoricalOrdersFilter,
+        filter: HistoricalOrdersFilter
     ) -> eyre::Result<Vec<HistoricalOrders>> {
         self.eth_provider.historical_orders(filter).await
     }
@@ -102,7 +100,7 @@ where
         &self,
         token0: Address,
         token1: Address,
-        block_number: Option<u64>,
+        block_number: Option<u64>
     ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
         self.eth_provider
             .pool_data(token0, token1, block_number)
@@ -111,7 +109,7 @@ where
 
     async fn pool_config_store(
         &self,
-        block_number: Option<u64>,
+        block_number: Option<u64>
     ) -> eyre::Result<AngstromPoolConfigStore> {
         self.eth_provider.pool_config_store(block_number).await
     }
@@ -120,7 +118,7 @@ where
 impl<P: Provider> AngstromUserApi for AngstromProvider<P> {
     async fn get_positions(
         &self,
-        user_address: Address,
+        user_address: Address
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
         self.eth_provider.get_positions(user_address).await
     }

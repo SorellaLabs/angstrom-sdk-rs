@@ -1,15 +1,14 @@
-use crate::types::ANGSTROM_DOMAIN;
 use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::sol_bindings::{
-    grouped_orders::{AllOrders, FlashVariants, StandingVariants},
-    rpc_orders::{OmitOrderMeta, OrderMeta},
+    grouped_orders::AllOrders,
+    rpc_orders::{OmitOrderMeta, OrderMeta}
 };
 use pade::PadeEncode;
 
 use super::{AngstromFiller, FillFrom, errors::FillerError};
-use crate::providers::backend::AngstromProvider;
+use crate::{providers::backend::AngstromProvider, types::ANGSTROM_DOMAIN};
 
 #[derive(Clone)]
 pub struct AngstromSignerFiller<S>(S);
@@ -22,7 +21,11 @@ impl<S: Signer + SignerSync + Clone> AngstromSignerFiller<S> {
     fn sign_into_meta<O: OmitOrderMeta>(&self, order: &O) -> Result<OrderMeta, FillerError> {
         let hash = order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
         let sig = self.0.sign_hash_sync(&hash)?;
-        Ok(OrderMeta { isEcdsa: true, from: self.0.address(), signature: sig.pade_encode().into() })
+        Ok(OrderMeta {
+            isEcdsa:   true,
+            from:      self.0.address(),
+            signature: sig.pade_encode().into()
+        })
     }
 }
 
@@ -32,38 +35,34 @@ impl<S: Signer + SignerSync + Clone> AngstromFiller for AngstromSignerFiller<S> 
     async fn prepare<P>(
         &self,
         _: &AngstromProvider<P>,
-        order: &AllOrders,
+        order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider,
+        P: Provider
     {
         let my_address = self.0.address();
 
         let om = match order {
-            AllOrders::Standing(standing_variants) => match standing_variants {
-                StandingVariants::Partial(inner_order) => {
-                    let mut inner_order = inner_order.clone();
-                    inner_order.recipient = self.0.address();
-                    self.sign_into_meta(&inner_order)?
-                }
-                StandingVariants::Exact(inner_order) => {
-                    let mut inner_order = inner_order.clone();
-                    inner_order.recipient = self.0.address();
-                    self.sign_into_meta(&inner_order)?
-                }
-            },
-            AllOrders::Flash(flash_variants) => match flash_variants {
-                FlashVariants::Partial(inner_order) => {
-                    let mut inner_order = inner_order.clone();
-                    inner_order.recipient = self.0.address();
-                    self.sign_into_meta(&inner_order)?
-                }
-                FlashVariants::Exact(inner_order) => {
-                    let mut inner_order = inner_order.clone();
-                    inner_order.recipient = self.0.address();
-                    self.sign_into_meta(&inner_order)?
-                }
-            },
+            AllOrders::PartialStanding(inner_order) => {
+                let mut inner_order = inner_order.clone();
+                inner_order.recipient = self.0.address();
+                self.sign_into_meta(&inner_order)?
+            }
+            AllOrders::ExactStanding(inner_order) => {
+                let mut inner_order = inner_order.clone();
+                inner_order.recipient = self.0.address();
+                self.sign_into_meta(&inner_order)?
+            }
+            AllOrders::PartialFlash(inner_order) => {
+                let mut inner_order = inner_order.clone();
+                inner_order.recipient = self.0.address();
+                self.sign_into_meta(&inner_order)?
+            }
+            AllOrders::ExactFlash(inner_order) => {
+                let mut inner_order = inner_order.clone();
+                inner_order.recipient = self.0.address();
+                self.sign_into_meta(&inner_order)?
+            }
             AllOrders::TOB(inner_order) => {
                 let mut inner_order = inner_order.clone();
                 inner_order.recipient = self.0.address();
@@ -84,26 +83,22 @@ impl<S: Signer + SignerSync + Clone> FillFrom<AngstromSignerFiller<S>> for (Addr
     fn prepare_with(self, input_order: &mut AllOrders) -> Result<(), FillerError> {
         let (recipient, order_meta) = (self.0, self.1);
         match input_order {
-            AllOrders::Standing(standing_variants) => match standing_variants {
-                StandingVariants::Partial(partial_standing_order) => {
-                    partial_standing_order.meta = order_meta;
-                    partial_standing_order.recipient = recipient;
-                }
-                StandingVariants::Exact(exact_standing_order) => {
-                    exact_standing_order.meta = order_meta;
-                    exact_standing_order.recipient = recipient;
-                }
-            },
-            AllOrders::Flash(flash_variants) => match flash_variants {
-                FlashVariants::Partial(partial_flash_order) => {
-                    partial_flash_order.meta = order_meta;
-                    partial_flash_order.recipient = recipient;
-                }
-                FlashVariants::Exact(exact_flash_order) => {
-                    exact_flash_order.meta = order_meta;
-                    exact_flash_order.recipient = recipient;
-                }
-            },
+            AllOrders::PartialStanding(inner_order) => {
+                inner_order.meta = order_meta;
+                inner_order.recipient = recipient;
+            }
+            AllOrders::ExactStanding(inner_order) => {
+                inner_order.meta = order_meta;
+                inner_order.recipient = recipient;
+            }
+            AllOrders::PartialFlash(inner_order) => {
+                inner_order.meta = order_meta;
+                inner_order.recipient = recipient;
+            }
+            AllOrders::ExactFlash(inner_order) => {
+                inner_order.meta = order_meta;
+                inner_order.recipient = recipient;
+            }
             AllOrders::TOB(top_of_block_order) => {
                 top_of_block_order.meta = order_meta;
                 top_of_block_order.recipient = recipient;
@@ -118,12 +113,11 @@ impl<S: Signer + SignerSync + Clone> FillFrom<AngstromSignerFiller<S>> for (Addr
 mod tests {
     use alloy_signer_local::LocalSigner;
 
+    use super::*;
     use crate::{
         AngstromApi,
-        test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider},
+        test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider}
     };
-
-    use super::*;
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_signer_angstrom_order() {
@@ -136,7 +130,11 @@ mod tests {
 
         let sig_f = |hash| {
             let sig = signer.sign_hash_sync(&hash).unwrap();
-            OrderMeta { isEcdsa: true, from: signer.address(), signature: sig.pade_encode().into() }
+            OrderMeta {
+                isEcdsa:   true,
+                from:      signer.address(),
+                signature: sig.pade_encode().into()
+            }
         };
 
         let ref_api = &api;
@@ -146,22 +144,22 @@ mod tests {
                 ref_api.fill(&mut inner_order).await.unwrap();
 
                 match &mut order {
-                    AllOrders::Standing(StandingVariants::Exact(inner_order)) => {
+                    AllOrders::ExactStanding(inner_order) => {
                         let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
-                    AllOrders::Standing(StandingVariants::Partial(inner_order)) => {
+                    AllOrders::PartialStanding(inner_order) => {
                         let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
-                    AllOrders::Flash(FlashVariants::Exact(inner_order)) => {
+                    AllOrders::ExactFlash(inner_order) => {
                         let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
-                    AllOrders::Flash(FlashVariants::Partial(inner_order)) => {
+                    AllOrders::PartialFlash(inner_order) => {
                         let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();

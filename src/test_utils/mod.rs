@@ -6,7 +6,7 @@ use angstrom_types::primitive::AngstromSigner;
 
 use crate::{
     AngstromApi,
-    providers::backend::{AlloyRpcProvider, AngstromProvider},
+    providers::backend::{AlloyRpcProvider, AngstromProvider}
 };
 
 #[cfg(not(feature = "testnet-sepolia"))]
@@ -20,12 +20,13 @@ const ETH_WS_URL: &str = "ETH_SEPOLIA_WS_URL";
 
 pub fn angstrom_http_url() -> String {
     dotenv::dotenv().ok();
-    std::env::var(ANGSTROM_HTTP_URL).expect(&format!("{ANGSTROM_HTTP_URL} not found in .env"))
+    std::env::var(ANGSTROM_HTTP_URL)
+        .unwrap_or_else(|_| panic!("{ANGSTROM_HTTP_URL} not found in .env"))
 }
 
 pub fn eth_ws_url() -> String {
     dotenv::dotenv().ok();
-    std::env::var(ETH_WS_URL).expect(&format!("{ETH_WS_URL} not found in .env"))
+    std::env::var(ETH_WS_URL).unwrap_or_else(|_| panic!("{ETH_WS_URL} not found in .env"))
 }
 
 pub fn testing_private_key() -> AngstromSigner {
@@ -34,7 +35,7 @@ pub fn testing_private_key() -> AngstromSigner {
         std::env::var("TESTING_PRIVATE_KEY")
             .expect("TESTING_PRIVATE_KEY not found in .env")
             .parse()
-            .unwrap(),
+            .unwrap()
     )
 }
 
