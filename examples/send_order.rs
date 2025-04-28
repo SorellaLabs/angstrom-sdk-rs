@@ -2,11 +2,12 @@ mod order_gen;
 
 use std::str::FromStr;
 
+use alloy_provider::{Provider, RootProvider};
 use alloy_signer_local::PrivateKeySigner;
 use angstrom_sdk_rs::{
     AngstromApi,
     apis::node_api::AngstromNodeApi,
-    types::{USDC, WETH}
+    types::{USDC, WETH},
 };
 use order_gen::ValidOrderGenerator;
 
@@ -22,8 +23,12 @@ async fn main() -> eyre::Result<()> {
 
     let signer = PrivateKeySigner::from_str(signer_pk)?;
 
-    let angstrom_api = AngstromApi::new(eth_ws_url, angstrom_http_url)
-        .await?
+    let eth_provider = RootProvider::builder()
+        .with_recommended_fillers()
+        .connect(&eth_ws_url)
+        .await?;
+
+    let angstrom_api = AngstromApi::new_angstrom_http(eth_provider, angstrom_http_url)?
         .with_all_fillers(signer.clone());
     let order_generator = ValidOrderGenerator::new(angstrom_api.clone());
     let tob_order = order_generator.generate_valid_tob_order(USDC, WETH).await?;

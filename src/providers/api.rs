@@ -1,17 +1,21 @@
 use alloy_network::TxSigner;
 use alloy_primitives::{Address, FixedBytes, Signature};
-use alloy_provider::{Provider, RootProvider};
+use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
-    contract_payloads::angstrom::AngstromPoolConfigStore, sol_bindings::grouped_orders::AllOrders
+    contract_payloads::angstrom::AngstromPoolConfigStore, sol_bindings::grouped_orders::AllOrders,
 };
 use jsonrpsee_http_client::HttpClient;
+use jsonrpsee_ws_client::WsClient;
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
-use super::backend::AlloyRpcProvider;
 use crate::{
-    apis::{data_api::AngstromDataApi, node_api::AngstromNodeApi, user_api::AngstromUserApi},
+    apis::{
+        data_api::AngstromDataApi,
+        node_api::{AngstromNodeApi, AngstromOrderApiClient},
+        user_api::AngstromUserApi,
+    },
     providers::backend::{AlloyWalletRpcProvider, AngstromProvider},
     types::{
         HistoricalOrders, HistoricalOrdersFilter, TokenInfoWithMeta, TokenPairInfo,
@@ -19,121 +23,134 @@ use crate::{
         errors::AngstromSdkError,
         fillers::{
             AngstromFillProvider, AngstromFiller, AngstromSignerFiller, FillWrapper,
-            NonceGeneratorFiller, TokenBalanceCheckFiller
-        }
-    }
+            NonceGeneratorFiller, TokenBalanceCheckFiller,
+        },
+    },
 };
 
 #[derive(Clone)]
-pub struct AngstromApi<P, F = ()>
+pub struct AngstromApi<P, T, F = ()>
 where
-    P: Provider
+    P: Provider,
+    T: AngstromOrderApiClient,
 {
-    provider: AngstromProvider<P>,
-    filler:   F
+    provider: AngstromProvider<P, T>,
+    filler: F,
 }
 
-impl AngstromApi<AlloyRpcProvider<RootProvider>> {
-    pub async fn new(eth_ws_url: &str, angstrom_http_url: &str) -> eyre::Result<Self> {
+impl<P: Provider> AngstromApi<P, HttpClient> {
+    pub fn new_angstrom_http(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
         Ok(Self {
-            provider: AngstromProvider::new(eth_ws_url, angstrom_http_url).await?,
-            filler:   ()
+            provider: AngstromProvider::new_angstrom_http(eth_provider, angstrom_url)?,
+            filler: (),
         })
     }
 }
 
-impl<P> AngstromApi<P>
+impl<P: Provider> AngstromApi<P, WsClient> {
+    pub async fn new_angstrom_ws(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
+        Ok(Self {
+            provider: AngstromProvider::new_angstrom_ws(eth_provider, angstrom_url).await?,
+            filler: (),
+        })
+    }
+}
+
+impl<P, T> AngstromApi<P, T>
 where
-    P: Provider
+    P: Provider,
+    T: AngstromOrderApiClient,
 {
-    pub fn new_with_provider(provider: AngstromProvider<P>) -> Self {
+    pub fn new_with_provider(provider: AngstromProvider<P, T>) -> Self {
         Self { provider, filler: () }
     }
 }
 
-impl<P, F> AngstromApi<P, F>
+impl<P, T, F> AngstromApi<P, T, F>
 where
     P: Provider,
-    F: FillWrapper
+    F: AngstromFiller,
+    T: AngstromOrderApiClient,
 {
     pub fn eth_provider(&self) -> &P {
         self.provider.eth_provider()
     }
 
-    pub fn angstrom_rpc_provider(&self) -> HttpClient {
+    pub fn angstrom_rpc_provider(&self) -> &T {
         self.provider.angstrom_rpc_provider()
     }
 
-    pub fn angstrom_provider(&self) -> &AngstromProvider<P> {
+    pub fn angstrom_provider(&self) -> &AngstromProvider<P, T> {
         &self.provider
     }
 
-    pub fn with_filler<F1: FillWrapper>(
+    pub fn with_filler<F1: AngstromFiller>(
         self,
-        filler: F1
-    ) -> AngstromApi<P, AngstromFillProvider<F, F1>> {
+        filler: F1,
+    ) -> AngstromApi<P, T, AngstromFillProvider<F, F1>> {
         AngstromApi { provider: self.provider, filler: self.filler.wrap_with_filler(filler) }
     }
 
     pub fn with_nonce_generator_filler(
-        self
-    ) -> AngstromApi<P, AngstromFillProvider<F, NonceGeneratorFiller>> {
+        self,
+    ) -> AngstromApi<P, T, AngstromFillProvider<F, NonceGeneratorFiller>> {
         AngstromApi {
             provider: self.provider,
-            filler:   self.filler.wrap_with_filler(NonceGeneratorFiller)
+            filler: self.filler.wrap_with_filler(NonceGeneratorFiller),
         }
     }
 
     pub fn with_token_balance_filler(
-        self
-    ) -> AngstromApi<P, AngstromFillProvider<F, TokenBalanceCheckFiller>> {
+        self,
+    ) -> AngstromApi<P, T, AngstromFillProvider<F, TokenBalanceCheckFiller>> {
         AngstromApi {
             provider: self.provider,
-            filler:   self.filler.wrap_with_filler(TokenBalanceCheckFiller)
+            filler: self.filler.wrap_with_filler(TokenBalanceCheckFiller),
         }
     }
 
     pub fn with_angstrom_signer_filler<S>(
         self,
-        signer: S
-    ) -> AngstromApi<AlloyWalletRpcProvider<P>, AngstromFillProvider<F, AngstromSignerFiller<S>>>
+        signer: S,
+    ) -> AngstromApi<AlloyWalletRpcProvider<P>, T, AngstromFillProvider<F, AngstromSignerFiller<S>>>
     where
         S: Signer + SignerSync + TxSigner<Signature> + Clone + Send + Sync + 'static,
-        AngstromSignerFiller<S>: AngstromFiller
+        AngstromSignerFiller<S>: FillWrapper,
     {
         AngstromApi {
             provider: self.provider.with_wallet(signer.clone()),
-            filler:   self
+            filler: self
                 .filler
-                .wrap_with_filler(AngstromSignerFiller::new(signer))
+                .wrap_with_filler(AngstromSignerFiller::new(signer)),
         }
     }
 
     pub fn with_all_fillers<S>(
         self,
-        signer: S
+        signer: S,
     ) -> AngstromApi<
         P,
+        T,
         AngstromFillProvider<
             AngstromFillProvider<
                 AngstromFillProvider<F, NonceGeneratorFiller>,
-                TokenBalanceCheckFiller
+                TokenBalanceCheckFiller,
             >,
-            AngstromSignerFiller<S>
-        >
+            AngstromSignerFiller<S>,
+        >,
     >
     where
         S: Signer + SignerSync + Send + Clone,
-        AngstromSignerFiller<S>: AngstromFiller,
-        P: Provider
+        AngstromSignerFiller<S>: FillWrapper,
+        P: Provider,
     {
         AngstromApi {
             provider: self.provider,
-            filler:   self
+            filler: self
                 .filler
                 .wrap_with_filler(NonceGeneratorFiller)
                 .wrap_with_filler(TokenBalanceCheckFiller)
-                .wrap_with_filler(AngstromSignerFiller::new(signer))
+                .wrap_with_filler(AngstromSignerFiller::new(signer)),
         }
     }
 
@@ -142,12 +159,13 @@ where
     }
 }
 
-impl<P, F> AngstromNodeApi for AngstromApi<P, F>
+impl<P, T, F> AngstromNodeApi<T> for AngstromApi<P, T, F>
 where
     P: Provider,
-    F: FillWrapper
+    F: AngstromFiller,
+    T: AngstromOrderApiClient,
 {
-    fn angstrom_rpc_provider(&self) -> HttpClient {
+    fn angstrom_rpc_provider(&self) -> &T {
         self.provider.angstrom_rpc_provider()
     }
 
@@ -159,7 +177,7 @@ where
 
     async fn send_orders(
         &self,
-        mut orders: Vec<AllOrders>
+        mut orders: Vec<AllOrders>,
     ) -> Result<Vec<Result<FixedBytes<32>, AngstromSdkError>>, AngstromSdkError> {
         self.filler.fill_many(&self.provider, &mut orders).await?;
 
@@ -167,10 +185,11 @@ where
     }
 }
 
-impl<P, F> AngstromDataApi for AngstromApi<P, F>
+impl<P, T, F> AngstromDataApi for AngstromApi<P, T, F>
 where
     P: Provider,
-    F: FillWrapper
+    F: AngstromFiller,
+    T: AngstromOrderApiClient,
 {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
         self.provider.all_token_pairs().await
@@ -182,7 +201,7 @@ where
 
     async fn historical_orders(
         &self,
-        filter: HistoricalOrdersFilter
+        filter: HistoricalOrdersFilter,
     ) -> eyre::Result<Vec<HistoricalOrders>> {
         self.provider.historical_orders(filter).await
     }
@@ -191,7 +210,7 @@ where
         &self,
         token0: Address,
         token1: Address,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
         self.provider.pool_data(token0, token1, block_number).await
     }
@@ -202,34 +221,36 @@ where
 
     async fn pool_config_store(
         &self,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<AngstromPoolConfigStore> {
         self.provider.pool_config_store(block_number).await
     }
 }
 
-impl<P, F> AngstromUserApi for AngstromApi<P, F>
+impl<P, T, F> AngstromUserApi for AngstromApi<P, T, F>
 where
     P: Provider,
-    F: FillWrapper
+    F: AngstromFiller,
+    T: AngstromOrderApiClient,
 {
     async fn get_positions(
         &self,
-        user_address: Address
+        user_address: Address,
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
         self.provider.get_positions(user_address).await
     }
 }
 
 #[cfg(test)]
-impl<P, F> AngstromApi<P, F>
+impl<P, T, F> AngstromApi<P, T, F>
 where
     P: Provider,
-    F: FillWrapper
+    F: AngstromFiller,
+    T: AngstromOrderApiClient,
 {
     pub(crate) async fn fill(
         &self,
-        order: &mut AllOrders
+        order: &mut AllOrders,
     ) -> Result<(), crate::types::fillers::errors::FillerError> {
         self.filler.fill(&self.provider, order).await
     }

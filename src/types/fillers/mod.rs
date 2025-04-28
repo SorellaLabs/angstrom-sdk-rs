@@ -10,12 +10,12 @@ pub use signer::*;
 mod nonce_generator;
 pub use nonce_generator::*;
 
-use crate::providers::backend::AngstromProvider;
+use crate::{apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider};
 
 #[derive(Clone)]
 pub struct AngstromFillProvider<L, R> {
-    left:  L,
-    right: R
+    left: L,
+    right: R,
 }
 
 impl<L, R> AngstromFillProvider<L, R> {
@@ -24,20 +24,21 @@ impl<L, R> AngstromFillProvider<L, R> {
     }
 }
 
-impl<L, R> AngstromFiller for AngstromFillProvider<L, R>
+impl<L, R> FillWrapper for AngstromFillProvider<L, R>
 where
-    L: AngstromFiller,
-    R: AngstromFiller
+    L: FillWrapper,
+    R: FillWrapper,
 {
     type FillOutput = ();
 
-    async fn fill<P>(
+    async fn fill<P, T>(
         &self,
-        provider: &AngstromProvider<P>,
-        order: &mut AllOrders
+        provider: &AngstromProvider<P, T>,
+        order: &mut AllOrders,
     ) -> Result<(), FillerError>
     where
-        P: Provider
+        P: Provider,
+        T: AngstromOrderApiClient,
     {
         self.left.fill(provider, order).await?;
         self.right.fill(provider, order).await?;
@@ -45,9 +46,14 @@ where
         Ok(())
     }
 
-    async fn prepare<P>(&self, _: &AngstromProvider<P>, _: &AllOrders) -> Result<(), FillerError>
+    async fn prepare<P, T>(
+        &self,
+        _: &AngstromProvider<P, T>,
+        _: &AllOrders,
+    ) -> Result<(), FillerError>
     where
-        P: Provider
+        P: Provider,
+        T: AngstromOrderApiClient,
     {
         Ok(())
     }
@@ -57,18 +63,19 @@ where
     }
 }
 
-impl<L: AngstromFiller, R: AngstromFiller> FillWrapper for AngstromFillProvider<L, R> {}
+impl<L: FillWrapper, R: FillWrapper> AngstromFiller for AngstromFillProvider<L, R> {}
 
-pub(crate) trait AngstromFiller: Clone + Sized {
+pub(crate) trait FillWrapper: Sync + Clone + Sized {
     type FillOutput: FillFrom<Self>;
 
-    async fn fill<P>(
+    async fn fill<P, T>(
         &self,
-        provider: &AngstromProvider<P>,
-        order: &mut AllOrders
+        provider: &AngstromProvider<P, T>,
+        order: &mut AllOrders,
     ) -> Result<(), FillerError>
     where
-        P: Provider
+        P: Provider,
+        T: AngstromOrderApiClient,
     {
         let input = self.prepare(provider, order).await?;
         input.prepare_with(order)?;
@@ -76,13 +83,14 @@ pub(crate) trait AngstromFiller: Clone + Sized {
         Ok(())
     }
 
-    async fn fill_many<P>(
+    async fn fill_many<P, T>(
         &self,
-        provider: &AngstromProvider<P>,
-        orders: &mut [AllOrders]
+        provider: &AngstromProvider<P, T>,
+        orders: &mut [AllOrders],
     ) -> Result<(), FillerError>
     where
-        P: Provider
+        P: Provider,
+        T: AngstromOrderApiClient,
     {
         let inputs = self.prepare_many(provider, orders).await;
 
@@ -94,21 +102,23 @@ pub(crate) trait AngstromFiller: Clone + Sized {
         Ok(())
     }
 
-    async fn prepare<P>(
+    async fn prepare<P, T>(
         &self,
-        provider: &AngstromProvider<P>,
-        order: &AllOrders
+        provider: &AngstromProvider<P, T>,
+        order: &AllOrders,
     ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider;
+        P: Provider,
+        T: AngstromOrderApiClient;
 
-    async fn prepare_many<P>(
+    async fn prepare_many<P, T>(
         &self,
-        provider: &AngstromProvider<P>,
-        orders: &[AllOrders]
+        provider: &AngstromProvider<P, T>,
+        orders: &[AllOrders],
     ) -> Vec<Result<Self::FillOutput, FillerError>>
     where
-        P: Provider
+        P: Provider,
+        T: AngstromOrderApiClient,
     {
         futures::future::join_all(orders.iter().map(|order| self.prepare(provider, order))).await
     }
@@ -118,30 +128,35 @@ pub(crate) trait AngstromFiller: Clone + Sized {
     }
 }
 
-impl AngstromFiller for () {
+impl FillWrapper for () {
     type FillOutput = ();
 
-    async fn prepare<P>(&self, _: &AngstromProvider<P>, _: &AllOrders) -> Result<(), FillerError>
+    async fn prepare<P, T>(
+        &self,
+        _: &AngstromProvider<P, T>,
+        _: &AllOrders,
+    ) -> Result<(), FillerError>
     where
-        P: Provider
+        P: Provider,
+        T: AngstromOrderApiClient,
     {
         Ok(())
     }
 }
 
-pub trait FillWrapper: AngstromFiller + Clone {
-    fn wrap_with_filler<F: AngstromFiller>(self, filler: F) -> AngstromFillProvider<Self, F> {
+pub trait AngstromFiller: FillWrapper + Sync + Clone {
+    fn wrap_with_filler<F: FillWrapper>(self, filler: F) -> AngstromFillProvider<Self, F> {
         AngstromFillProvider::new(self, filler)
     }
 }
 
-impl FillWrapper for () {}
+impl AngstromFiller for () {}
 
-pub(crate) trait FillFrom<F: AngstromFiller> {
+pub(crate) trait FillFrom<F: FillWrapper> {
     fn prepare_with(self, input_order: &mut AllOrders) -> Result<(), FillerError>;
 }
 
-impl<F: AngstromFiller> FillFrom<F> for () {
+impl<F: FillWrapper> FillFrom<F> for () {
     fn prepare_with(self, _: &mut AllOrders) -> Result<(), FillerError> {
         Ok(())
     }

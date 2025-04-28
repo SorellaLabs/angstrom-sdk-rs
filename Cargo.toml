@@ -76,9 +76,10 @@ futures = "0.3.26"
 
 # web
 reqwest = { version = "0.12.2", features = ["json"] }
-jsonrpsee = "=0.24.9"
+jsonrpsee = { version = "=0.24.9", features = ["async-client"] }
 jsonrpsee-core = "=0.24.9"
 jsonrpsee-http-client = "=0.24.9"
+jsonrpsee-ws-client = "=0.24.9"
 jsonrpsee-types = "=0.24.9"
 
 # misc

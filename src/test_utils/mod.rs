@@ -1,12 +1,13 @@
 pub mod filler_orders;
 pub mod valid_orders;
 
-use alloy_provider::RootProvider;
+use alloy_provider::{Provider, RootProvider};
 use angstrom_types::primitive::AngstromSigner;
+use jsonrpsee_ws_client::WsClient;
 
 use crate::{
     AngstromApi,
-    providers::backend::{AlloyRpcProvider, AngstromProvider}
+    providers::backend::{AlloyRpcProvider, AngstromProvider},
 };
 
 #[cfg(not(feature = "testnet-sepolia"))]
@@ -35,16 +36,21 @@ pub fn testing_private_key() -> AngstromSigner {
         std::env::var("TESTING_PRIVATE_KEY")
             .expect("TESTING_PRIVATE_KEY not found in .env")
             .parse()
-            .unwrap()
+            .unwrap(),
     )
 }
 
-async fn spawn_angstrom_provider() -> eyre::Result<AngstromProvider<AlloyRpcProvider<RootProvider>>>
-{
-    AngstromProvider::new(&eth_ws_url(), &angstrom_http_url()).await
+async fn spawn_angstrom_provider()
+-> eyre::Result<AngstromProvider<AlloyRpcProvider<RootProvider>, WsClient>> {
+    let eth_provider = RootProvider::builder()
+        .with_recommended_fillers()
+        .connect(&eth_ws_url())
+        .await?;
+    Ok(AngstromProvider::new_angstrom_ws(eth_provider, &angstrom_http_url()).await?)
 }
 
-pub async fn spawn_angstrom_api() -> eyre::Result<AngstromApi<AlloyRpcProvider<RootProvider>>> {
+pub async fn spawn_angstrom_api()
+-> eyre::Result<AngstromApi<AlloyRpcProvider<RootProvider>, WsClient>> {
     Ok(AngstromApi::new_with_provider(spawn_angstrom_provider().await?))
 }
 

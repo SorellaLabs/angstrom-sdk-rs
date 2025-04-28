@@ -3,12 +3,15 @@ use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::sol_bindings::{
     grouped_orders::AllOrders,
-    rpc_orders::{OmitOrderMeta, OrderMeta}
+    rpc_orders::{OmitOrderMeta, OrderMeta},
 };
 use pade::PadeEncode;
 
-use super::{AngstromFiller, FillFrom, errors::FillerError};
-use crate::{providers::backend::AngstromProvider, types::ANGSTROM_DOMAIN};
+use super::{FillFrom, FillWrapper, errors::FillerError};
+use crate::{
+    apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider,
+    types::ANGSTROM_DOMAIN,
+};
 
 #[derive(Clone)]
 pub struct AngstromSignerFiller<S>(S);
@@ -21,24 +24,21 @@ impl<S: Signer + SignerSync + Clone> AngstromSignerFiller<S> {
     fn sign_into_meta<O: OmitOrderMeta>(&self, order: &O) -> Result<OrderMeta, FillerError> {
         let hash = order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
         let sig = self.0.sign_hash_sync(&hash)?;
-        Ok(OrderMeta {
-            isEcdsa:   true,
-            from:      self.0.address(),
-            signature: sig.pade_encode().into()
-        })
+        Ok(OrderMeta { isEcdsa: true, from: self.0.address(), signature: sig.pade_encode().into() })
     }
 }
 
-impl<S: Signer + SignerSync + Clone> AngstromFiller for AngstromSignerFiller<S> {
+impl<S: Signer + SignerSync + Sync + Clone> FillWrapper for AngstromSignerFiller<S> {
     type FillOutput = (Address, OrderMeta);
 
-    async fn prepare<P>(
+    async fn prepare<P, T>(
         &self,
-        _: &AngstromProvider<P>,
-        order: &AllOrders
+        _: &AngstromProvider<P, T>,
+        order: &AllOrders,
     ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider
+        P: Provider,
+        T: AngstromOrderApiClient,
     {
         let my_address = self.0.address();
 
@@ -79,7 +79,9 @@ impl<S: Signer + SignerSync + Clone> AngstromFiller for AngstromSignerFiller<S> 
     }
 }
 
-impl<S: Signer + SignerSync + Clone> FillFrom<AngstromSignerFiller<S>> for (Address, OrderMeta) {
+impl<S: Signer + SignerSync + Sync + Clone> FillFrom<AngstromSignerFiller<S>>
+    for (Address, OrderMeta)
+{
     fn prepare_with(self, input_order: &mut AllOrders) -> Result<(), FillerError> {
         let (recipient, order_meta) = (self.0, self.1);
         match input_order {
@@ -116,25 +118,21 @@ mod tests {
     use super::*;
     use crate::{
         AngstromApi,
-        test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider}
+        test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider},
     };
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_signer_angstrom_order() {
         let signer = LocalSigner::random();
         let provider = AnvilAngstromProvider::new().await.unwrap();
-        let api = AngstromApi::new_with_provider(provider.provider.clone())
+        let api = AngstromApi::new_with_provider(provider.provider)
             .with_angstrom_signer_filler(signer.clone());
 
         let orders = AllOrdersSpecific::default();
 
         let sig_f = |hash| {
             let sig = signer.sign_hash_sync(&hash).unwrap();
-            OrderMeta {
-                isEcdsa:   true,
-                from:      signer.address(),
-                signature: sig.pade_encode().into()
-            }
+            OrderMeta { isEcdsa: true, from: signer.address(), signature: sig.pade_encode().into() }
         };
 
         let ref_api = &api;
