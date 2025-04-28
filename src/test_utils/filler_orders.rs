@@ -12,7 +12,8 @@ use angstrom_types::{
     CHAIN_ID,
     primitive::ERC20,
     sol_bindings::{
-        grouped_orders::{AllOrders, FlashVariants, GroupedVanillaOrder, StandingVariants},
+        RawPoolOrder,
+        grouped_orders::AllOrders,
         rpc_orders::{
             ExactFlashOrder, ExactStandingOrder, PartialFlashOrder, PartialStandingOrder,
             TopOfBlockOrder
@@ -72,37 +73,32 @@ pub fn generate_any_order_for_all(order_generator: &OrderGenerator) -> AllOrders
             }
 
             for book_order in &order.book {
-                match book_order {
-                    GroupedVanillaOrder::KillOrFill(FlashVariants::Partial(partial_flash)) => {
-                        if bitmap & 0b0001 != 0 {
-                            all_orders.push(AllOrders::Flash(FlashVariants::Partial(
-                                partial_flash.clone()
-                            )));
-                            bitmap &= !0b0001;
+                let is_parital = book_order.is_partial();
+                let is_standing = book_order.deadline().is_some();
+                match (is_parital, is_standing) {
+                    (true, true) => {
+                        if bitmap & 0b0001 == 0 {
+                            all_orders.push(book_order.clone())
                         }
+                        bitmap |= 0b0001;
                     }
-                    GroupedVanillaOrder::KillOrFill(FlashVariants::Exact(exact_flash)) => {
-                        if bitmap & 0b0010 != 0 {
-                            all_orders
-                                .push(AllOrders::Flash(FlashVariants::Exact(exact_flash.clone())));
-                            bitmap &= !0b0010;
+                    (false, true) => {
+                        if bitmap & 0b0010 == 0 {
+                            all_orders.push(book_order.clone())
                         }
+                        bitmap |= 0b0010;
                     }
-                    GroupedVanillaOrder::Standing(StandingVariants::Partial(partial_standing)) => {
-                        if bitmap & 0b0100 != 0 {
-                            all_orders.push(AllOrders::Standing(StandingVariants::Partial(
-                                partial_standing.clone()
-                            )));
-                            bitmap &= !0b0100;
+                    (true, false) => {
+                        if bitmap & 0b0100 == 0 {
+                            all_orders.push(book_order.clone())
                         }
+                        bitmap |= 0b0100;
                     }
-                    GroupedVanillaOrder::Standing(StandingVariants::Exact(exact_standing)) => {
-                        if bitmap & 0b1000 != 0 {
-                            all_orders.push(AllOrders::Standing(StandingVariants::Exact(
-                                exact_standing.clone()
-                            )));
-                            bitmap &= !0b1000;
+                    (false, false) => {
+                        if bitmap & 0b1000 == 0 {
+                            all_orders.push(book_order.clone())
                         }
+                        bitmap |= 0b1000;
                     }
                 }
             }
@@ -132,10 +128,10 @@ impl AllOrdersSpecific {
         let mut exact_standing: Option<ExactStandingOrder> = None;
 
         orders.into_iter().for_each(|order| match order {
-            AllOrders::Flash(FlashVariants::Exact(order)) => exact_flash = Some(order),
-            AllOrders::Flash(FlashVariants::Partial(order)) => partial_flash = Some(order),
-            AllOrders::Standing(StandingVariants::Exact(order)) => exact_standing = Some(order),
-            AllOrders::Standing(StandingVariants::Partial(order)) => partial_standing = Some(order),
+            AllOrders::ExactFlash(order) => exact_flash = Some(order),
+            AllOrders::PartialFlash(order) => partial_flash = Some(order),
+            AllOrders::ExactStanding(order) => exact_standing = Some(order),
+            AllOrders::PartialStanding(order) => partial_standing = Some(order),
             AllOrders::TOB(order) => tob = Some(order)
         });
 
@@ -150,22 +146,13 @@ impl AllOrdersSpecific {
 
     pub async fn test_filler_order(self, f: impl AsyncFn(AllOrders) -> bool) {
         assert!(f(AllOrders::TOB(self.tob)).await, "tob failed");
+        assert!(f(AllOrders::PartialFlash(self.partial_flash)).await, "partial_flash failed");
+        assert!(f(AllOrders::ExactFlash(self.exact_flash)).await, "exact_flash failed");
         assert!(
-            f(AllOrders::Flash(FlashVariants::Partial(self.partial_flash))).await,
-            "partial_flash failed"
-        );
-        assert!(
-            f(AllOrders::Flash(FlashVariants::Exact(self.exact_flash))).await,
-            "exact_flash failed"
-        );
-        assert!(
-            f(AllOrders::Standing(StandingVariants::Partial(self.partial_standing))).await,
+            f(AllOrders::PartialStanding(self.partial_standing)).await,
             "partial_standing failed"
         );
-        assert!(
-            f(AllOrders::Standing(StandingVariants::Exact(self.exact_standing))).await,
-            "exact_standing failed"
-        );
+        assert!(f(AllOrders::ExactStanding(self.exact_standing)).await, "exact_standing failed");
     }
 }
 
@@ -187,9 +174,9 @@ impl AnvilAngstromProvider {
     pub async fn new() -> eyre::Result<Self> {
         dotenv::dotenv().ok();
         let angstrom_http_url = std::env::var(ANGSTROM_HTTP_URL)
-            .expect(&format!("{ANGSTROM_HTTP_URL} not found in .env"));
+            .unwrap_or_else(|_| panic!("{ANGSTROM_HTTP_URL} not found in .env"));
         let eth_ws_url =
-            std::env::var(ETH_WS_URL).expect(&format!("{ETH_WS_URL} not found in .env"));
+            std::env::var(ETH_WS_URL).unwrap_or_else(|_| panic!("{ETH_WS_URL} not found in .env"));
 
         let seed: u16 = rand::random();
         let eth_ipc = format!("/tmp/anvil_{seed}.ipc");

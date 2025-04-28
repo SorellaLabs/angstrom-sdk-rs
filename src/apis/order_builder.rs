@@ -5,10 +5,7 @@ use alloy_primitives::{
 use alloy_sol_types::SolCall;
 use angstrom_types::{
     contract_bindings::pool_manager::{IPoolManager, PoolManager},
-    sol_bindings::{
-        grouped_orders::{AllOrders, GroupedVanillaOrder},
-        rpc_orders::TopOfBlockOrder
-    }
+    sol_bindings::{grouped_orders::AllOrders, rpc_orders::TopOfBlockOrder}
 };
 use testing_tools::type_generator::orders::{ToBOrderBuilder, UserOrderBuilder};
 
@@ -21,22 +18,12 @@ impl AngstromOrderBuilder {
         AllOrders::TOB(f(ToBOrderBuilder::new()))
     }
 
-    pub fn flash_order(f: impl Fn(UserOrderBuilder) -> GroupedVanillaOrder) -> AllOrders {
-        let order = f(UserOrderBuilder::new().kill_or_fill());
-
-        match order {
-            GroupedVanillaOrder::KillOrFill(order) => AllOrders::Flash(order),
-            _ => unreachable!("must be a flash order")
-        }
+    pub fn flash_order(f: impl Fn(UserOrderBuilder) -> AllOrders) -> AllOrders {
+        f(UserOrderBuilder::new().kill_or_fill())
     }
 
-    pub fn standing_order(f: impl Fn(UserOrderBuilder) -> GroupedVanillaOrder) -> AllOrders {
-        let order = f(UserOrderBuilder::new().standing());
-
-        match order {
-            GroupedVanillaOrder::Standing(order) => AllOrders::Standing(order),
-            _ => unreachable!("must be a flash order")
-        }
+    pub fn standing_order(f: impl Fn(UserOrderBuilder) -> AllOrders) -> AllOrders {
+        f(UserOrderBuilder::new().standing())
     }
 
     pub fn modify_liquidity(

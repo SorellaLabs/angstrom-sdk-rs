@@ -150,11 +150,7 @@ mod tests {
 
     use alloy_primitives::U256;
     use alloy_provider::Provider;
-    use angstrom_types::sol_bindings::{
-        RawPoolOrder,
-        grouped_orders::{FlashVariants, GroupedVanillaOrder},
-        rpc_orders::TopOfBlockOrder
-    };
+    use angstrom_types::sol_bindings::{RawPoolOrder, rpc_orders::TopOfBlockOrder};
     use testing_tools::order_generator::GeneratedPoolOrders;
 
     use super::*;
@@ -165,15 +161,11 @@ mod tests {
         types::sort_tokens
     };
 
-    fn get_flash_order(orders: &[GeneratedPoolOrders]) -> FlashVariants {
+    fn get_flash_order(orders: &[GeneratedPoolOrders]) -> AllOrders {
         orders
             .iter()
             .flat_map(|book| book.book.clone())
-            .filter_map(|order| match order {
-                GroupedVanillaOrder::KillOrFill(or) => Some(or.clone()),
-                _ => None
-            })
-            .next()
+            .find(|order| order.deadline().is_none())
             .unwrap()
     }
 
@@ -198,7 +190,7 @@ mod tests {
             let tob_order_sent = provider.send_order(tob_order.clone()).await;
             assert!(tob_order_sent.is_ok());
 
-            let user_order = AllOrders::Flash(get_flash_order(&orders));
+            let user_order = get_flash_order(&orders);
             let user_order_sent = provider.send_order(user_order.clone()).await;
             assert!(user_order_sent.is_ok());
 
@@ -210,7 +202,7 @@ mod tests {
     async fn test_send_order() {
         let provider = spawn_angstrom_api().await.unwrap();
 
-        let _ = AllOrdersSent::send_orders(&provider.angstrom_provider())
+        let _ = AllOrdersSent::send_orders(provider.angstrom_provider())
             .await
             .unwrap();
     }
@@ -219,7 +211,7 @@ mod tests {
     async fn test_pending_order() {
         let provider = spawn_angstrom_api().await.unwrap();
 
-        let orders = AllOrdersSent::send_orders(&provider.angstrom_provider())
+        let orders = AllOrdersSent::send_orders(provider.angstrom_provider())
             .await
             .unwrap();
 
@@ -243,7 +235,7 @@ mod tests {
     async fn test_cancel_order() {
         let provider = spawn_angstrom_api().await.unwrap();
 
-        let orders = AllOrdersSent::send_orders(&provider.angstrom_provider())
+        let orders = AllOrdersSent::send_orders(provider.angstrom_provider())
             .await
             .unwrap();
 
@@ -272,7 +264,7 @@ mod tests {
     async fn test_estimate_gas() {
         let provider = spawn_angstrom_api().await.unwrap();
 
-        let (generator, _rx) = make_order_generator(&provider.angstrom_provider())
+        let (generator, _rx) = make_order_generator(provider.angstrom_provider())
             .await
             .unwrap();
         let orders = generator.generate_orders();
@@ -285,7 +277,7 @@ mod tests {
             .unwrap();
         assert_eq!(tob_order_gas_estimation, U256::ZERO);
 
-        let user_order = AllOrders::Flash(get_flash_order(&orders));
+        let user_order = get_flash_order(&orders);
         let tokens = sort_tokens(user_order.token_in(), user_order.token_out());
         let user_order_gas_estimation = provider
             .estimate_gas(!user_order.is_tob(), tokens.0, tokens.1)
@@ -298,7 +290,7 @@ mod tests {
     async fn test_order_status() {
         let provider = spawn_angstrom_api().await.unwrap();
 
-        let orders = AllOrdersSent::send_orders(&provider.angstrom_provider())
+        let orders = AllOrdersSent::send_orders(provider.angstrom_provider())
             .await
             .unwrap();
 
@@ -319,7 +311,7 @@ mod tests {
     async fn test_order_by_pool_id() {
         let provider = spawn_angstrom_api().await.unwrap();
 
-        let orders = AllOrdersSent::send_orders(&provider.angstrom_provider())
+        let orders = AllOrdersSent::send_orders(provider.angstrom_provider())
             .await
             .unwrap();
 
@@ -371,7 +363,7 @@ mod tests {
 
         let order_send_fut = async {
             for _ in 0..order_cycles {
-                let _ = AllOrdersSent::send_orders(&provider.angstrom_provider())
+                let _ = AllOrdersSent::send_orders(provider.angstrom_provider())
                     .await
                     .unwrap();
             }
