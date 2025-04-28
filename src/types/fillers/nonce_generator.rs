@@ -1,13 +1,13 @@
-use super::{AngstromFiller, FillFrom, errors::FillerError};
-use crate::{providers::backend::AngstromProvider, types::ANGSTROM_ADDRESS};
 use alloy_primitives::{Address, U256};
 use alloy_provider::Provider;
 use angstrom_types::sol_bindings::{
     RawPoolOrder,
-    grouped_orders::{AllOrders, StandingVariants},
+    grouped_orders::{AllOrders, StandingVariants}
 };
-
 use validation::order::state::db_state_utils::nonces::Nonces;
+
+use super::{AngstromFiller, FillFrom, errors::FillerError};
+use crate::{providers::backend::AngstromProvider, types::ANGSTROM_ADDRESS};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct NonceGeneratorFiller;
@@ -15,7 +15,7 @@ pub struct NonceGeneratorFiller;
 impl NonceGeneratorFiller {
     async fn get_valid_angstrom_nonce<P: Provider>(
         user: Address,
-        provider: &P,
+        provider: &P
     ) -> Result<u64, FillerError> {
         let nonce_tracker = Nonces::new(ANGSTROM_ADDRESS);
 
@@ -44,10 +44,10 @@ impl AngstromFiller for NonceGeneratorFiller {
     async fn prepare<P>(
         &self,
         provider: &AngstromProvider<P>,
-        order: &AllOrders,
+        order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider,
+        P: Provider
     {
         if !matches!(order, AllOrders::Standing(_)) {
             return Ok(None);
@@ -88,20 +88,19 @@ impl FillFrom<NonceGeneratorFiller> for Option<u64> {
 mod tests {
     use alloy_provider::RootProvider;
 
+    use super::*;
     use crate::{
         AngstromApi,
         providers::backend::AlloyRpcProvider,
         test_utils::{
             filler_orders::{AllOrdersSpecific, match_all_orders},
-            spawn_angstrom_api,
+            spawn_angstrom_api
         },
-        types::fillers::AngstromFillProvider,
+        types::fillers::AngstromFillProvider
     };
 
-    use super::*;
-
     async fn spawn_api_with_filler() -> eyre::Result<
-        AngstromApi<AlloyRpcProvider<RootProvider>, AngstromFillProvider<(), NonceGeneratorFiller>>,
+        AngstromApi<AlloyRpcProvider<RootProvider>, AngstromFillProvider<(), NonceGeneratorFiller>>
     > {
         Ok(spawn_angstrom_api().await?.with_nonce_generator_filler())
     }
@@ -125,7 +124,7 @@ mod tests {
                     AllOrders::Standing(StandingVariants::Partial(inner_order)) => {
                         Some(inner_order.nonce)
                     }
-                    _ => None,
+                    _ => None
                 });
 
                 if let Some((mod_nonce, nonce)) = matched_orders {

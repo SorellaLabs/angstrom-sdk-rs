@@ -4,13 +4,13 @@ use alloy_primitives::{Address, B256, FixedBytes, U256};
 use angstrom_rpc::{
     api::OrderApiClient,
     types::{
-        OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult, PendingOrder,
-    },
+        OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult, PendingOrder
+    }
 };
 use angstrom_types::{
     orders::{CancelOrderRequest, OrderLocation, OrderStatus},
     primitive::PoolId,
-    sol_bindings::grouped_orders::AllOrders,
+    sol_bindings::grouped_orders::AllOrders
 };
 use auto_impl::auto_impl;
 use futures::{Stream, StreamExt, TryStreamExt};
@@ -44,7 +44,7 @@ pub trait AngstromNodeApi {
         &self,
         is_book: bool,
         token_0: Address,
-        token_1: Address,
+        token_1: Address
     ) -> Result<U256, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         provider
@@ -61,7 +61,7 @@ pub trait AngstromNodeApi {
     async fn orders_by_pool_id(
         &self,
         pool_id: PoolId,
-        location: OrderLocation,
+        location: OrderLocation
     ) -> Result<Vec<AllOrders>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.orders_by_pool_id(pool_id, location).await?)
@@ -70,10 +70,10 @@ pub trait AngstromNodeApi {
     async fn subscribe_orders(
         &self,
         kind: HashSet<OrderSubscriptionKind>,
-        filters: HashSet<OrderSubscriptionFilter>,
+        filters: HashSet<OrderSubscriptionFilter>
     ) -> Result<
         impl Stream<Item = Result<OrderSubscriptionResult, AngstromSdkError>>,
-        AngstromSdkError,
+        AngstromSdkError
     > {
         let provider = self.angstrom_rpc_provider();
 
@@ -86,7 +86,7 @@ pub trait AngstromNodeApi {
 
     async fn send_orders(
         &self,
-        orders: Vec<AllOrders>,
+        orders: Vec<AllOrders>
     ) -> Result<Vec<Result<FixedBytes<32>, AngstromSdkError>>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider
@@ -99,7 +99,7 @@ pub trait AngstromNodeApi {
 
     async fn pending_orders(
         &self,
-        from: Vec<Address>,
+        from: Vec<Address>
     ) -> Result<Vec<PendingOrder>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.pending_orders(from).await?)
@@ -107,7 +107,7 @@ pub trait AngstromNodeApi {
 
     async fn cancel_orders(
         &self,
-        request: Vec<CancelOrderRequest>,
+        request: Vec<CancelOrderRequest>
     ) -> Result<Vec<bool>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.cancel_orders(request).await?)
@@ -115,7 +115,7 @@ pub trait AngstromNodeApi {
 
     async fn estimate_gas_of_orders(
         &self,
-        orders: Vec<(bool, Address, Address)>,
+        orders: Vec<(bool, Address, Address)>
     ) -> Result<Vec<Result<U256, AngstromSdkError>>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider
@@ -128,7 +128,7 @@ pub trait AngstromNodeApi {
 
     async fn status_of_orders(
         &self,
-        order_hashes: Vec<B256>,
+        order_hashes: Vec<B256>
     ) -> Result<Vec<OrderStatus>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.status_of_orders(order_hashes).await?)
@@ -136,7 +136,7 @@ pub trait AngstromNodeApi {
 
     async fn orders_by_pool_ids(
         &self,
-        pool_ids_with_location: Vec<(PoolId, OrderLocation)>,
+        pool_ids_with_location: Vec<(PoolId, OrderLocation)>
     ) -> Result<Vec<AllOrders>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.orders_by_pool_ids(pool_ids_with_location).await?)
@@ -153,7 +153,7 @@ mod tests {
     use angstrom_types::sol_bindings::{
         RawPoolOrder,
         grouped_orders::{FlashVariants, GroupedVanillaOrder},
-        rpc_orders::TopOfBlockOrder,
+        rpc_orders::TopOfBlockOrder
     };
     use testing_tools::order_generator::GeneratedPoolOrders;
 
@@ -162,7 +162,7 @@ mod tests {
         apis::data_api::AngstromDataApi,
         providers::backend::AngstromProvider,
         test_utils::{filler_orders::make_order_generator, spawn_angstrom_api},
-        types::sort_tokens,
+        types::sort_tokens
     };
 
     fn get_flash_order(orders: &[GeneratedPoolOrders]) -> FlashVariants {
@@ -171,7 +171,7 @@ mod tests {
             .flat_map(|book| book.book.clone())
             .filter_map(|order| match order {
                 GroupedVanillaOrder::KillOrFill(or) => Some(or.clone()),
-                _ => None,
+                _ => None
             })
             .next()
             .unwrap()
@@ -182,14 +182,14 @@ mod tests {
     }
 
     struct AllOrdersSent {
-        tob: AllOrders,
-        user: AllOrders,
+        tob:  AllOrders,
+        user: AllOrders
     }
 
     impl AllOrdersSent {
         async fn send_orders<P>(provider: &AngstromProvider<P>) -> Result<Self, AngstromSdkError>
         where
-            P: Provider,
+            P: Provider
         {
             let (generator, _rx) = make_order_generator(provider).await.unwrap();
             let orders = generator.generate_orders();
@@ -231,7 +231,10 @@ mod tests {
 
         let pending_user_orders = provider.pending_order(orders.user.from()).await.unwrap();
         assert_eq!(
-            vec![PendingOrder { order_id: orders.user.order_hash(), order: orders.user.clone() }],
+            vec![PendingOrder {
+                order_id: orders.user.order_hash(),
+                order:    orders.user.clone()
+            }],
             pending_user_orders
         );
     }
@@ -246,9 +249,9 @@ mod tests {
 
         let canceled_tob_order = provider
             .cancel_order(CancelOrderRequest {
-                signature: orders.tob.order_signature().unwrap().as_bytes().into(),
+                signature:    orders.tob.order_signature().unwrap().as_bytes().into(),
                 user_address: orders.tob.from(),
-                order_id: orders.tob.order_hash(),
+                order_id:     orders.tob.order_hash()
             })
             .await
             .unwrap();
@@ -256,9 +259,9 @@ mod tests {
 
         let canceled_user_orders = provider
             .cancel_order(CancelOrderRequest {
-                signature: orders.user.order_signature().unwrap().as_bytes().into(),
+                signature:    orders.user.order_signature().unwrap().as_bytes().into(),
                 user_address: orders.user.from(),
-                order_id: orders.user.order_hash(),
+                order_id:     orders.user.order_hash()
             })
             .await
             .unwrap();

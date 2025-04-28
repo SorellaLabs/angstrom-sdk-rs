@@ -1,13 +1,9 @@
-use super::{AllOrders, AngstromFiller, errors::FillerError};
-use crate::apis::utils::view_call;
-use crate::providers::backend::AngstromProvider;
 use alloy_primitives::{Address, U256};
 use alloy_provider::Provider;
-use angstrom_types::sol_bindings::RawPoolOrder;
-use angstrom_types::{
-    primitive::ERC20,
-    sol_bindings::grouped_orders::{FlashVariants, StandingVariants},
-};
+use angstrom_types::{primitive::ERC20, sol_bindings::RawPoolOrder};
+
+use super::{AllOrders, AngstromFiller, errors::FillerError};
+use crate::{apis::utils::view_call, providers::backend::AngstromProvider};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct TokenBalanceCheckFiller;
@@ -17,7 +13,7 @@ impl TokenBalanceCheckFiller {
         provider: &AngstromProvider<P>,
         user: Address,
         token: Address,
-        requested_amount: U256,
+        requested_amount: U256
     ) -> Result<(), FillerError> {
         let user_balance_of =
             view_call(provider.eth_provider(), token, ERC20::balanceOfCall { _owner: user })
@@ -27,7 +23,7 @@ impl TokenBalanceCheckFiller {
             return Err(FillerError::InsufficientBalanceError(
                 token,
                 requested_amount,
-                user_balance_of,
+                user_balance_of
             ));
         }
 
@@ -41,36 +37,32 @@ impl AngstromFiller for TokenBalanceCheckFiller {
     async fn prepare<P: Provider>(
         &self,
         provider: &AngstromProvider<P>,
-        order: &AllOrders,
+        order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError> {
         if order.from() != Address::ZERO {
             let (token, amt) = match order {
-                AllOrders::Standing(standing_variants) => match standing_variants {
-                    StandingVariants::Partial(partial_standing_order) => (
-                        partial_standing_order.asset_in,
-                        partial_standing_order.max_amount_in
-                            + partial_standing_order.max_extra_fee_asset0,
-                    ),
-                    StandingVariants::Exact(exact_standing_order) => (
-                        exact_standing_order.asset_in,
-                        exact_standing_order.amount + exact_standing_order.max_extra_fee_asset0,
-                    ),
-                },
-                AllOrders::Flash(flash_variants) => match flash_variants {
-                    FlashVariants::Partial(partial_flash_order) => (
-                        partial_flash_order.asset_in,
-                        partial_flash_order.max_amount_in
-                            + partial_flash_order.max_extra_fee_asset0,
-                    ),
-                    FlashVariants::Exact(exact_flash_order) => (
-                        exact_flash_order.asset_in,
-                        exact_flash_order.amount + exact_flash_order.max_extra_fee_asset0,
-                    ),
-                },
+                AllOrders::PartialStanding(partial_standing_order) => (
+                    partial_standing_order.asset_in,
+                    partial_standing_order.max_amount_in
+                        + partial_standing_order.max_extra_fee_asset0
+                ),
+                AllOrders::ExactStanding(exact_standing_order) => (
+                    exact_standing_order.asset_in,
+                    exact_standing_order.amount + exact_standing_order.max_extra_fee_asset0
+                ),
+                AllOrders::ExactFlash(exact_flash_order) => (
+                    exact_flash_order.asset_in,
+                    exact_flash_order.amount + exact_flash_order.max_extra_fee_asset0
+                ),
+                AllOrders::PartialFlash(partial_flash_order) => (
+                    partial_flash_order.asset_in,
+                    partial_flash_order.max_amount_in + partial_flash_order.max_extra_fee_asset0
+                ),
+
                 AllOrders::TOB(top_of_block_order) => (
                     top_of_block_order.asset_in,
-                    top_of_block_order.quantity_in + top_of_block_order.max_gas_asset0,
-                ),
+                    top_of_block_order.quantity_in + top_of_block_order.max_gas_asset0
+                )
             };
 
             Self::check_balance(provider, order.from(), token, U256::from(amt)).await?;
@@ -84,13 +76,12 @@ impl AngstromFiller for TokenBalanceCheckFiller {
 mod tests {
     use alloy_primitives::Address;
 
+    use super::*;
     use crate::{
         AngstromApi,
         test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider},
-        types::USDC,
+        types::USDC
     };
-
-    use super::*;
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_balance_checker_angstrom_order() {

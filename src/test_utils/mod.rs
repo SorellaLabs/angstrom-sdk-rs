@@ -6,7 +6,7 @@ use angstrom_types::primitive::AngstromSigner;
 
 use crate::{
     AngstromApi,
-    providers::backend::{AlloyRpcProvider, AngstromProvider},
+    providers::backend::{AlloyRpcProvider, AngstromProvider}
 };
 
 #[cfg(not(feature = "testnet-sepolia"))]
@@ -34,7 +34,7 @@ pub fn testing_private_key() -> AngstromSigner {
         std::env::var("TESTING_PRIVATE_KEY")
             .expect("TESTING_PRIVATE_KEY not found in .env")
             .parse()
-            .unwrap(),
+            .unwrap()
     )
 }
 

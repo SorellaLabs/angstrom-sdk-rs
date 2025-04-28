@@ -6,9 +6,8 @@ use alloy_signer_local::PrivateKeySigner;
 use angstrom_sdk_rs::{
     AngstromApi,
     apis::node_api::AngstromNodeApi,
-    types::{USDC, WETH},
+    types::{USDC, WETH}
 };
-
 use order_gen::ValidOrderGenerator;
 
 #[tokio::main]

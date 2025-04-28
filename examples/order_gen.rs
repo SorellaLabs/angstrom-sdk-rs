@@ -1,29 +1,28 @@
-use alloy_json_rpc::RpcError;
-use alloy_primitives::TxKind;
-use alloy_provider::Provider;
-use alloy_rpc_types::{TransactionInput, TransactionRequest};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use alloy::{
     primitives::{Address, I256, U256},
     sol_types::SolCall,
-    transports::TransportErrorKind,
+    transports::TransportErrorKind
 };
-use angstrom_types::{
-    matching::{Ray, SqrtPriceX96},
-    sol_bindings::grouped_orders::AllOrders,
-};
-
+use alloy_json_rpc::RpcError;
+use alloy_primitives::TxKind;
+use alloy_provider::Provider;
+use alloy_rpc_types::{TransactionInput, TransactionRequest};
 use angstrom_sdk_rs::{
     AngstromApi,
     apis::{
-        data_api::AngstromDataApi, node_api::AngstromNodeApi, order_builder::AngstromOrderBuilder,
+        data_api::AngstromDataApi, node_api::AngstromNodeApi, order_builder::AngstromOrderBuilder
     },
-    types::fillers::FillWrapper,
+    types::fillers::FillWrapper
+};
+use angstrom_types::{
+    matching::{Ray, SqrtPriceX96},
+    sol_bindings::grouped_orders::AllOrders
 };
 
 pub struct ValidOrderGenerator<P: Provider, F: FillWrapper> {
-    angstrom_api: AngstromApi<P, F>,
+    angstrom_api: AngstromApi<P, F>
 }
 
 impl<P: Provider, F: FillWrapper> ValidOrderGenerator<P, F> {
@@ -34,7 +33,7 @@ impl<P: Provider, F: FillWrapper> ValidOrderGenerator<P, F> {
     pub async fn generate_valid_tob_order(
         &self,
         token0: Address,
-        token1: Address,
+        token1: Address
     ) -> eyre::Result<AllOrders> {
         let (block_number, pool) = self.angstrom_api.pool_data(token0, token1, None).await?;
 
@@ -54,7 +53,7 @@ impl<P: Provider, F: FillWrapper> ValidOrderGenerator<P, F> {
                 token0,
                 token1,
                 &pool_price,
-                true,
+                true
             )
             .await?;
 
@@ -104,7 +103,7 @@ impl<P: Provider, F: FillWrapper> ValidOrderGenerator<P, F> {
         token0: Address,
         token1: Address,
         pool_price: &Ray,
-        exact_in: bool,
+        exact_in: bool
     ) -> eyre::Result<(I256, bool)> {
         let (token0_bal, token1_bal) = tokio::try_join!(
             self.view_call(token0, _private::balanceOfCall::new((from,))),
@@ -163,10 +162,10 @@ impl<P: Provider, F: FillWrapper> ValidOrderGenerator<P, F> {
     async fn view_call<IC>(
         &self,
         contract: Address,
-        call: IC,
+        call: IC
     ) -> Result<Result<IC::Return, alloy_sol_types::Error>, RpcError<TransportErrorKind>>
     where
-        IC: SolCall + Send,
+        IC: SolCall + Send
     {
         let tx = TransactionRequest {
             to: Some(TxKind::Call(contract)),
