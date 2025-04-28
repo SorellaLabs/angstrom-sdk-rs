@@ -101,22 +101,22 @@ mod tests {
             .clone()
             .test_filler_order(async |mut order| {
                 match &mut order {
-                    AllOrders::Standing(StandingVariants::Exact(inner_order)) => {
+                    AllOrders::ExactStanding(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.amount = amount;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
-                    AllOrders::Standing(StandingVariants::Partial(inner_order)) => {
+                    AllOrders::PartialStanding(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.max_amount_in = amount;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
-                    AllOrders::Flash(FlashVariants::Exact(inner_order)) => {
+                    AllOrders::ExactFlash(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.amount = amount;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
-                    AllOrders::Flash(FlashVariants::Partial(inner_order)) => {
+                    AllOrders::PartialFlash(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.max_amount_in = amount;
                         inner_order.max_extra_fee_asset0 = max_fee;
@@ -144,22 +144,22 @@ mod tests {
         orders
             .test_filler_order(async |mut order| {
                 match &mut order {
-                    AllOrders::Standing(StandingVariants::Exact(inner_order)) => {
+                    AllOrders::ExactStanding(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.amount = amount;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
-                    AllOrders::Standing(StandingVariants::Partial(inner_order)) => {
+                    AllOrders::PartialStanding(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.max_amount_in = amount;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
-                    AllOrders::Flash(FlashVariants::Exact(inner_order)) => {
+                    AllOrders::ExactFlash(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.amount = amount;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
-                    AllOrders::Flash(FlashVariants::Partial(inner_order)) => {
+                    AllOrders::PartialFlash(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.max_amount_in = amount;
                         inner_order.max_extra_fee_asset0 = max_fee;

@@ -1,9 +1,6 @@
 use alloy_primitives::{Address, U256};
 use alloy_provider::Provider;
-use angstrom_types::sol_bindings::{
-    RawPoolOrder,
-    grouped_orders::{AllOrders, StandingVariants}
-};
+use angstrom_types::sol_bindings::{RawPoolOrder, grouped_orders::AllOrders};
 use validation::order::state::db_state_utils::nonces::Nonces;
 
 use super::{AngstromFiller, FillFrom, errors::FillerError};
@@ -49,7 +46,7 @@ impl AngstromFiller for NonceGeneratorFiller {
     where
         P: Provider
     {
-        if !matches!(order, AllOrders::Standing(_)) {
+        if !matches!(order, AllOrders::PartialStanding(_) | AllOrders::ExactStanding(_)) {
             return Ok(None);
         }
 
@@ -65,21 +62,19 @@ impl AngstromFiller for NonceGeneratorFiller {
 
 impl FillFrom<NonceGeneratorFiller> for Option<u64> {
     fn prepare_with(self, input_order: &mut AllOrders) -> Result<(), FillerError> {
-        if let AllOrders::Standing(standing_variants) = input_order {
-            match standing_variants {
-                StandingVariants::Partial(partial_standing_order) => {
-                    if let Some(nonce) = self {
-                        partial_standing_order.nonce = nonce;
-                    }
-                }
-                StandingVariants::Exact(exact_standing_order) => {
-                    if let Some(nonce) = self {
-                        exact_standing_order.nonce = nonce;
-                    }
+        match input_order {
+            AllOrders::ExactStanding(ex) => {
+                if let Some(nonce) = self {
+                    ex.nonce = nonce;
                 }
             }
-        };
-
+            AllOrders::PartialStanding(ex) => {
+                if let Some(nonce) = self {
+                    ex.nonce = nonce;
+                }
+            }
+            _ => {}
+        }
         Ok(())
     }
 }
@@ -118,12 +113,8 @@ mod tests {
                 provider.fill(&mut order0).await.unwrap();
 
                 let matched_orders = match_all_orders(&order0, &order1, |o| match o {
-                    AllOrders::Standing(StandingVariants::Exact(inner_order)) => {
-                        Some(inner_order.nonce)
-                    }
-                    AllOrders::Standing(StandingVariants::Partial(inner_order)) => {
-                        Some(inner_order.nonce)
-                    }
+                    AllOrders::ExactStanding(inner_order) => Some(inner_order.nonce),
+                    AllOrders::PartialStanding(inner_order) => Some(inner_order.nonce),
                     _ => None
                 });
 

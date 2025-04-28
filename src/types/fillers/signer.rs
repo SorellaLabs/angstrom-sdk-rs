@@ -152,22 +152,22 @@ mod tests {
                 ref_api.fill(&mut inner_order).await.unwrap();
 
                 match &mut order {
-                    AllOrders::Standing(StandingVariants::Exact(inner_order)) => {
+                    AllOrders::ExactStanding(inner_order) => {
                         let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
-                    AllOrders::Standing(StandingVariants::Partial(inner_order)) => {
+                    AllOrders::PartialStanding(inner_order) => {
                         let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
-                    AllOrders::Flash(FlashVariants::Exact(inner_order)) => {
+                    AllOrders::ExactFlash(inner_order) => {
                         let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
-                    AllOrders::Flash(FlashVariants::Partial(inner_order)) => {
+                    AllOrders::PartialFlash(inner_order) => {
                         let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
