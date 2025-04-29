@@ -11,9 +11,9 @@ use crate::{
 };
 
 #[cfg(not(feature = "testnet-sepolia"))]
-const ANGSTROM_HTTP_URL: &str = "ANGSTROM_HTTP_URL";
+const ANGSTROM_HTTP_URL: &str = "ANGSTROM_WS_URL";
 #[cfg(feature = "testnet-sepolia")]
-const ANGSTROM_HTTP_URL: &str = "ANGSTROM_SEPOLIA_HTTP_URL";
+const ANGSTROM_HTTP_URL: &str = "ANGSTROM_SEPOLIA_WS_URL";
 #[cfg(not(feature = "testnet-sepolia"))]
 const ETH_WS_URL: &str = "ETH_WS_URL";
 #[cfg(feature = "testnet-sepolia")]
