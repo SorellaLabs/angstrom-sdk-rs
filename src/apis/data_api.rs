@@ -208,11 +208,12 @@ impl<P: Provider> AngstromDataApi for P {
         let (token0, token1) = sort_tokens(token0, token1);
 
         let mut pool_key = self.pool_key(token0, token1).await?;
+        let registry = vec![pool_key.clone()].into();
+
         pool_key.fee = U24::from(0x800000);
         let pool_id: PoolId = pool_key.clone().into();
 
-        let data_loader =
-            DataLoader::new_with_registry(pool_id, vec![pool_key].into(), POOL_MANAGER_ADDRESS);
+        let data_loader = DataLoader::new_with_registry(pool_id, registry, POOL_MANAGER_ADDRESS);
 
         let mut enhanced_uni_pool = EnhancedUniswapPool::new(data_loader, 200);
 

@@ -1,5 +1,14 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use crate::{
+    AngstromApi,
+    apis::{
+        data_api::AngstromDataApi,
+        node_api::{AngstromNodeApi, AngstromOrderApiClient},
+        order_builder::AngstromOrderBuilder,
+    },
+    types::fillers::AngstromFiller,
+};
 use alloy::{
     primitives::{Address, I256, U256},
     sol_types::SolCall,
@@ -9,15 +18,6 @@ use alloy_json_rpc::RpcError;
 use alloy_primitives::TxKind;
 use alloy_provider::Provider;
 use alloy_rpc_types::{TransactionInput, TransactionRequest};
-use angstrom_sdk_rs::{
-    AngstromApi,
-    apis::{
-        data_api::AngstromDataApi,
-        node_api::{AngstromNodeApi, AngstromOrderApiClient},
-        order_builder::AngstromOrderBuilder,
-    },
-    types::fillers::AngstromFiller,
-};
 use angstrom_types::{
     matching::{Ray, SqrtPriceX96},
     sol_bindings::grouped_orders::AllOrders,
@@ -38,9 +38,6 @@ impl<P: Provider, T: AngstromOrderApiClient, F: AngstromFiller> ValidOrderGenera
         token1: Address,
     ) -> eyre::Result<AllOrders> {
         let (block_number, pool) = self.angstrom_api.pool_data(token0, token1, None).await?;
-        let (token0, token1) = (pool.token0, pool.token1);
-
-        println!("FEE: {}", pool.book_fee);
 
         let pool_price = Ray::from(SqrtPriceX96::from(pool.sqrt_price));
         let mut gas = self
@@ -64,21 +61,16 @@ impl<P: Provider, T: AngstromOrderApiClient, F: AngstromFiller> ValidOrderGenera
 
         // limit to crossing 30 ticks a swap
         let target_price = if zfo {
-            uniswap_v3_math::tick_math::get_sqrt_ratio_at_tick(
-                pool.tick - (100 * pool.tick_spacing),
-            )
-            .unwrap()
+            uniswap_v3_math::tick_math::get_sqrt_ratio_at_tick(pool.tick - (5 * pool.tick_spacing))
+                .unwrap()
         } else {
-            uniswap_v3_math::tick_math::get_sqrt_ratio_at_tick(
-                pool.tick + (100 * pool.tick_spacing),
-            )
-            .unwrap()
+            uniswap_v3_math::tick_math::get_sqrt_ratio_at_tick(pool.tick + (5 * pool.tick_spacing))
+                .unwrap()
         };
 
-        let (token_in, token_out) = if zfo { (token0, token1) } else { (token1, token0) };
-
+        let t_in = if zfo { pool.token0 } else { pool.token1 };
         let (amount_in, amount_out) = pool
-            .simulate_swap(token_in, amount, Some(target_price))
+            .simulate_swap(t_in, amount, Some(target_price))
             .unwrap();
 
         let mut amount_in = u128::try_from(amount_in.abs()).unwrap();
@@ -89,6 +81,8 @@ impl<P: Provider, T: AngstromOrderApiClient, F: AngstromFiller> ValidOrderGenera
         }
         let range = (amount_in / 100).max(101);
         amount_in += self.gen_range_for(100, range);
+
+        let (token_in, token_out) = if zfo { (token0, token1) } else { (token1, token0) };
 
         let order = AngstromOrderBuilder::tob_order(move |builder| {
             builder
@@ -137,16 +131,16 @@ impl<P: Provider, T: AngstromOrderApiClient, F: AngstromFiller> ValidOrderGenera
         let amount = if exact_in {
             // exact in will swap 1/6 of the balance
             I256::unchecked_from(if zfo {
-                token0_bal / U256::from(30)
+                token0_bal / U256::from(50)
             } else {
-                token1_bal / U256::from(30)
+                token1_bal / U256::from(50)
             })
         } else {
             // exact out
             I256::unchecked_from(if zfo {
-                t1_with_current_price / U256::from(30)
+                t1_with_current_price / U256::from(50)
             } else {
-                token1_bal / U256::from(30)
+                token1_bal / U256::from(50)
             })
             .wrapping_neg()
         };
