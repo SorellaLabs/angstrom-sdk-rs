@@ -7,7 +7,7 @@ use alloy_signer_local::PrivateKeySigner;
 use angstrom_sdk_rs::{
     AngstromApi,
     apis::node_api::AngstromNodeApi,
-    types::{USDC, WETH},
+    types::{USDC, WETH}
 };
 use order_gen::ValidOrderGenerator;
 
@@ -22,6 +22,7 @@ async fn main() -> eyre::Result<()> {
         &std::env::var("TESTING_PRIVATE_KEY").expect("TESTING_PRIVATE_KEY not found in .env");
 
     let signer = PrivateKeySigner::from_str(signer_pk)?;
+    println!("SIGNER: {}", signer.address());
 
     let eth_provider = RootProvider::builder()
         .with_recommended_fillers()

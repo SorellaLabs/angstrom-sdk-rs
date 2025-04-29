@@ -1,17 +1,18 @@
-use std::{
-    collections::{HashMap, HashSet},
-    str::FromStr,
-};
-
 use alloy_consensus::Transaction;
 use alloy_primitives::Address;
 use alloy_provider::Provider;
-use alloy_rpc_types::{Block, Filter};
+use alloy_rpc_types::Block;
+use alloy_sol_types::SolCall;
+use angstrom_types::contract_bindings::angstrom::Angstrom::{PoolKey, executeCall};
 use angstrom_types::{
     contract_payloads::angstrom::{AngstromBundle, TopOfBlockOrder, UserOrder},
     primitive::PoolId,
 };
 use pade::PadeDecode;
+use std::{
+    collections::{HashMap, HashSet},
+    str::FromStr,
+};
 
 use super::{ANGSTROM_ADDRESS, PoolMetadata};
 use crate::apis::data_api::AngstromDataApi;
@@ -59,18 +60,6 @@ impl HistoricalOrdersFilter {
         self
     }
 
-    pub(crate) fn as_eth_filter(&self) -> Filter {
-        let mut filter = Filter::new().address(ANGSTROM_ADDRESS);
-        if let Some(block) = self.from_block {
-            filter = filter.from_block(block)
-        }
-        if let Some(block) = self.to_block {
-            filter = filter.to_block(block)
-        }
-
-        filter
-    }
-
     pub(crate) fn filter_block(
         &self,
         block: Block,
@@ -79,8 +68,11 @@ impl HistoricalOrdersFilter {
         block
             .transactions
             .into_transactions()
+            .filter(|tx| tx.to() == Some(ANGSTROM_ADDRESS))
             .filter_map(|transaction| {
-                let mut input: &[u8] = transaction.input();
+                let input: &[u8] = transaction.input();
+                let call = executeCall::abi_decode(input).ok()?;
+                let mut input = call.encoded.as_ref();
                 AngstromBundle::pade_decode(&mut input, None).ok()
             })
             .flat_map(|bundle| self.apply_kinds(bundle, pool_stores))
@@ -94,20 +86,17 @@ impl HistoricalOrdersFilter {
     ) -> Vec<HistoricalOrders> {
         let mut all_orders = Vec::new();
 
-        if self.order_kinds.contains(&OrderKind::TOB) || self.order_kinds.contains(&OrderKind::None)
-        {
+        if self.order_kinds.contains(&OrderKind::TOB) || self.order_kinds.is_empty() {
             bundle.top_of_block_orders.into_iter().for_each(|order| {
-                if self.apply_filter_tob(&order, pool_stores) {
+                if self.apply(order.pairs_index, pool_stores) {
                     all_orders.push(HistoricalOrders::TOB(order))
                 }
             });
         }
 
-        if self.order_kinds.contains(&OrderKind::User)
-            || self.order_kinds.contains(&OrderKind::None)
-        {
+        if self.order_kinds.contains(&OrderKind::User) || self.order_kinds.is_empty() {
             bundle.user_orders.into_iter().for_each(|order| {
-                if self.apply_filter_user(&order, pool_stores) {
+                if self.apply(order.pair_index, pool_stores) {
                     all_orders.push(HistoricalOrders::User(order))
                 }
             });
@@ -116,59 +105,27 @@ impl HistoricalOrdersFilter {
         all_orders
     }
 
-    fn apply_filter_tob(
-        &self,
-        order: &TopOfBlockOrder,
-        pool_stores: &AngstromPoolTokenIndexToPair,
-    ) -> bool {
-        if self.order_filters.contains(&OrderFilter::None) {
+    fn apply(&self, order_pair_index: u16, pool_stores: &AngstromPoolTokenIndexToPair) -> bool {
+        if self.order_filters.is_empty() {
             return true;
         }
 
         self.order_filters.iter().all(|filter| match filter {
-            OrderFilter::ByPoolId { pool_id } => {
-                if let Some(pool) = pool_stores.0.get(&order.pairs_index) {
-                    pool.pool_id == *pool_id
-                } else {
-                    false
-                }
-            }
-            OrderFilter::ByTokens { token0, token1 } => {
-                if let Some(pool) = pool_stores.0.get(&order.pairs_index) {
-                    pool.token0 == *token0 && pool.token1 == *token1
-                } else {
-                    false
-                }
-            }
-            OrderFilter::None => unreachable!(),
-        })
-    }
-
-    fn apply_filter_user(
-        &self,
-        order: &UserOrder,
-        pool_stores: &AngstromPoolTokenIndexToPair,
-    ) -> bool {
-        if self.order_filters.contains(&OrderFilter::None) {
-            return true;
-        }
-
-        self.order_filters.iter().all(|filter| match filter {
-            OrderFilter::ByPoolId { pool_id } => {
-                if let Some(pool) = pool_stores.0.get(&order.pair_index) {
-                    pool.pool_id == *pool_id
-                } else {
-                    false
-                }
-            }
-            OrderFilter::ByTokens { token0, token1 } => {
-                if let Some(pool) = pool_stores.0.get(&order.pair_index) {
-                    pool.token0 == *token0 && pool.token1 == *token1
-                } else {
-                    false
-                }
-            }
-            OrderFilter::None => unreachable!(),
+            OrderFilter::PoolId(pool_id) => pool_stores
+                .0
+                .get(&order_pair_index)
+                .map(|pool| *pool.pool_id == *pool_id)
+                .unwrap_or_default(),
+            OrderFilter::PoolKey(pool_key) => pool_stores
+                .0
+                .get(&order_pair_index)
+                .map(|pool| pool.pool_key.clone() == pool_key.clone())
+                .unwrap_or_default(),
+            OrderFilter::Tokens(token0, token1) => pool_stores
+                .0
+                .get(&order_pair_index)
+                .map(|pool| pool.token0 == *token0 && pool.token1 == *token1)
+                .unwrap_or_default(),
         })
     }
 }
@@ -177,7 +134,6 @@ impl HistoricalOrdersFilter {
 pub enum OrderKind {
     TOB,
     User,
-    None,
 }
 
 impl FromStr for OrderKind {
@@ -188,26 +144,21 @@ impl FromStr for OrderKind {
         match lower_s.as_str() {
             "tob" => Ok(Self::TOB),
             "user" => Ok(Self::User),
-            "none" => Ok(Self::None),
             _ => Err(eyre::eyre!("{s} is not a valid OrderKind")),
         }
     }
 }
 
-#[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
+#[derive(Debug, Hash, Clone, PartialEq, Eq)]
 pub enum OrderFilter {
-    ByPoolId { pool_id: PoolId },
-    ByTokens { token0: Address, token1: Address },
-    None,
+    PoolId(PoolId),
+    PoolKey(PoolKey),
+    Tokens(Address, Address),
 }
 
 impl OrderFilter {
     fn addresses(&self) -> Option<(Address, Address)> {
-        if let OrderFilter::ByTokens { token0, token1 } = self {
-            Some((*token0, *token1))
-        } else {
-            None
-        }
+        if let OrderFilter::Tokens(token0, token1) = self { Some((*token0, *token1)) } else { None }
     }
 }
 

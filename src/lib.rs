@@ -6,7 +6,6 @@
 pub mod apis;
 pub use providers::AngstromApi;
 
-pub mod order_builder;
 pub mod providers;
 #[cfg(test)]
 pub mod test_utils;

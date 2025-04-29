@@ -69,6 +69,7 @@ pub trait AngstromDataApi {
     async fn historical_orders(
         &self,
         filter: HistoricalOrdersFilter,
+        block_stream_buffer: Option<usize>,
     ) -> eyre::Result<Vec<HistoricalOrders>>;
 
     async fn pool_data(
@@ -167,6 +168,7 @@ impl<P: Provider> AngstromDataApi for P {
     async fn historical_orders(
         &self,
         filter: HistoricalOrdersFilter,
+        block_stream_buffer: Option<usize>,
     ) -> eyre::Result<Vec<HistoricalOrders>> {
         let filter = &filter;
         let pool_stores = &AngstromPoolTokenIndexToPair::new_with_tokens(self, filter).await?;
@@ -175,11 +177,7 @@ impl<P: Provider> AngstromDataApi for P {
         let end_block =
             if let Some(e) = filter.to_block { e } else { self.get_block_number().await? };
 
-        // let eth_filter = filter.as_eth_filter();
-
-        // self.get_logs(&eth_filter);
-
-        let mut block_stream = futures::stream::iter(start_block..end_block)
+        let mut block_stream = futures::stream::iter(start_block..=end_block)
             .map(|bn| async move {
                 let block = self
                     .get_block(bn.into())
@@ -189,7 +187,7 @@ impl<P: Provider> AngstromDataApi for P {
 
                 Ok::<_, eyre::ErrReport>(filter.filter_block(block, pool_stores))
             })
-            .buffer_unordered(10);
+            .buffer_unordered(block_stream_buffer.unwrap_or(10));
 
         let mut all_orders = Vec::new();
         while let Some(val) = block_stream.next().await {
@@ -300,7 +298,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_historical_orders() {
-        todo!()
+        let provider = spawn_angstrom_api().await.unwrap();
+        let filter = HistoricalOrdersFilter::new()
+            .from_block(8214200)
+            .to_block(8214320)
+            .order_kind(OrderKind::User);
+        let orders = provider.historical_orders(filter, None).await.unwrap();
+
+        assert_eq!(orders.len(), 5);
     }
 
     #[tokio::test]

@@ -101,8 +101,11 @@ where
     async fn historical_orders(
         &self,
         filter: HistoricalOrdersFilter,
+        block_stream_buffer: Option<usize>,
     ) -> eyre::Result<Vec<HistoricalOrders>> {
-        self.eth_provider.historical_orders(filter).await
+        self.eth_provider
+            .historical_orders(filter, block_stream_buffer)
+            .await
     }
 
     async fn pool_data(
