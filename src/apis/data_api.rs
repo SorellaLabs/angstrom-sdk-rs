@@ -1,23 +1,26 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
-
+use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
 use alloy_primitives::{
     Address, FixedBytes,
     aliases::{I24, U24},
 };
 use alloy_provider::Provider;
+use alloy_sol_types::SolCall;
+use angstrom_types::contract_bindings::angstrom::Angstrom::executeCall;
 use angstrom_types::{
     contract_bindings::{
         angstrom::Angstrom::PoolKey, controller_v_1::ControllerV1,
         mintable_mock_erc_20::MintableMockERC20,
     },
-    contract_payloads::angstrom::AngstromPoolConfigStore,
+    contract_payloads::angstrom::{AngstromBundle, AngstromPoolConfigStore},
     primitive::PoolId,
 };
 use futures::{StreamExt, TryFutureExt};
+use pade::PadeDecode;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
 use super::utils::*;
@@ -71,6 +74,13 @@ pub trait AngstromDataApi {
         filter: HistoricalOrdersFilter,
         block_stream_buffer: Option<usize>,
     ) -> eyre::Result<Vec<HistoricalOrders>>;
+
+    async fn historical_bundles(
+        &self,
+        start_block: Option<u64>,
+        end_block: Option<u64>,
+        block_stream_buffer: Option<usize>,
+    ) -> eyre::Result<Vec<AngstromBundle>>;
 
     async fn pool_data(
         &self,
@@ -164,7 +174,6 @@ impl<P: Provider> AngstromDataApi for P {
         })
     }
 
-    /// this needs to change
     async fn historical_orders(
         &self,
         filter: HistoricalOrdersFilter,
@@ -195,6 +204,46 @@ impl<P: Provider> AngstromDataApi for P {
         }
 
         Ok(all_orders)
+    }
+
+    async fn historical_bundles(
+        &self,
+        start_block: Option<u64>,
+        end_block: Option<u64>,
+        block_stream_buffer: Option<usize>,
+    ) -> eyre::Result<Vec<AngstromBundle>> {
+        let start_block = start_block.unwrap_or(ANGSTROM_DEPLOYED_BLOCK);
+        let end_block = if let Some(e) = end_block { e } else { self.get_block_number().await? };
+
+        let mut block_stream = futures::stream::iter(start_block..=end_block)
+            .map(|bn| async move {
+                let block = self
+                    .get_block(bn.into())
+                    .full()
+                    .await?
+                    .ok_or(eyre::eyre!("block number {bn} not found"))?;
+
+                Ok::<_, eyre::ErrReport>(
+                    block
+                        .transactions
+                        .into_transactions()
+                        .filter(|tx| tx.to() == Some(ANGSTROM_ADDRESS))
+                        .filter_map(|transaction| {
+                            let input: &[u8] = transaction.input();
+                            let call = executeCall::abi_decode(input).ok()?;
+                            let mut input = call.encoded.as_ref();
+                            AngstromBundle::pade_decode(&mut input, None).ok()
+                        }),
+                )
+            })
+            .buffer_unordered(block_stream_buffer.unwrap_or(10));
+
+        let mut all_bundles = Vec::new();
+        while let Some(val) = block_stream.next().await {
+            all_bundles.extend(val?);
+        }
+
+        Ok(all_bundles)
     }
 
     async fn pool_data(

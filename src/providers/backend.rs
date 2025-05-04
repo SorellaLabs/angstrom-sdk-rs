@@ -9,7 +9,7 @@ use alloy_provider::{
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
-    contract_payloads::angstrom::AngstromPoolConfigStore,
+    contract_payloads::angstrom::{AngstromBundle, AngstromPoolConfigStore},
 };
 use jsonrpsee_http_client::HttpClient;
 use jsonrpsee_ws_client::{WsClient, WsClientBuilder};
@@ -105,6 +105,17 @@ where
     ) -> eyre::Result<Vec<HistoricalOrders>> {
         self.eth_provider
             .historical_orders(filter, block_stream_buffer)
+            .await
+    }
+
+    async fn historical_bundles(
+        &self,
+        start_block: Option<u64>,
+        end_block: Option<u64>,
+        block_stream_buffer: Option<usize>,
+    ) -> eyre::Result<Vec<AngstromBundle>> {
+        self.eth_provider
+            .historical_bundles(start_block, end_block, block_stream_buffer)
             .await
     }
 

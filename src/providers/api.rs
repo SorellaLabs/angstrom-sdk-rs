@@ -4,7 +4,8 @@ use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
-    contract_payloads::angstrom::AngstromPoolConfigStore, sol_bindings::grouped_orders::AllOrders,
+    contract_payloads::angstrom::{AngstromBundle, AngstromPoolConfigStore},
+    sol_bindings::grouped_orders::AllOrders,
 };
 use jsonrpsee_http_client::HttpClient;
 use jsonrpsee_ws_client::WsClient;
@@ -216,6 +217,17 @@ where
         block_number: Option<u64>,
     ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
         self.provider.pool_data(token0, token1, block_number).await
+    }
+
+    async fn historical_bundles(
+        &self,
+        start_block: Option<u64>,
+        end_block: Option<u64>,
+        block_stream_buffer: Option<usize>,
+    ) -> eyre::Result<Vec<AngstromBundle>> {
+        self.provider
+            .historical_bundles(start_block, end_block, block_stream_buffer)
+            .await
     }
 
     async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
