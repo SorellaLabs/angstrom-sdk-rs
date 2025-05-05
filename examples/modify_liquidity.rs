@@ -1,5 +1,7 @@
 mod utils;
 
+use std::str::FromStr;
+
 use alloy_primitives::{Address, I256, TxKind};
 use alloy_provider::{Provider, RootProvider};
 use alloy_rpc_types::TransactionRequest;
@@ -8,9 +10,8 @@ use alloy_sol_types::SolCall;
 use angstrom_sdk_rs::{
     AngstromApi,
     apis::{AngstromDataApi, AngstromOrderBuilder},
-    types::{USDC, WETH},
+    types::{USDC, WETH}
 };
-use std::str::FromStr;
 
 #[tokio::main]
 async fn main() -> eyre::Result<()> {
@@ -41,7 +42,7 @@ async fn main() -> eyre::Result<()> {
         pool.fetch_lowest_tick(),
         pool.fetch_highest_tick(),
         pool.tick_spacing,
-        amount,
+        amount
     );
 
     // no callback contract is deployed so this will currently fail
