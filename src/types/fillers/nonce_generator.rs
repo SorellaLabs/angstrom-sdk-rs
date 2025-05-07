@@ -6,7 +6,7 @@ use validation::order::state::db_state_utils::nonces::Nonces;
 use super::{FillFrom, FillWrapper, errors::FillerError};
 use crate::{
     apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider,
-    types::ANGSTROM_ADDRESS,
+    types::ANGSTROM_ADDRESS
 };
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -15,7 +15,7 @@ pub struct NonceGeneratorFiller;
 impl NonceGeneratorFiller {
     async fn get_valid_angstrom_nonce<P: Provider>(
         user: Address,
-        provider: &P,
+        provider: &P
     ) -> Result<u64, FillerError> {
         let nonce_tracker = Nonces::new(ANGSTROM_ADDRESS);
 
@@ -44,11 +44,11 @@ impl FillWrapper for NonceGeneratorFiller {
     async fn prepare<P, T>(
         &self,
         provider: &AngstromProvider<P, T>,
-        order: &AllOrders,
+        order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError>
     where
         P: Provider,
-        T: AngstromOrderApiClient,
+        T: AngstromOrderApiClient
     {
         if !matches!(order, AllOrders::PartialStanding(_) | AllOrders::ExactStanding(_)) {
             return Ok(None);
@@ -94,17 +94,17 @@ mod tests {
         providers::backend::AlloyRpcProvider,
         test_utils::{
             filler_orders::{AllOrdersSpecific, match_all_orders},
-            spawn_angstrom_api,
+            spawn_angstrom_api
         },
-        types::fillers::AngstromFillProvider,
+        types::fillers::AngstromFillProvider
     };
 
     async fn spawn_api_with_filler() -> eyre::Result<
         AngstromApi<
             AlloyRpcProvider<RootProvider>,
             WsClient,
-            AngstromFillProvider<(), NonceGeneratorFiller>,
-        >,
+            AngstromFillProvider<(), NonceGeneratorFiller>
+        >
     > {
         Ok(spawn_angstrom_api().await?.with_nonce_generator_filler())
     }
@@ -124,7 +124,7 @@ mod tests {
                 let matched_orders = match_all_orders(&order0, &order1, |o| match o {
                     AllOrders::ExactStanding(inner_order) => Some(inner_order.nonce),
                     AllOrders::PartialStanding(inner_order) => Some(inner_order.nonce),
-                    _ => None,
+                    _ => None
                 });
 
                 if let Some((mod_nonce, nonce)) = matched_orders {

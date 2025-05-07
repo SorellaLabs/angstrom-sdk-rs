@@ -3,13 +3,13 @@ use alloy_primitives::{Address, Signature};
 use alloy_provider::{
     Identity, Provider,
     fillers::{
-        BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
-    },
+        BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller
+    }
 };
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
-    contract_payloads::angstrom::{AngstromBundle, AngstromPoolConfigStore},
+    contract_payloads::angstrom::{AngstromBundle, AngstromPoolConfigStore}
 };
 use jsonrpsee_http_client::HttpClient;
 use jsonrpsee_ws_client::{WsClient, WsClientBuilder};
@@ -19,17 +19,17 @@ use crate::{
     apis::{
         data_api::AngstromDataApi,
         node_api::{AngstromNodeApi, AngstromOrderApiClient},
-        user_api::AngstromUserApi,
+        user_api::AngstromUserApi
     },
-    types::*,
+    types::*
 };
 
 pub type AlloyRpcProvider<P> = FillProvider<
     JoinFill<
         Identity,
-        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>
     >,
-    P,
+    P
 >;
 
 pub type AlloyWalletRpcProvider<P> =
@@ -39,10 +39,10 @@ pub type AlloyWalletRpcProvider<P> =
 pub struct AngstromProvider<P, T>
 where
     P: Provider,
-    T: AngstromOrderApiClient,
+    T: AngstromOrderApiClient
 {
-    eth_provider: P,
-    angstrom_provider: T,
+    eth_provider:      P,
+    angstrom_provider: T
 }
 
 impl<P: Provider> AngstromProvider<P, HttpClient> {
@@ -55,7 +55,7 @@ impl<P: Provider> AngstromProvider<P, WsClient> {
     pub async fn new_angstrom_ws(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
         Ok(Self {
             eth_provider,
-            angstrom_provider: WsClientBuilder::new().build(angstrom_url).await?,
+            angstrom_provider: WsClientBuilder::new().build(angstrom_url).await?
         })
     }
 }
@@ -71,7 +71,7 @@ impl<P: Provider, T: AngstromOrderApiClient> AngstromProvider<P, T> {
 
     pub(crate) fn with_wallet<S>(self, signer: S) -> AngstromProvider<AlloyWalletRpcProvider<P>, T>
     where
-        S: Signer + SignerSync + TxSigner<Signature> + Send + Sync + 'static,
+        S: Signer + SignerSync + TxSigner<Signature> + Send + Sync + 'static
     {
         let eth_provider = alloy_provider::builder::<Ethereum>()
             .wallet(EthereumWallet::new(signer))
@@ -84,7 +84,7 @@ impl<P: Provider, T: AngstromOrderApiClient> AngstromProvider<P, T> {
 impl<P, T> AngstromDataApi for AngstromProvider<P, T>
 where
     P: Provider,
-    T: AngstromOrderApiClient,
+    T: AngstromOrderApiClient
 {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
         self.eth_provider.all_token_pairs().await
@@ -101,7 +101,7 @@ where
     async fn historical_orders(
         &self,
         filter: HistoricalOrdersFilter,
-        block_stream_buffer: Option<usize>,
+        block_stream_buffer: Option<usize>
     ) -> eyre::Result<Vec<HistoricalOrders>> {
         self.eth_provider
             .historical_orders(filter, block_stream_buffer)
@@ -112,7 +112,7 @@ where
         &self,
         start_block: Option<u64>,
         end_block: Option<u64>,
-        block_stream_buffer: Option<usize>,
+        block_stream_buffer: Option<usize>
     ) -> eyre::Result<Vec<AngstromBundle>> {
         self.eth_provider
             .historical_bundles(start_block, end_block, block_stream_buffer)
@@ -123,7 +123,7 @@ where
         &self,
         token0: Address,
         token1: Address,
-        block_number: Option<u64>,
+        block_number: Option<u64>
     ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
         self.eth_provider
             .pool_data(token0, token1, block_number)
@@ -132,7 +132,7 @@ where
 
     async fn pool_config_store(
         &self,
-        block_number: Option<u64>,
+        block_number: Option<u64>
     ) -> eyre::Result<AngstromPoolConfigStore> {
         self.eth_provider.pool_config_store(block_number).await
     }
@@ -141,7 +141,7 @@ where
 impl<P: Provider, T: AngstromOrderApiClient> AngstromUserApi for AngstromProvider<P, T> {
     async fn get_positions(
         &self,
-        user_address: Address,
+        user_address: Address
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
         self.eth_provider.get_positions(user_address).await
     }
