@@ -1,23 +1,24 @@
 use std::{
     collections::{HashMap, HashSet},
-    sync::Arc,
+    sync::Arc
 };
 
 use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
 use alloy_primitives::{
     Address, FixedBytes,
-    aliases::{I24, U24},
+    aliases::{I24, U24}
 };
 use alloy_provider::Provider;
 use alloy_sol_types::SolCall;
 use angstrom_types::{
     contract_bindings::{
         angstrom::Angstrom::{PoolKey, executeCall},
-        mintable_mock_erc_20::MintableMockERC20,
+        controller_v_1::ControllerV1::getPoolByKeyCall,
+        mintable_mock_erc_20::MintableMockERC20
     },
     contract_payloads::angstrom::{AngstromBundle, AngstromPoolConfigStore},
-    primitive::PoolId,
+    primitive::PoolId
 };
 use futures::{StreamExt, TryFutureExt};
 use pade::PadeDecode;
@@ -42,7 +43,7 @@ pub trait AngstromDataApi {
             .map(|tokens| {
                 (
                     AngstromPoolConfigStore::derive_store_key(tokens.token0, tokens.token1),
-                    (tokens.token0, tokens.token1),
+                    (tokens.token0, tokens.token1)
                 )
             })
             .collect::<HashMap<_, _>>();
@@ -55,11 +56,11 @@ pub trait AngstromDataApi {
                 let (token0, token1) = tokens_to_partial_keys.get(k).unwrap();
 
                 PoolKey {
-                    currency0: *token0,
-                    currency1: *token1,
-                    fee: U24::from(v.fee_in_e6),
+                    currency0:   *token0,
+                    currency1:   *token1,
+                    fee:         U24::from(v.fee_in_e6),
                     tickSpacing: I24::unchecked_from(v.tick_spacing),
-                    hooks: ANGSTROM_ADDRESS,
+                    hooks:       ANGSTROM_ADDRESS
                 }
             })
             .collect())
@@ -72,33 +73,33 @@ pub trait AngstromDataApi {
     async fn historical_orders(
         &self,
         filter: HistoricalOrdersFilter,
-        block_stream_buffer: Option<usize>,
+        block_stream_buffer: Option<usize>
     ) -> eyre::Result<Vec<HistoricalOrders>>;
 
     async fn historical_bundles(
         &self,
         start_block: Option<u64>,
         end_block: Option<u64>,
-        block_stream_buffer: Option<usize>,
+        block_stream_buffer: Option<usize>
     ) -> eyre::Result<Vec<AngstromBundle>>;
 
     async fn pool_data(
         &self,
         token0: Address,
         token1: Address,
-        block_number: Option<u64>,
+        block_number: Option<u64>
     ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)>;
 
     async fn all_pool_data(
         &self,
-        block_number: Option<u64>,
+        block_number: Option<u64>
     ) -> eyre::Result<Vec<(u64, EnhancedUniswapPool<DataLoader>)>> {
         let token_pairs = self.all_token_pairs().await?;
 
         let pools = futures::future::try_join_all(
             token_pairs
                 .into_iter()
-                .map(|pair| self.pool_data(pair.token0, pair.token1, block_number)),
+                .map(|pair| self.pool_data(pair.token0, pair.token1, block_number))
         )
         .await?;
 
@@ -107,18 +108,9 @@ pub trait AngstromDataApi {
 
     async fn pool_config_store(
         &self,
-        block_number: Option<u64>,
+        block_number: Option<u64>
     ) -> eyre::Result<AngstromPoolConfigStore>;
 }
-
-alloy::sol!(
-        type StoreKey is bytes27;
-        struct Pool {
-            address asset0;
-            address asset1;
-        }
-        mapping(StoreKey key => Pool) public pools;
-);
 
 impl<P: Provider> AngstromDataApi for P {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
@@ -129,7 +121,7 @@ impl<P: Provider> AngstromDataApi for P {
             view_call(
                 self,
                 CONTROLLER_V1_ADDRESS,
-                poolsCall { key: FixedBytes::from(*key.pool_partial_key) },
+                getPoolByKeyCall { key: FixedBytes::from(*key.pool_partial_key) }
             )
         }))
         .await?;
@@ -137,7 +129,11 @@ impl<P: Provider> AngstromDataApi for P {
         Ok(all_pools_call
             .into_iter()
             .map(|val_res| {
-                val_res.map(|val| TokenPairInfo { token0: val._0, token1: val._1, is_active: true })
+                val_res.map(|val| TokenPairInfo {
+                    token0:    val.asset0,
+                    token1:    val.asset1,
+                    is_active: true
+                })
             })
             .collect::<Result<Vec<_>, _>>()?)
     }
@@ -154,7 +150,7 @@ impl<P: Provider> AngstromDataApi for P {
             view_call(self, address, MintableMockERC20::symbolCall {}).and_then(
                 async move |val_res| {
                     Ok(val_res.map(|val| TokenInfoWithMeta { address, symbol: val }))
-                },
+                }
             )
         }))
         .await?
@@ -171,18 +167,18 @@ impl<P: Provider> AngstromDataApi for P {
             .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
 
         Ok(PoolKey {
-            currency0: token0,
-            currency1: token1,
-            fee: U24::from(pool_config_store.fee_in_e6),
+            currency0:   token0,
+            currency1:   token1,
+            fee:         U24::from(pool_config_store.fee_in_e6),
             tickSpacing: I24::unchecked_from(pool_config_store.tick_spacing),
-            hooks: ANGSTROM_ADDRESS,
+            hooks:       ANGSTROM_ADDRESS
         })
     }
 
     async fn historical_orders(
         &self,
         filter: HistoricalOrdersFilter,
-        block_stream_buffer: Option<usize>,
+        block_stream_buffer: Option<usize>
     ) -> eyre::Result<Vec<HistoricalOrders>> {
         let filter = &filter;
         let pool_stores = &AngstromPoolTokenIndexToPair::new_with_tokens(self, filter).await?;
@@ -215,7 +211,7 @@ impl<P: Provider> AngstromDataApi for P {
         &self,
         start_block: Option<u64>,
         end_block: Option<u64>,
-        block_stream_buffer: Option<usize>,
+        block_stream_buffer: Option<usize>
     ) -> eyre::Result<Vec<AngstromBundle>> {
         let start_block = start_block.unwrap_or(ANGSTROM_DEPLOYED_BLOCK);
         let end_block = if let Some(e) = end_block { e } else { self.get_block_number().await? };
@@ -238,7 +234,7 @@ impl<P: Provider> AngstromDataApi for P {
                             let call = executeCall::abi_decode(input).ok()?;
                             let mut input = call.encoded.as_ref();
                             AngstromBundle::pade_decode(&mut input, None).ok()
-                        }),
+                        })
                 )
             })
             .buffer_unordered(block_stream_buffer.unwrap_or(10));
@@ -255,7 +251,7 @@ impl<P: Provider> AngstromDataApi for P {
         &self,
         token0: Address,
         token1: Address,
-        block_number: Option<u64>,
+        block_number: Option<u64>
     ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
         let (token0, token1) = sort_tokens(token0, token1);
 
@@ -270,7 +266,7 @@ impl<P: Provider> AngstromDataApi for P {
             private_pool_id,
             public_pool_id,
             registry,
-            POOL_MANAGER_ADDRESS,
+            POOL_MANAGER_ADDRESS
         );
 
         let mut enhanced_uni_pool = EnhancedUniswapPool::new(data_loader, 200);
@@ -287,12 +283,12 @@ impl<P: Provider> AngstromDataApi for P {
 
     async fn pool_config_store(
         &self,
-        block_number: Option<u64>,
+        block_number: Option<u64>
     ) -> eyre::Result<AngstromPoolConfigStore> {
         AngstromPoolConfigStore::load_from_chain(
             ANGSTROM_ADDRESS,
             block_number.map(Into::into).unwrap_or(BlockId::latest()),
-            self,
+            self
         )
         .await
         .map_err(|e| eyre::eyre!("{e:?}"))
@@ -346,11 +342,11 @@ mod tests {
 
         let pool_key = provider.pool_key(token0, token1).await.unwrap();
         let expected_pool_key = PoolKey {
-            currency0: token0,
-            currency1: token1,
-            fee: U24::ZERO,
+            currency0:   token0,
+            currency1:   token1,
+            fee:         U24::ZERO,
             tickSpacing: I24::unchecked_from(30),
-            hooks: ANGSTROM_ADDRESS,
+            hooks:       ANGSTROM_ADDRESS
         };
 
         assert_eq!(pool_key, expected_pool_key);
