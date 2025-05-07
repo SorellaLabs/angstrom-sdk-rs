@@ -41,7 +41,7 @@ pub const POOL_MANAGER_ADDRESS: alloy_primitives::Address =
 #[cfg(not(feature = "testnet-sepolia"))]
 pub const ANGSTROM_DEPLOYED_BLOCK: u64 = 0;
 #[cfg(feature = "testnet-sepolia")]
-pub const ANGSTROM_DEPLOYED_BLOCK: u64 = 7838402;
+pub const ANGSTROM_DEPLOYED_BLOCK: u64 = 8276506;
 
 #[cfg(not(feature = "testnet-sepolia"))]
 pub const USDC: alloy_primitives::Address =
