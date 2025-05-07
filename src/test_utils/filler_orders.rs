@@ -1,6 +1,6 @@
 use std::{
     fmt::Debug,
-    sync::{Arc, RwLock}
+    sync::{Arc, RwLock},
 };
 
 use alloy_eips::BlockId;
@@ -16,15 +16,15 @@ use angstrom_types::{
         grouped_orders::AllOrders,
         rpc_orders::{
             ExactFlashOrder, ExactStandingOrder, PartialFlashOrder, PartialStandingOrder,
-            TopOfBlockOrder
-        }
-    }
+            TopOfBlockOrder,
+        },
+    },
 };
 use jsonrpsee_http_client::HttpClient;
 use revm::{
     Context, ExecuteEvm, MainBuilder,
     context::{BlockEnv, TxEnv},
-    primitives::hardfork::SpecId
+    primitives::hardfork::SpecId,
 };
 use revm_database::{AlloyDB, CacheDB, EmptyDBTyped, WrapDatabaseAsync};
 use rust_utils::ToHashMapByKey;
@@ -35,15 +35,15 @@ use uniswap_v4::uniswap::pool_manager::{SyncedUniswapPools, TickRangeToLoad};
 use crate::{
     apis::{data_api::AngstromDataApi, node_api::AngstromOrderApiClient},
     providers::backend::{AlloyRpcProvider, AngstromProvider},
-    test_utils::{ANGSTROM_HTTP_URL, ETH_WS_URL}
+    test_utils::{ANGSTROM_HTTP_URL, ETH_WS_URL},
 };
 
 pub async fn make_order_generator<P, T>(
-    provider: &AngstromProvider<P, T>
+    provider: &AngstromProvider<P, T>,
 ) -> eyre::Result<(OrderGenerator, tokio::sync::mpsc::Receiver<(TickRangeToLoad, Arc<Notify>)>)>
 where
     P: Provider,
-    T: AngstromOrderApiClient
+    T: AngstromOrderApiClient,
 {
     let block_number = provider.eth_provider().get_block_number().await?;
 
@@ -51,14 +51,14 @@ where
         .all_pool_data(Some(block_number))
         .await?
         .into_iter()
-        .hashmap_by_key_val(|(_, pool)| (pool.address(), Arc::new(RwLock::new(pool))));
+        .hashmap_by_key_val(|(_, pool)| (pool.public_address(), Arc::new(RwLock::new(pool))));
 
     let (tx, rx) = tokio::sync::mpsc::channel(100);
     let generator = OrderGenerator::new(
         SyncedUniswapPools::new(Arc::new(uniswap_pools.into_iter().collect()), tx),
         block_number,
         20..50,
-        0.5..0.7
+        0.5..0.7,
     );
 
     Ok((generator, rx))
@@ -114,11 +114,11 @@ pub fn generate_any_order_for_all(order_generator: &OrderGenerator) -> AllOrders
 
 #[derive(Debug, Clone, Default)]
 pub struct AllOrdersSpecific {
-    pub tob:              TopOfBlockOrder,
-    pub partial_flash:    PartialFlashOrder,
-    pub exact_flash:      ExactFlashOrder,
+    pub tob: TopOfBlockOrder,
+    pub partial_flash: PartialFlashOrder,
+    pub exact_flash: ExactFlashOrder,
     pub partial_standing: PartialStandingOrder,
-    pub exact_standing:   ExactStandingOrder
+    pub exact_standing: ExactStandingOrder,
 }
 
 impl AllOrdersSpecific {
@@ -134,15 +134,15 @@ impl AllOrdersSpecific {
             AllOrders::PartialFlash(order) => partial_flash = Some(order),
             AllOrders::ExactStanding(order) => exact_standing = Some(order),
             AllOrders::PartialStanding(order) => partial_standing = Some(order),
-            AllOrders::TOB(order) => tob = Some(order)
+            AllOrders::TOB(order) => tob = Some(order),
         });
 
         Self {
-            tob:              tob.unwrap(),
-            partial_flash:    partial_flash.unwrap(),
-            exact_flash:      exact_flash.unwrap(),
+            tob: tob.unwrap(),
+            partial_flash: partial_flash.unwrap(),
+            exact_flash: exact_flash.unwrap(),
             partial_standing: partial_standing.unwrap(),
-            exact_standing:   exact_standing.unwrap()
+            exact_standing: exact_standing.unwrap(),
         }
     }
 
@@ -161,15 +161,15 @@ impl AllOrdersSpecific {
 pub fn match_all_orders<O>(
     order0: &AllOrders,
     order1: &AllOrders,
-    f: impl Fn(&AllOrders) -> Option<O>
+    f: impl Fn(&AllOrders) -> Option<O>,
 ) -> Option<(O, O)> {
     f(order0).zip(f(order1))
 }
 
 pub struct AnvilAngstromProvider {
     pub provider: AngstromProvider<AlloyRpcProvider<RootProvider>, HttpClient>,
-    handle:       Handle,
-    _anvil:       AnvilInstance
+    handle: Handle,
+    _anvil: AnvilInstance,
 }
 
 impl AnvilAngstromProvider {
@@ -193,7 +193,7 @@ impl AnvilAngstromProvider {
                 .with_recommended_fillers()
                 .connect(&eth_ipc)
                 .await?,
-            &angstrom_http_url
+            &angstrom_http_url,
         )?;
 
         Ok(Self { provider, _anvil: anvil, handle: tokio::runtime::Handle::current().clone() })
@@ -216,13 +216,13 @@ impl AnvilAngstromProvider {
 fn find_slot_offset_for_balance<P: Provider>(
     provider: &P,
     token_address: Address,
-    handle: Handle
+    handle: Handle,
 ) -> eyre::Result<u64> {
     let probe_address = Address::random();
 
     let mut db = CacheDB::new(Arc::new(WrapDatabaseAsync::with_handle(
         AlloyDB::new(provider.root().clone(), BlockId::latest()),
-        handle
+        handle,
     )));
 
     // check the first 100 offsets
