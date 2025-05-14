@@ -1,11 +1,10 @@
 use std::collections::HashSet;
 
-use alloy_primitives::{Address, B256, FixedBytes, U256};
+use alloy_primitives::{Address, B256, FixedBytes, TxHash, U256};
 use angstrom_rpc::{
     api::OrderApiClient,
     types::{
-        CallResult, OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult,
-        PendingOrder,
+        OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult, PendingOrder,
     },
 };
 use angstrom_types::{
@@ -29,12 +28,17 @@ impl AngstromOrderApiClient for WsClient {}
 pub trait AngstromNodeApi<T: AngstromOrderApiClient> {
     fn angstrom_rpc_provider(&self) -> &T;
 
-    async fn send_order(&self, order: AllOrders) -> Result<CallResult, AngstromSdkError> {
+    async fn send_order(&self, order: AllOrders) -> Result<TxHash, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
-        provider
-            .send_order(order)
-            .await?
-            .map_err(AngstromSdkError::AngstromRpc)
+        let result = provider.send_order(order).await?;
+
+        let out = if result.is_success {
+            Ok(serde_json::from_value(result.data).unwrap())
+        } else {
+            Err(result.msg)
+        };
+
+        out.map_err(AngstromSdkError::AngstromRpc)
     }
 
     async fn pending_order(&self, from: Address) -> Result<Vec<PendingOrder>, AngstromSdkError> {
@@ -61,9 +65,9 @@ pub trait AngstromNodeApi<T: AngstromOrderApiClient> {
             .map_err(AngstromSdkError::AngstromRpc)
     }
 
-    async fn order_status(&self, order_hash: B256) -> Result<CallResult, AngstromSdkError> {
+    async fn order_status(&self, order_hash: B256) -> Result<OrderStatus, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
-        Ok(provider.order_status(order_hash).await?)
+        Ok(serde_json::from_value(provider.order_status(order_hash).await?.data).unwrap())
     }
 
     async fn orders_by_pool_id(
@@ -101,7 +105,15 @@ pub trait AngstromNodeApi<T: AngstromOrderApiClient> {
             .send_orders(orders)
             .await?
             .into_iter()
-            .map(|order| order.map_err(AngstromSdkError::AngstromRpc))
+            .map(|result| {
+                let out = if result.is_success {
+                    Ok(serde_json::from_value(result.data).unwrap())
+                } else {
+                    Err(result.msg)
+                };
+
+                out.map_err(AngstromSdkError::AngstromRpc)
+            })
             .collect())
     }
 
@@ -137,9 +149,14 @@ pub trait AngstromNodeApi<T: AngstromOrderApiClient> {
     async fn status_of_orders(
         &self,
         order_hashes: Vec<B256>,
-    ) -> Result<Vec<CallResult>, AngstromSdkError> {
+    ) -> Result<Vec<OrderStatus>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
-        Ok(provider.status_of_orders(order_hashes).await?)
+        Ok(provider
+            .status_of_orders(order_hashes)
+            .await?
+            .into_iter()
+            .map(|s| serde_json::from_value(s.data).unwrap())
+            .collect())
     }
 
     async fn orders_by_pool_ids(
