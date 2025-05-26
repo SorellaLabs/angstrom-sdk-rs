@@ -86,6 +86,7 @@ impl FillFrom<NonceGeneratorFiller> for Option<u64> {
 #[cfg(test)]
 mod tests {
     use alloy_provider::RootProvider;
+    use jsonrpsee_http_client::HttpClient;
     use jsonrpsee_ws_client::WsClient;
 
     use super::*;
@@ -102,7 +103,7 @@ mod tests {
     async fn spawn_api_with_filler() -> eyre::Result<
         AngstromApi<
             AlloyRpcProvider<RootProvider>,
-            WsClient,
+            HttpClient,
             AngstromFillProvider<(), NonceGeneratorFiller>
         >
     > {

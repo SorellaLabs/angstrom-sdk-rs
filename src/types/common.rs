@@ -80,7 +80,7 @@ pub(crate) fn sort_tokens(token0: Address, token1: Address) -> (Address, Address
     if token0 < token1 { (token0, token1) } else { (token1, token0) }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct UserLiquidityPosition {
     pub pool_id:    PoolId,
     pub token_id:   U256,
