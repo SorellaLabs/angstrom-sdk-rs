@@ -75,7 +75,7 @@ impl<P: Provider, T: AngstromOrderApiClient> AngstromProvider<P, T> {
     {
         let eth_provider = alloy_provider::builder::<Ethereum>()
             .wallet(EthereumWallet::new(signer))
-            .on_provider(self.eth_provider);
+            .connect_provider(self.eth_provider);
 
         AngstromProvider { eth_provider, angstrom_provider: self.angstrom_provider }
     }

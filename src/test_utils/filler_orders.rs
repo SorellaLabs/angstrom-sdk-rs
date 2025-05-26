@@ -12,7 +12,6 @@ use angstrom_types::{
     CHAIN_ID,
     primitive::ERC20,
     sol_bindings::{
-        RawPoolOrder,
         grouped_orders::AllOrders,
         rpc_orders::{
             ExactFlashOrder, ExactStandingOrder, PartialFlashOrder, PartialStandingOrder,
@@ -33,17 +32,21 @@ use tokio::{runtime::Handle, sync::Notify};
 use uniswap_v4::uniswap::pool_manager::{SyncedUniswapPools, TickRangeToLoad};
 
 use crate::{
-    apis::{data_api::AngstromDataApi, node_api::AngstromOrderApiClient},
+    apis::{
+        AngstromNodeApi,
+        data_api::AngstromDataApi,
+        node_api::{AngstromOrderApiClient, AngstromOrderApiClientClone}
+    },
     providers::backend::{AlloyRpcProvider, AngstromProvider},
     test_utils::{ANGSTROM_HTTP_URL, ETH_WS_URL}
 };
 
 pub async fn make_order_generator<P, T>(
     provider: &AngstromProvider<P, T>
-) -> eyre::Result<(OrderGenerator, tokio::sync::mpsc::Receiver<(TickRangeToLoad, Arc<Notify>)>)>
+) -> eyre::Result<(OrderGenerator<T>, tokio::sync::mpsc::Receiver<(TickRangeToLoad, Arc<Notify>)>)>
 where
     P: Provider,
-    T: AngstromOrderApiClient
+    T: AngstromOrderApiClientClone
 {
     let block_number = provider.eth_provider().get_block_number().await?;
 
@@ -52,11 +55,13 @@ where
         .await?
         .into_iter()
         .hashmap_by_key_val(|(_, pool)| (pool.public_address(), Arc::new(RwLock::new(pool))));
+    let cloned = provider.angstrom_rpc_provider().clone();
 
     let (tx, rx) = tokio::sync::mpsc::channel(100);
     let generator = OrderGenerator::new(
         SyncedUniswapPools::new(Arc::new(uniswap_pools.into_iter().collect()), tx),
         block_number,
+        cloned,
         20..50,
         0.5..0.7
     );
@@ -64,53 +69,53 @@ where
     Ok((generator, rx))
 }
 
-pub fn generate_any_order_for_all(order_generator: &OrderGenerator) -> AllOrdersSpecific {
-    let mut bitmap = 0x0000;
-    let mut all_orders = Vec::new();
-
-    loop {
-        for order in order_generator.generate_orders() {
-            if all_orders.is_empty() {
-                all_orders.push(AllOrders::TOB(order.tob));
-            }
-
-            for book_order in &order.book {
-                let is_parital = book_order.is_partial();
-                let is_standing = book_order.deadline().is_some();
-                match (is_parital, is_standing) {
-                    (true, true) => {
-                        if bitmap & 0b0001 == 0 {
-                            all_orders.push(book_order.clone())
-                        }
-                        bitmap |= 0b0001;
-                    }
-                    (false, true) => {
-                        if bitmap & 0b0010 == 0 {
-                            all_orders.push(book_order.clone())
-                        }
-                        bitmap |= 0b0010;
-                    }
-                    (true, false) => {
-                        if bitmap & 0b0100 == 0 {
-                            all_orders.push(book_order.clone())
-                        }
-                        bitmap |= 0b0100;
-                    }
-                    (false, false) => {
-                        if bitmap & 0b1000 == 0 {
-                            all_orders.push(book_order.clone())
-                        }
-                        bitmap |= 0b1000;
-                    }
-                }
-            }
-        }
-
-        if bitmap == 0x1111 {
-            break AllOrdersSpecific::new(all_orders);
-        }
-    }
-}
+// pub async fn generate_any_order_for_all(order_generator: &OrderGenerator) ->
+// AllOrdersSpecific {     let mut bitmap = 0x0000;
+//     let mut all_orders = Vec::new();
+//
+//     loop {
+//         for order in order_generator.generate_orders() {
+//             if all_orders.is_empty() {
+//                 all_orders.push(AllOrders::TOB(order.tob));
+//             }
+//
+//             for book_order in &order.book {
+//                 let is_parital = book_order.is_partial();
+//                 let is_standing = book_order.deadline().is_some();
+//                 match (is_parital, is_standing) {
+//                     (true, true) => {
+//                         if bitmap & 0b0001 == 0 {
+//                             all_orders.push(book_order.clone())
+//                         }
+//                         bitmap |= 0b0001;
+//                     }
+//                     (false, true) => {
+//                         if bitmap & 0b0010 == 0 {
+//                             all_orders.push(book_order.clone())
+//                         }
+//                         bitmap |= 0b0010;
+//                     }
+//                     (true, false) => {
+//                         if bitmap & 0b0100 == 0 {
+//                             all_orders.push(book_order.clone())
+//                         }
+//                         bitmap |= 0b0100;
+//                     }
+//                     (false, false) => {
+//                         if bitmap & 0b1000 == 0 {
+//                             all_orders.push(book_order.clone())
+//                         }
+//                         bitmap |= 0b1000;
+//                     }
+//                 }
+//             }
+//         }
+//
+//         if bitmap == 0x1111 {
+//             break AllOrdersSpecific::new(all_orders);
+//         }
+//     }
+// }
 
 #[derive(Debug, Clone, Default)]
 pub struct AllOrdersSpecific {

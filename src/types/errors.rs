@@ -10,5 +10,7 @@ pub enum AngstromSdkError {
     #[error("jsonrpsee error: {0:?}")]
     Jsonrpsee(#[from] jsonrpsee_core::ClientError),
     #[error("angstrom-rpc error: {0:?}")]
-    AngstromRpc(String)
+    AngstromRpc(String),
+    #[error(transparent)]
+    Deser(#[from] serde_json::Error)
 }

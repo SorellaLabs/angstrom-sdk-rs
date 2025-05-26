@@ -21,7 +21,10 @@ use crate::types::errors::AngstromSdkError;
 
 #[auto_impl(&, Box, Arc)]
 pub trait AngstromOrderApiClient: OrderApiClient + Sync {}
+#[auto_impl(&, Box, Arc)]
+pub trait AngstromOrderApiClientClone: AngstromOrderApiClient + Clone + Sync {}
 impl AngstromOrderApiClient for HttpClient {}
+impl AngstromOrderApiClientClone for HttpClient {}
 impl AngstromOrderApiClient for WsClient {}
 
 #[auto_impl(&, Box, Arc)]
@@ -30,10 +33,7 @@ pub trait AngstromNodeApi<T: AngstromOrderApiClient> {
 
     async fn send_order(&self, order: AllOrders) -> Result<FixedBytes<32>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
-        provider
-            .send_order(order)
-            .await?
-            .map_err(AngstromSdkError::AngstromRpc)
+        serde_json::from_value(provider.send_order(order).await?.data).map_err(Into::into)
     }
 
     async fn pending_order(&self, from: Address) -> Result<Vec<PendingOrder>, AngstromSdkError> {
@@ -62,7 +62,7 @@ pub trait AngstromNodeApi<T: AngstromOrderApiClient> {
 
     async fn order_status(&self, order_hash: B256) -> Result<OrderStatus, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
-        Ok(provider.order_status(order_hash).await?)
+        serde_json::from_value(provider.order_status(order_hash).await?.data).map_err(Into::into)
     }
 
     async fn orders_by_pool_id(
@@ -100,7 +100,7 @@ pub trait AngstromNodeApi<T: AngstromOrderApiClient> {
             .send_orders(orders)
             .await?
             .into_iter()
-            .map(|order| order.map_err(AngstromSdkError::AngstromRpc))
+            .map(|order| serde_json::from_value(order.data).map_err(Into::into))
             .collect())
     }
 
@@ -138,7 +138,12 @@ pub trait AngstromNodeApi<T: AngstromOrderApiClient> {
         order_hashes: Vec<B256>
     ) -> Result<Vec<OrderStatus>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
-        Ok(provider.status_of_orders(order_hashes).await?)
+        provider
+            .status_of_orders(order_hashes)
+            .await?
+            .into_iter()
+            .map(|order| serde_json::from_value(order.data).map_err(Into::into))
+            .collect::<Result<Vec<_>, AngstromSdkError>>()
     }
 
     async fn orders_by_pool_ids(
@@ -191,10 +196,10 @@ mod tests {
         ) -> Result<Self, AngstromSdkError>
         where
             P: Provider,
-            T: AngstromOrderApiClient
+            T: AngstromOrderApiClientClone
         {
             let (generator, _rx) = make_order_generator(provider).await.unwrap();
-            let orders = generator.generate_orders();
+            let orders = generator.generate_orders().await;
 
             let tob_order = AllOrders::TOB(get_tob_order(&orders));
             let tob_order_sent = provider.send_order(tob_order.clone()).await;
@@ -277,7 +282,7 @@ mod tests {
         let (generator, _rx) = make_order_generator(provider.angstrom_provider())
             .await
             .unwrap();
-        let orders = generator.generate_orders();
+        let orders = generator.generate_orders().await;
 
         let tob_order = AllOrders::TOB(get_tob_order(&orders));
         let tokens = sort_tokens(tob_order.token_in(), tob_order.token_out());

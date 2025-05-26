@@ -3,7 +3,7 @@ pub mod valid_orders;
 
 use alloy_provider::{Provider, RootProvider};
 use angstrom_types::primitive::AngstromSigner;
-use jsonrpsee_ws_client::WsClient;
+use jsonrpsee_http_client::HttpClient;
 
 use crate::{
     AngstromApi,
@@ -41,16 +41,16 @@ pub fn testing_private_key() -> AngstromSigner {
 }
 
 async fn spawn_angstrom_provider()
--> eyre::Result<AngstromProvider<AlloyRpcProvider<RootProvider>, WsClient>> {
+-> eyre::Result<AngstromProvider<AlloyRpcProvider<RootProvider>, HttpClient>> {
     let eth_provider = RootProvider::builder()
         .with_recommended_fillers()
         .connect(&eth_ws_url())
         .await?;
-    Ok(AngstromProvider::new_angstrom_ws(eth_provider, &angstrom_http_url()).await?)
+    Ok(AngstromProvider::new_angstrom_http(eth_provider, &angstrom_http_url())?)
 }
 
 pub async fn spawn_angstrom_api()
--> eyre::Result<AngstromApi<AlloyRpcProvider<RootProvider>, WsClient>> {
+-> eyre::Result<AngstromApi<AlloyRpcProvider<RootProvider>, HttpClient>> {
     Ok(AngstromApi::new_with_provider(spawn_angstrom_provider().await?))
 }
 
