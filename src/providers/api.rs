@@ -36,23 +36,35 @@ where
     T: AngstromOrderApiClient
 {
     provider: AngstromProvider<P, T>,
-    filler:   F
+    filler:   F,
+
+    angstrom_contract: Address
 }
 
 impl<P: Provider> AngstromApi<P, HttpClient> {
-    pub fn new_angstrom_http(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
+    pub fn new_angstrom_http(
+        eth_provider: P,
+        angstrom_url: &str,
+        angstrom_contract: Address
+    ) -> eyre::Result<Self> {
         Ok(Self {
             provider: AngstromProvider::new_angstrom_http(eth_provider, angstrom_url)?,
-            filler:   ()
+            filler: (),
+            angstrom_contract
         })
     }
 }
 
 impl<P: Provider> AngstromApi<P, WsClient> {
-    pub async fn new_angstrom_ws(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
+    pub async fn new_angstrom_ws(
+        eth_provider: P,
+        angstrom_url: &str,
+        angstrom_contract: Address
+    ) -> eyre::Result<Self> {
         Ok(Self {
             provider: AngstromProvider::new_angstrom_ws(eth_provider, angstrom_url).await?,
-            filler:   ()
+            filler: (),
+            angstrom_contract
         })
     }
 }
@@ -62,7 +74,7 @@ where
     P: Provider,
     T: AngstromOrderApiClient
 {
-    pub fn new_with_provider(provider: AngstromProvider<P, T>) -> Self {
+    pub fn new_with_provider(provider: AngstromProvider<P, T>, angstrom_contract: Address) -> Self {
         Self { provider, filler: () }
     }
 }
