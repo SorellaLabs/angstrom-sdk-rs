@@ -109,26 +109,18 @@ auto_impl = "1.3"
 
 [dev-dependencies]
 revm = { version = "22.0.1", features = [
-    "std",
-    "secp256k1",
-    "optional_balance_check",
-    "optional_block_gas_limit",
-    "alloydb",
+  "std",
+  "secp256k1",
+  "optional_balance_check",
+  "optional_block_gas_limit",
+  "alloydb",
 ], default-features = false }
 revm-database = { version = "3.0.0", default-features = false }
 
 
 [features]
-default = ["full", "testnet-sepolia"]
+default = ["full"]
 full = ["ipc", "ws"]
 
 ipc = []
 ws = []
-
-testnet-sepolia = [
-    "angstrom-types/testnet-sepolia",
-    "validation/testnet-sepolia",
-    "angstrom-rpc/testnet-sepolia",
-    "uniswap-v4/testnet-sepolia",
-    "testing-tools/testnet-sepolia",
-]
