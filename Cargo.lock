@@ -1844,56 +1844,28 @@ name = "angstrom-sdk-rs"
 version = "0.1.0"
 dependencies = [
  "alloy 1.0.9",
- "alloy-chains",
  "alloy-consensus 1.0.9",
- "alloy-dyn-abi",
  "alloy-eips 1.0.9",
- "alloy-genesis 1.0.9",
  "alloy-json-rpc 1.0.9",
  "alloy-network 1.0.9",
  "alloy-node-bindings",
  "alloy-primitives",
  "alloy-provider 1.0.9",
- "alloy-pubsub",
- "alloy-rlp",
- "alloy-rlp-derive",
- "alloy-rpc-client 1.0.9",
  "alloy-rpc-types 1.0.9",
- "alloy-rpc-types-admin",
- "alloy-rpc-types-anvil",
- "alloy-rpc-types-beacon",
- "alloy-rpc-types-engine",
- "alloy-rpc-types-eth 1.0.9",
- "alloy-rpc-types-txpool",
- "alloy-serde 1.0.9",
  "alloy-signer 1.0.9",
  "alloy-signer-local 1.0.9",
- "alloy-sol-macro",
  "alloy-sol-types",
- "alloy-transport 1.0.9",
- "alloy-transport-http 1.0.9",
- "alloy-transport-ipc",
- "alloy-transport-ws",
- "alloy-trie",
  "angstrom-rpc",
  "angstrom-types",
  "auto_impl",
  "dotenv",
  "eyre",
  "futures",
- "itertools 0.12.1",
- "jsonrpsee",
  "jsonrpsee-core",
  "jsonrpsee-http-client",
- "jsonrpsee-types",
  "jsonrpsee-ws-client",
- "malachite",
- "malachite-q",
  "pade",
- "pade-macro",
- "parking_lot",
  "rand 0.9.1",
- "reqwest",
  "revm 22.0.1",
  "revm-database 3.0.0",
  "rust-utils",
@@ -5557,15 +5529,6 @@ name = "itertools"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
 dependencies = [
  "either",
 ]
