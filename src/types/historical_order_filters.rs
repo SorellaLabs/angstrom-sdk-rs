@@ -11,11 +11,11 @@ use alloy_sol_types::SolCall;
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::{PoolKey, executeCall},
     contract_payloads::angstrom::{AngstromBundle, TopOfBlockOrder, UserOrder},
-    primitive::PoolId
+    primitive::{ANGSTROM_ADDRESS, PoolId}
 };
 use pade::PadeDecode;
 
-use super::{ANGSTROM_ADDRESS, PoolMetadata};
+use super::PoolMetadata;
 use crate::apis::data_api::AngstromDataApi;
 
 #[derive(Debug, Default, Clone)]
@@ -69,7 +69,7 @@ impl HistoricalOrdersFilter {
         block
             .transactions
             .into_transactions()
-            .filter(|tx| tx.to() == Some(ANGSTROM_ADDRESS))
+            .filter(|tx| tx.to() == Some(*ANGSTROM_ADDRESS.get().unwrap()))
             .filter_map(|transaction| {
                 let input: &[u8] = transaction.input();
                 let call = executeCall::abi_decode(input).ok()?;

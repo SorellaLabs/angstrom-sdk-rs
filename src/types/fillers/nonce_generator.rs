@@ -1,13 +1,13 @@
 use alloy_primitives::{Address, U256};
 use alloy_provider::Provider;
-use angstrom_types::sol_bindings::{RawPoolOrder, grouped_orders::AllOrders};
+use angstrom_types::{
+    primitive::ANGSTROM_ADDRESS,
+    sol_bindings::{RawPoolOrder, grouped_orders::AllOrders}
+};
 use validation::order::state::db_state_utils::nonces::Nonces;
 
 use super::{FillFrom, FillWrapper, errors::FillerError};
-use crate::{
-    apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider,
-    types::ANGSTROM_ADDRESS
-};
+use crate::{apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider};
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct NonceGeneratorFiller;
@@ -17,14 +17,14 @@ impl NonceGeneratorFiller {
         user: Address,
         provider: &P
     ) -> Result<u64, FillerError> {
-        let nonce_tracker = Nonces::new(ANGSTROM_ADDRESS);
+        let nonce_tracker = Nonces::new(*ANGSTROM_ADDRESS.get().unwrap());
 
         let mut nonce: u64 = rand::random();
         loop {
             let slot = nonce_tracker.get_nonce_word_slot(user, nonce);
 
             let word = provider
-                .get_storage_at(ANGSTROM_ADDRESS, slot.into())
+                .get_storage_at(*ANGSTROM_ADDRESS.get().unwrap(), slot.into())
                 .await?;
 
             let flag = U256::from(1) << (nonce as u8);
@@ -87,7 +87,6 @@ impl FillFrom<NonceGeneratorFiller> for Option<u64> {
 mod tests {
     use alloy_provider::RootProvider;
     use jsonrpsee_http_client::HttpClient;
-    use jsonrpsee_ws_client::WsClient;
 
     use super::*;
     use crate::{

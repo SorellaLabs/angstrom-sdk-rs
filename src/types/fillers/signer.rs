@@ -1,17 +1,17 @@
 use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
-use angstrom_types::sol_bindings::{
-    grouped_orders::AllOrders,
-    rpc_orders::{OmitOrderMeta, OrderMeta}
+use angstrom_types::{
+    primitive::ANGSTROM_DOMAIN,
+    sol_bindings::{
+        grouped_orders::AllOrders,
+        rpc_orders::{OmitOrderMeta, OrderMeta}
+    }
 };
 use pade::PadeEncode;
 
 use super::{FillFrom, FillWrapper, errors::FillerError};
-use crate::{
-    apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider,
-    types::ANGSTROM_DOMAIN
-};
+use crate::{apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider};
 
 #[derive(Clone)]
 pub struct AngstromSignerFiller<S>(S);
@@ -22,7 +22,7 @@ impl<S: Signer + SignerSync + Clone> AngstromSignerFiller<S> {
     }
 
     fn sign_into_meta<O: OmitOrderMeta>(&self, order: &O) -> Result<OrderMeta, FillerError> {
-        let hash = order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
+        let hash = order.no_meta_eip712_signing_hash(ANGSTROM_DOMAIN.get().unwrap());
         let sig = self.0.sign_hash_sync(&hash)?;
         Ok(OrderMeta {
             isEcdsa:   true,

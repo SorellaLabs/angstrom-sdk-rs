@@ -18,7 +18,10 @@ use angstrom_types::{
         mintable_mock_erc_20::MintableMockERC20
     },
     contract_payloads::angstrom::{AngstromBundle, AngstromPoolConfigStore},
-    primitive::PoolId
+    primitive::{
+        ANGSTROM_ADDRESS, ANGSTROM_DEPLOYED_BLOCK, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS,
+        PoolId
+    }
 };
 use futures::{StreamExt, TryFutureExt};
 use pade::PadeDecode;
@@ -60,7 +63,7 @@ pub trait AngstromDataApi {
                     currency1:   *token1,
                     fee:         U24::from(v.fee_in_e6),
                     tickSpacing: I24::unchecked_from(v.tick_spacing),
-                    hooks:       ANGSTROM_ADDRESS
+                    hooks:       *ANGSTROM_ADDRESS.get().unwrap()
                 }
             })
             .collect())
@@ -120,7 +123,7 @@ impl<P: Provider> AngstromDataApi for P {
         let all_pools_call = futures::future::try_join_all(partial_key_entries.iter().map(|key| {
             view_call(
                 self,
-                CONTROLLER_V1_ADDRESS,
+                *CONTROLLER_V1_ADDRESS.get().unwrap(),
                 getPoolByKeyCall { key: FixedBytes::from(*key.pool_partial_key) }
             )
         }))
@@ -171,7 +174,7 @@ impl<P: Provider> AngstromDataApi for P {
             currency1:   token1,
             fee:         U24::from(pool_config_store.fee_in_e6),
             tickSpacing: I24::unchecked_from(pool_config_store.tick_spacing),
-            hooks:       ANGSTROM_ADDRESS
+            hooks:       *ANGSTROM_ADDRESS.get().unwrap()
         })
     }
 
@@ -183,7 +186,9 @@ impl<P: Provider> AngstromDataApi for P {
         let filter = &filter;
         let pool_stores = &AngstromPoolTokenIndexToPair::new_with_tokens(self, filter).await?;
 
-        let start_block = filter.from_block.unwrap_or(ANGSTROM_DEPLOYED_BLOCK);
+        let start_block = filter
+            .from_block
+            .unwrap_or(*ANGSTROM_DEPLOYED_BLOCK.get().unwrap());
         let end_block =
             if let Some(e) = filter.to_block { e } else { self.get_block_number().await? };
 
@@ -213,7 +218,7 @@ impl<P: Provider> AngstromDataApi for P {
         end_block: Option<u64>,
         block_stream_buffer: Option<usize>
     ) -> eyre::Result<Vec<AngstromBundle>> {
-        let start_block = start_block.unwrap_or(ANGSTROM_DEPLOYED_BLOCK);
+        let start_block = start_block.unwrap_or(*ANGSTROM_DEPLOYED_BLOCK.get().unwrap());
         let end_block = if let Some(e) = end_block { e } else { self.get_block_number().await? };
 
         let mut block_stream = futures::stream::iter(start_block..=end_block)
@@ -228,7 +233,7 @@ impl<P: Provider> AngstromDataApi for P {
                     block
                         .transactions
                         .into_transactions()
-                        .filter(|tx| tx.to() == Some(ANGSTROM_ADDRESS))
+                        .filter(|tx| tx.to() == Some(*ANGSTROM_ADDRESS.get().unwrap()))
                         .filter_map(|transaction| {
                             let input: &[u8] = transaction.input();
                             let call = executeCall::abi_decode(input).ok()?;
@@ -266,7 +271,7 @@ impl<P: Provider> AngstromDataApi for P {
             private_pool_id,
             public_pool_id,
             registry,
-            POOL_MANAGER_ADDRESS
+            *POOL_MANAGER_ADDRESS.get().unwrap()
         );
 
         let mut enhanced_uni_pool = EnhancedUniswapPool::new(data_loader, 200);
@@ -286,7 +291,7 @@ impl<P: Provider> AngstromDataApi for P {
         block_number: Option<u64>
     ) -> eyre::Result<AngstromPoolConfigStore> {
         AngstromPoolConfigStore::load_from_chain(
-            ANGSTROM_ADDRESS,
+            *ANGSTROM_ADDRESS.get().unwrap(),
             block_number.map(Into::into).unwrap_or(BlockId::latest()),
             self
         )
@@ -346,7 +351,7 @@ mod tests {
             currency1:   token1,
             fee:         U24::ZERO,
             tickSpacing: I24::unchecked_from(30),
-            hooks:       ANGSTROM_ADDRESS
+            hooks:       *ANGSTROM_ADDRESS.get().unwrap()
         };
 
         assert_eq!(pool_key, expected_pool_key);
