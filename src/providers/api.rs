@@ -40,7 +40,7 @@ where
 }
 
 impl<P: Provider> AngstromApi<P, HttpClient> {
-    pub fn new_angstrom_http(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
+    pub(crate) fn new_angstrom_http(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
         Ok(Self {
             provider: AngstromProvider::new_angstrom_http(eth_provider, angstrom_url)?,
             filler:   ()
@@ -49,7 +49,7 @@ impl<P: Provider> AngstromApi<P, HttpClient> {
 }
 
 impl<P: Provider> AngstromApi<P, WsClient> {
-    pub async fn new_angstrom_ws(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
+    pub(crate) async fn new_angstrom_ws(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
         Ok(Self {
             provider: AngstromProvider::new_angstrom_ws(eth_provider, angstrom_url).await?,
             filler:   ()

@@ -1,7 +1,7 @@
-pub mod data_api;
-pub mod node_api;
-pub mod order_builder;
-pub mod user_api;
+pub(crate) mod data_api;
+pub(crate) mod node_api;
+pub(crate) mod order_builder;
+pub(crate) mod user_api;
 pub use data_api::AngstromDataApi;
 pub use node_api::AngstromNodeApi;
 pub use order_builder::AngstromOrderBuilder;
