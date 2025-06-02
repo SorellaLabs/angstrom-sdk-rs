@@ -11,7 +11,6 @@ use jsonrpsee_ws_client::WsClient;
 
 use crate::apis::node_api::AngstromOrderApiClient;
 
-#[derive(Default)]
 pub struct AngstromApiBuilder<P, T, F = ()>
 where
     P: Provider,
@@ -21,6 +20,21 @@ where
     angstrom_url:    &'static str,
     address_builder: Option<AngstromAddressBuilder>,
     _t:              PhantomData<fn() -> (T, F)>
+}
+
+impl<P, T, F> Default for AngstromApiBuilder<P, T, F>
+where
+    P: Provider,
+    T: AngstromOrderApiClient
+{
+    fn default() -> Self {
+        Self {
+            eth_provider:    None,
+            angstrom_url:    "",
+            address_builder: None,
+            _t:              Default::default()
+        }
+    }
 }
 
 impl<P, T, F> AngstromApiBuilder<P, T, F>
