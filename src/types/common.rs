@@ -4,11 +4,10 @@ use alloy_primitives::{
 };
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
-    contract_payloads::angstrom::AngPoolConfigEntry, primitive::PoolId
+    contract_payloads::angstrom::AngPoolConfigEntry,
+    primitive::{ANGSTROM_ADDRESS, PoolId}
 };
 use serde::{Deserialize, Serialize};
-
-use super::ANGSTROM_ADDRESS;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TokenPairInfo {
@@ -41,7 +40,7 @@ impl PoolMetadata {
             currency1:   token1,
             fee:         U24::from(config_store.fee_in_e6),
             tickSpacing: I24::unchecked_from(config_store.tick_spacing),
-            hooks:       ANGSTROM_ADDRESS
+            hooks:       *ANGSTROM_ADDRESS.get().unwrap()
         };
 
         Self {

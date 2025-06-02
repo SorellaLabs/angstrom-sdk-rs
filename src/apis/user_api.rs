@@ -7,12 +7,12 @@ use angstrom_types::{
         angstrom::Angstrom::PoolKey, position_fetcher::PositionFetcher,
         position_manager::PositionManager
     },
-    primitive::PoolId
+    primitive::{POSITION_MANAGER_ADDRESS, PoolId}
 };
 use futures::TryFutureExt;
 
 use super::{data_api::AngstromDataApi, utils::*};
-use crate::types::{POSITION_MANAGER_ADDRESS, UserLiquidityPosition};
+use crate::types::UserLiquidityPosition;
 
 pub trait AngstromUserApi: AngstromDataApi {
     async fn get_positions(
@@ -43,7 +43,7 @@ impl<P: Provider> AngstromUserApi for P {
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
         let user_positons = view_call(
             self,
-            POSITION_MANAGER_ADDRESS,
+            *POSITION_MANAGER_ADDRESS.get().unwrap(),
             PositionFetcher::getPositionsCall {
                 owner:       user_address,
                 tokenId:     U256::from(1u8),
@@ -63,7 +63,7 @@ impl<P: Provider> AngstromUserApi for P {
             futures::future::try_join_all(unique_pool_ids.into_iter().map(|uni_id| {
                 view_call(
                     self,
-                    POSITION_MANAGER_ADDRESS,
+                    *POSITION_MANAGER_ADDRESS.get().unwrap(),
                     PositionManager::poolKeysCall { poolId: uni_id }
                 )
                 .and_then(async move |ang_id_res| {

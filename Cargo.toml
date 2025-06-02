@@ -72,16 +72,8 @@ revm = { version = "22.0.1", features = [
 revm-database = { version = "3.0.0", default-features = false }
 
 [features]
-default = ["full", "testnet-sepolia"]
+default = ["full"]
 full = ["ipc", "ws"]
 
 ipc = []
 ws = []
-
-testnet-sepolia = [
-  "angstrom-types/testnet-sepolia",
-  "validation/testnet-sepolia",
-  "angstrom-rpc/testnet-sepolia",
-  "uniswap-v4/testnet-sepolia",
-  "testing-tools/testnet-sepolia",
-]

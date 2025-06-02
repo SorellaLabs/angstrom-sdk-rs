@@ -69,7 +69,7 @@ impl<P: Provider, T: AngstromOrderApiClient> AngstromProvider<P, T> {
         &self.eth_provider
     }
 
-    pub(crate) fn with_wallet<S>(self, signer: S) -> AngstromProvider<AlloyWalletRpcProvider<P>, T>
+    pub fn with_wallet<S>(self, signer: S) -> AngstromProvider<AlloyWalletRpcProvider<P>, T>
     where
         S: Signer + SignerSync + TxSigner<Signature> + Send + Sync + 'static
     {
