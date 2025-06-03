@@ -7,17 +7,11 @@ use jsonrpsee_http_client::HttpClient;
 
 use crate::{
     AngstromApi,
-    providers::backend::{AlloyRpcProvider, AngstromProvider}
+    providers::backend::{AlloyRpcProvider, AngstromProvider},
 };
 
-#[cfg(not(feature = "testnet-sepolia"))]
 const ANGSTROM_HTTP_URL: &str = "ANGSTROM_WS_URL";
-#[cfg(feature = "testnet-sepolia")]
-const ANGSTROM_HTTP_URL: &str = "ANGSTROM_SEPOLIA_WS_URL";
-#[cfg(not(feature = "testnet-sepolia"))]
 const ETH_WS_URL: &str = "ETH_WS_URL";
-#[cfg(feature = "testnet-sepolia")]
-const ETH_WS_URL: &str = "ETH_SEPOLIA_WS_URL";
 
 pub fn angstrom_http_url() -> String {
     dotenv::dotenv().ok();
@@ -36,7 +30,7 @@ pub fn testing_private_key() -> AngstromSigner {
         std::env::var("TESTING_PRIVATE_KEY")
             .expect("TESTING_PRIVATE_KEY not found in .env")
             .parse()
-            .unwrap()
+            .unwrap(),
     )
 }
 
