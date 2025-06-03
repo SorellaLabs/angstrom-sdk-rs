@@ -36,8 +36,8 @@ use crate::{
         data_api::AngstromDataApi,
         node_api::{AngstromOrderApiClient, AngstromOrderApiClientClone},
     },
-    providers::backend::{AlloyRpcProvider, AngstromProvider},
-    test_utils::{ANGSTROM_HTTP_URL, ETH_WS_URL},
+    providers::backend::AngstromProvider,
+    test_utils::{ANGSTROM_HTTP_URL, AlloyRpcProvider, ETH_WS_URL},
 };
 
 pub async fn make_order_generator<P, T>(

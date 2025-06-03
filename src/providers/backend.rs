@@ -2,9 +2,7 @@ use alloy_network::{Ethereum, EthereumWallet, TxSigner};
 use alloy_primitives::{Address, Signature};
 use alloy_provider::{
     Identity, Provider,
-    fillers::{
-        BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
-    },
+    fillers::{FillProvider, JoinFill, WalletFiller},
 };
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::{

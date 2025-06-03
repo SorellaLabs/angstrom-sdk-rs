@@ -1,15 +1,10 @@
 pub mod filler_orders;
 pub mod valid_orders;
 
-use crate::{
-    AngstromApi,
-    providers::backend::{AlloyRpcProvider, AngstromProvider},
-};
+use crate::{AngstromApi, providers::backend::AngstromProvider};
 use alloy_provider::{
     Identity, Provider, RootProvider,
-    fillers::{
-        BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
-    },
+    fillers::{BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller},
 };
 
 use angstrom_types::primitive::AngstromSigner;
