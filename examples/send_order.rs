@@ -6,8 +6,8 @@ use alloy_provider::{Provider, RootProvider};
 use alloy_signer_local::PrivateKeySigner;
 use angstrom_sdk_rs::{
     AngstromApi,
-    apis::node_api::AngstromNodeApi,
-    types::{USDC, WETH}
+    apis::AngstromNodeApi,
+    types::{USDC, WETH},
 };
 use utils::order_gen::ValidOrderGenerator;
 

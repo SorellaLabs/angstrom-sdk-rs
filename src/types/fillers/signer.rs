@@ -5,8 +5,8 @@ use angstrom_types::{
     primitive::ANGSTROM_DOMAIN,
     sol_bindings::{
         grouped_orders::AllOrders,
-        rpc_orders::{OmitOrderMeta, OrderMeta}
-    }
+        rpc_orders::{OmitOrderMeta, OrderMeta},
+    },
 };
 use pade::PadeEncode;
 
@@ -24,11 +24,7 @@ impl<S: Signer + SignerSync + Clone> AngstromSignerFiller<S> {
     fn sign_into_meta<O: OmitOrderMeta>(&self, order: &O) -> Result<OrderMeta, FillerError> {
         let hash = order.no_meta_eip712_signing_hash(ANGSTROM_DOMAIN.get().unwrap());
         let sig = self.0.sign_hash_sync(&hash)?;
-        Ok(OrderMeta {
-            isEcdsa:   true,
-            from:      self.0.address(),
-            signature: sig.pade_encode().into()
-        })
+        Ok(OrderMeta { isEcdsa: true, from: self.0.address(), signature: sig.pade_encode().into() })
     }
 }
 
@@ -38,11 +34,11 @@ impl<S: Signer + SignerSync + Sync + Clone> FillWrapper for AngstromSignerFiller
     async fn prepare<P, T>(
         &self,
         _: &AngstromProvider<P, T>,
-        order: &AllOrders
+        order: &AllOrders,
     ) -> Result<Self::FillOutput, FillerError>
     where
         P: Provider,
-        T: AngstromOrderApiClient
+        T: AngstromOrderApiClient,
     {
         let my_address = self.0.address();
 
@@ -118,15 +114,18 @@ impl<S: Signer + SignerSync + Sync + Clone> FillFrom<AngstromSignerFiller<S>>
 #[cfg(test)]
 mod tests {
     use alloy_signer_local::LocalSigner;
+    use angstrom_types::primitive::init_with_chain_id;
 
     use super::*;
     use crate::{
         AngstromApi,
-        test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider}
+        test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider},
     };
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_signer_angstrom_order() {
+        init_with_chain_id(11155111);
+
         let signer = LocalSigner::random();
         let provider = AnvilAngstromProvider::new().await.unwrap();
         let api = AngstromApi::new_with_provider(provider.provider)
@@ -136,11 +135,7 @@ mod tests {
 
         let sig_f = |hash| {
             let sig = signer.sign_hash_sync(&hash).unwrap();
-            OrderMeta {
-                isEcdsa:   true,
-                from:      signer.address(),
-                signature: sig.pade_encode().into()
-            }
+            OrderMeta { isEcdsa: true, from: signer.address(), signature: sig.pade_encode().into() }
         };
 
         let ref_api = &api;
@@ -149,29 +144,30 @@ mod tests {
                 let mut inner_order = order.clone();
                 ref_api.fill(&mut inner_order).await.unwrap();
 
+                let domain = ANGSTROM_DOMAIN.get().expect("ANGSTROM_DOMAIN not set");
                 match &mut order {
                     AllOrders::ExactStanding(inner_order) => {
-                        let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
+                        let hash = inner_order.no_meta_eip712_signing_hash(&domain);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
                     AllOrders::PartialStanding(inner_order) => {
-                        let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
+                        let hash = inner_order.no_meta_eip712_signing_hash(&domain);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
                     AllOrders::ExactFlash(inner_order) => {
-                        let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
+                        let hash = inner_order.no_meta_eip712_signing_hash(&domain);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
                     AllOrders::PartialFlash(inner_order) => {
-                        let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
+                        let hash = inner_order.no_meta_eip712_signing_hash(&domain);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
                     AllOrders::TOB(inner_order) => {
-                        let hash = inner_order.no_meta_eip712_signing_hash(&ANGSTROM_DOMAIN);
+                        let hash = inner_order.no_meta_eip712_signing_hash(&domain);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
