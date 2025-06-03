@@ -31,11 +31,7 @@ use tokio::{runtime::Handle, sync::Notify};
 use uniswap_v4::uniswap::pool_manager::{SyncedUniswapPools, TickRangeToLoad};
 
 use crate::{
-    apis::{
-        AngstromNodeApi,
-        data_api::AngstromDataApi,
-        node_api::{AngstromOrderApiClient, AngstromOrderApiClientClone},
-    },
+    apis::{AngstromNodeApi, data_api::AngstromDataApi, node_api::AngstromOrderApiClientClone},
     providers::backend::AngstromProvider,
     test_utils::{ANGSTROM_HTTP_URL, AlloyRpcProvider, ETH_WS_URL},
 };

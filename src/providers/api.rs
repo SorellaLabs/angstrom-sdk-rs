@@ -62,7 +62,8 @@ where
     P: Provider,
     T: AngstromOrderApiClient,
 {
-    pub(crate) fn new_with_provider(provider: AngstromProvider<P, T>) -> Self {
+    #[allow(unused)]
+    pub fn new_with_provider(provider: AngstromProvider<P, T>) -> Self {
         Self { provider, filler: () }
     }
 }
