@@ -1,14 +1,27 @@
 pub mod filler_orders;
 pub mod valid_orders;
 
-use alloy_provider::{Provider, RootProvider};
-use angstrom_types::primitive::AngstromSigner;
-use jsonrpsee_http_client::HttpClient;
-
 use crate::{
     AngstromApi,
     providers::backend::{AlloyRpcProvider, AngstromProvider},
 };
+use alloy_provider::{
+    Identity, Provider, RootProvider,
+    fillers::{
+        BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller, WalletFiller,
+    },
+};
+
+use angstrom_types::primitive::AngstromSigner;
+use jsonrpsee_http_client::HttpClient;
+
+pub type AlloyRpcProvider<P> = FillProvider<
+    JoinFill<
+        Identity,
+        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+    >,
+    P,
+>;
 
 const ANGSTROM_HTTP_URL: &str = "ANGSTROM_WS_URL";
 const ETH_WS_URL: &str = "ETH_WS_URL";
