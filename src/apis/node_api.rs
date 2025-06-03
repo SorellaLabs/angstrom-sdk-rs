@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use crate::types::errors::AngstromSdkError;
 use alloy_primitives::{Address, B256, FixedBytes, TxHash, U256};
 use angstrom_rpc::{
     api::OrderApiClient,
@@ -17,15 +18,10 @@ use futures::{Stream, StreamExt, TryStreamExt};
 use jsonrpsee_http_client::HttpClient;
 use jsonrpsee_ws_client::WsClient;
 
-use crate::types::errors::AngstromSdkError;
-
 #[auto_impl(&, Box, Arc)]
 pub trait AngstromOrderApiClient: OrderApiClient + Sync {}
-#[auto_impl(&, Box, Arc)]
-pub trait AngstromOrderApiClientClone: AngstromOrderApiClient + Clone + Sync {}
-impl AngstromOrderApiClient for HttpClient {}
-impl AngstromOrderApiClientClone for HttpClient {}
 impl AngstromOrderApiClient for WsClient {}
+impl AngstromOrderApiClient for HttpClient {}
 
 #[auto_impl(&, Box, Arc)]
 pub trait AngstromNodeApi<T: AngstromOrderApiClient> {
@@ -185,7 +181,9 @@ mod tests {
     use crate::{
         apis::data_api::AngstromDataApi,
         providers::backend::AngstromProvider,
-        test_utils::{filler_orders::make_order_generator, spawn_angstrom_api},
+        test_utils::{
+            AngstromOrderApiClientClone, filler_orders::make_order_generator, spawn_angstrom_api,
+        },
         types::sort_tokens,
     };
 

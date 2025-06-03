@@ -31,9 +31,9 @@ use tokio::{runtime::Handle, sync::Notify};
 use uniswap_v4::uniswap::pool_manager::{SyncedUniswapPools, TickRangeToLoad};
 
 use crate::{
-    apis::{AngstromNodeApi, data_api::AngstromDataApi, node_api::AngstromOrderApiClientClone},
+    apis::{AngstromNodeApi, data_api::AngstromDataApi},
     providers::backend::AngstromProvider,
-    test_utils::{ANGSTROM_HTTP_URL, AlloyRpcProvider, ETH_WS_URL},
+    test_utils::{ANGSTROM_HTTP_URL, AlloyRpcProvider, AngstromOrderApiClientClone, ETH_WS_URL},
 };
 
 pub async fn make_order_generator<P, T>(
@@ -74,29 +74,29 @@ pub struct AllOrdersSpecific {
 }
 
 impl AllOrdersSpecific {
-    fn new(orders: Vec<AllOrders>) -> Self {
-        let mut tob: Option<TopOfBlockOrder> = None;
-        let mut partial_flash: Option<PartialFlashOrder> = None;
-        let mut exact_flash: Option<ExactFlashOrder> = None;
-        let mut partial_standing: Option<PartialStandingOrder> = None;
-        let mut exact_standing: Option<ExactStandingOrder> = None;
+    // fn new(orders: Vec<AllOrders>) -> Self {
+    //     let mut tob: Option<TopOfBlockOrder> = None;
+    //     let mut partial_flash: Option<PartialFlashOrder> = None;
+    //     let mut exact_flash: Option<ExactFlashOrder> = None;
+    //     let mut partial_standing: Option<PartialStandingOrder> = None;
+    //     let mut exact_standing: Option<ExactStandingOrder> = None;
 
-        orders.into_iter().for_each(|order| match order {
-            AllOrders::ExactFlash(order) => exact_flash = Some(order),
-            AllOrders::PartialFlash(order) => partial_flash = Some(order),
-            AllOrders::ExactStanding(order) => exact_standing = Some(order),
-            AllOrders::PartialStanding(order) => partial_standing = Some(order),
-            AllOrders::TOB(order) => tob = Some(order),
-        });
+    //     orders.into_iter().for_each(|order| match order {
+    //         AllOrders::ExactFlash(order) => exact_flash = Some(order),
+    //         AllOrders::PartialFlash(order) => partial_flash = Some(order),
+    //         AllOrders::ExactStanding(order) => exact_standing = Some(order),
+    //         AllOrders::PartialStanding(order) => partial_standing = Some(order),
+    //         AllOrders::TOB(order) => tob = Some(order),
+    //     });
 
-        Self {
-            tob: tob.unwrap(),
-            partial_flash: partial_flash.unwrap(),
-            exact_flash: exact_flash.unwrap(),
-            partial_standing: partial_standing.unwrap(),
-            exact_standing: exact_standing.unwrap(),
-        }
-    }
+    //     Self {
+    //         tob: tob.unwrap(),
+    //         partial_flash: partial_flash.unwrap(),
+    //         exact_flash: exact_flash.unwrap(),
+    //         partial_standing: partial_standing.unwrap(),
+    //         exact_standing: exact_standing.unwrap(),
+    //     }
+    // }
 
     pub async fn test_filler_order(self, f: impl AsyncFn(AllOrders) -> bool) {
         assert!(f(AllOrders::TOB(self.tob)).await, "tob failed");

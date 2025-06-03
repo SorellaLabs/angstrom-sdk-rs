@@ -1,13 +1,15 @@
 pub mod filler_orders;
 pub mod valid_orders;
 
+use crate::apis::AngstromOrderApiClient;
+
 use crate::{AngstromApi, providers::backend::AngstromProvider};
 use alloy_provider::{
     Identity, Provider, RootProvider,
     fillers::{BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller},
 };
-
 use angstrom_types::primitive::AngstromSigner;
+use auto_impl::auto_impl;
 use jsonrpsee_http_client::HttpClient;
 
 pub type AlloyRpcProvider<P> = FillProvider<
@@ -20,6 +22,10 @@ pub type AlloyRpcProvider<P> = FillProvider<
 
 const ANGSTROM_HTTP_URL: &str = "ANGSTROM_WS_URL";
 const ETH_WS_URL: &str = "ETH_WS_URL";
+
+#[auto_impl(&, Box, Arc)]
+pub trait AngstromOrderApiClientClone: AngstromOrderApiClient + Clone + Sync {}
+impl AngstromOrderApiClientClone for HttpClient {}
 
 pub fn angstrom_http_url() -> String {
     dotenv::dotenv().ok();
