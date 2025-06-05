@@ -5,9 +5,9 @@ use alloy_provider::Provider;
 use angstrom_types::{
     contract_bindings::{
         angstrom::Angstrom::PoolKey, position_fetcher::PositionFetcher,
-        position_manager::PositionManager
+        position_manager::PositionManager,
     },
-    primitive::{POSITION_MANAGER_ADDRESS, PoolId}
+    primitive::{POSITION_MANAGER_ADDRESS, PoolId},
 };
 use futures::TryFutureExt;
 
@@ -17,17 +17,17 @@ use crate::types::UserLiquidityPosition;
 pub trait AngstromUserApi: AngstromDataApi {
     async fn get_positions(
         &self,
-        user_address: Address
+        user_address: Address,
     ) -> eyre::Result<Vec<UserLiquidityPosition>>;
 
     async fn get_positions_in_pool(
         &self,
         user_address: Address,
         token0: Address,
-        token1: Address
+        token1: Address,
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
         let all_positions = self.get_positions(user_address).await?;
-        let pool_id = self.pool_id(token0, token1).await?;
+        let pool_id = self.pool_id(token0, token1, false).await?;
 
         Ok(all_positions
             .into_iter()
@@ -39,17 +39,17 @@ pub trait AngstromUserApi: AngstromDataApi {
 impl<P: Provider> AngstromUserApi for P {
     async fn get_positions(
         &self,
-        user_address: Address
+        user_address: Address,
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
         let user_positons = view_call(
             self,
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             PositionFetcher::getPositionsCall {
-                owner:       user_address,
-                tokenId:     U256::from(1u8),
+                owner: user_address,
+                tokenId: U256::from(1u8),
                 lastTokenId: U256::ZERO,
-                maxResults:  U256::MAX
-            }
+                maxResults: U256::MAX,
+            },
         )
         .await??;
 
@@ -64,19 +64,19 @@ impl<P: Provider> AngstromUserApi for P {
                 view_call(
                     self,
                     *POSITION_MANAGER_ADDRESS.get().unwrap(),
-                    PositionManager::poolKeysCall { poolId: uni_id }
+                    PositionManager::poolKeysCall { poolId: uni_id },
                 )
                 .and_then(async move |ang_id_res| {
                     Ok(ang_id_res.map(|ang_id| {
                         (
                             uni_id,
                             PoolKey {
-                                currency0:   ang_id.currency0,
-                                currency1:   ang_id.currency1,
-                                fee:         ang_id.fee,
+                                currency0: ang_id.currency0,
+                                currency1: ang_id.currency1,
+                                fee: ang_id.fee,
                                 tickSpacing: ang_id.tickSpacing,
-                                hooks:       ang_id.hooks
-                            }
+                                hooks: ang_id.hooks,
+                            },
                         )
                     }))
                 })
@@ -94,7 +94,7 @@ impl<P: Provider> AngstromUserApi for P {
                         .get(&pos.poolId)
                         .unwrap()
                         .clone(),
-                    pos
+                    pos,
                 )
             })
             .collect())

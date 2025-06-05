@@ -231,8 +231,13 @@ where
             .await
     }
 
-    async fn pool_key(&self, token0: Address, token1: Address) -> eyre::Result<PoolKey> {
-        self.provider.pool_key(token0, token1).await
+    async fn pool_key(
+        &self,
+        token0: Address,
+        token1: Address,
+        uniswap_key: bool,
+    ) -> eyre::Result<PoolKey> {
+        self.provider.pool_key(token0, token1, uniswap_key).await
     }
 
     async fn pool_config_store(
