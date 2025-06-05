@@ -33,7 +33,7 @@ use uniswap_v4::uniswap::pool_manager::{SyncedUniswapPools, TickRangeToLoad};
 use crate::{
     apis::{AngstromNodeApi, data_api::AngstromDataApi},
     providers::backend::AngstromProvider,
-    test_utils::{ANGSTROM_HTTP_URL, AlloyRpcProvider, AngstromOrderApiClientClone, ETH_WS_URL},
+    test_utils::{AlloyRpcProvider, AngstromOrderApiClientClone},
 };
 
 pub async fn make_order_generator<P, T>(
@@ -127,10 +127,10 @@ pub struct AnvilAngstromProvider {
 impl AnvilAngstromProvider {
     pub async fn new() -> eyre::Result<Self> {
         dotenv::dotenv().ok();
-        let angstrom_http_url = std::env::var(ANGSTROM_HTTP_URL)
-            .unwrap_or_else(|_| panic!("{ANGSTROM_HTTP_URL} not found in .env"));
+        let angstrom_http_url = std::env::var("ANGSTROM_HTTP_URL")
+            .unwrap_or_else(|_| panic!("ANGSTROM_HTTP_URL not found in .env"));
         let eth_ws_url =
-            std::env::var(ETH_WS_URL).unwrap_or_else(|_| panic!("{ETH_WS_URL} not found in .env"));
+            std::env::var("ETH_WS_URL").unwrap_or_else(|_| panic!("ETH_WS_URL not found in .env"));
 
         let seed: u16 = rand::random();
         let eth_ipc = format!("/tmp/anvil_{seed}.ipc");
