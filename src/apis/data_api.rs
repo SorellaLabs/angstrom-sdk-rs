@@ -40,11 +40,16 @@ pub trait AngstromDataApi {
         token0: Address,
         token1: Address,
         uniswap_key: bool,
+        block_number: Option<u64>,
     ) -> eyre::Result<PoolKey>;
 
-    async fn all_pool_keys(&self, uniswap_key: bool) -> eyre::Result<Vec<PoolKey>> {
+    async fn all_pool_keys(
+        &self,
+        uniswap_key: bool,
+        block_number: Option<u64>,
+    ) -> eyre::Result<Vec<PoolKey>> {
         let (config_store, all_token_pairs) =
-            tokio::try_join!(self.pool_config_store(None), self.all_token_pairs())?;
+            tokio::try_join!(self.pool_config_store(block_number), self.all_token_pairs())?;
 
         let tokens_to_partial_keys = all_token_pairs
             .into_iter()
@@ -79,8 +84,9 @@ pub trait AngstromDataApi {
         token0: Address,
         token1: Address,
         uniswap_key: bool,
+        block_number: Option<u64>,
     ) -> eyre::Result<PoolId> {
-        self.pool_key(token0, token1, uniswap_key)
+        self.pool_key(token0, token1, uniswap_key, block_number)
             .await
             .map(Into::into)
     }
@@ -178,10 +184,11 @@ impl<P: Provider> AngstromDataApi for P {
         token0: Address,
         token1: Address,
         uniswap_key: bool,
+        block_number: Option<u64>,
     ) -> eyre::Result<PoolKey> {
         let (token0, token1) = sort_tokens(token0, token1);
 
-        let config_store = self.pool_config_store(None).await?;
+        let config_store = self.pool_config_store(block_number).await?;
         let pool_config_store = config_store
             .get_entry(token0, token1)
             .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
@@ -281,7 +288,7 @@ impl<P: Provider> AngstromDataApi for P {
     ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
         let (token0, token1) = sort_tokens(token0, token1);
 
-        let mut pool_key = self.pool_key(token0, token1, false).await?;
+        let mut pool_key = self.pool_key(token0, token1, false, block_number).await?;
         let public_pool_id = pool_key.clone().into();
         let registry = vec![pool_key.clone()].into();
 
@@ -366,7 +373,10 @@ mod tests {
         let token0 = USDC;
         let token1 = WETH;
 
-        let pool_key = provider.pool_key(token0, token1, false).await.unwrap();
+        let pool_key = provider
+            .pool_key(token0, token1, false, None)
+            .await
+            .unwrap();
         let expected_pool_key = PoolKey {
             currency0: token0,
             currency1: token1,

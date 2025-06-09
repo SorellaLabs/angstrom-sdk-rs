@@ -18,6 +18,7 @@ pub trait AngstromUserApi: AngstromDataApi {
     async fn get_positions(
         &self,
         user_address: Address,
+        block_number: Option<u64>,
     ) -> eyre::Result<Vec<UserLiquidityPosition>>;
 
     async fn get_positions_in_pool(
@@ -25,9 +26,10 @@ pub trait AngstromUserApi: AngstromDataApi {
         user_address: Address,
         token0: Address,
         token1: Address,
+        block_number: Option<u64>,
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
-        let all_positions = self.get_positions(user_address).await?;
-        let pool_id = self.pool_id(token0, token1, false).await?;
+        let all_positions = self.get_positions(user_address, block_number).await?;
+        let pool_id = self.pool_id(token0, token1, false, block_number).await?;
 
         Ok(all_positions
             .into_iter()
@@ -40,6 +42,7 @@ impl<P: Provider> AngstromUserApi for P {
     async fn get_positions(
         &self,
         user_address: Address,
+        _block_number: Option<u64>,
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
         let user_positons = view_call(
             self,
@@ -110,10 +113,11 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_positions() {
+        // init_with_chain_id(11155111);
         // let angstrom_api = spawn_angstrom_api().await.unwrap();
 
         // let positions = angstrom_api
-        //     .get_positions(address!("0x796fB50EAe1456A523F869f6135dd557eeaEE226"))
+        //     .get_positions(address!("0xa7f1Aeb6e43443c683865Fdb9E15Dd01386C955b"))
         //     .await
         //     .unwrap();
 

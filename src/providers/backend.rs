@@ -89,9 +89,10 @@ where
         token0: Address,
         token1: Address,
         uniswap_key: bool,
+        block_number: Option<u64>,
     ) -> eyre::Result<PoolKey> {
         self.eth_provider
-            .pool_key(token0, token1, uniswap_key)
+            .pool_key(token0, token1, uniswap_key, block_number)
             .await
     }
 
@@ -139,8 +140,11 @@ impl<P: Provider, T: AngstromOrderApiClient> AngstromUserApi for AngstromProvide
     async fn get_positions(
         &self,
         user_address: Address,
+        block_number: Option<u64>,
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
-        self.eth_provider.get_positions(user_address).await
+        self.eth_provider
+            .get_positions(user_address, block_number)
+            .await
     }
 }
 

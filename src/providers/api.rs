@@ -236,8 +236,11 @@ where
         token0: Address,
         token1: Address,
         uniswap_key: bool,
+        block_number: Option<u64>,
     ) -> eyre::Result<PoolKey> {
-        self.provider.pool_key(token0, token1, uniswap_key).await
+        self.provider
+            .pool_key(token0, token1, uniswap_key, block_number)
+            .await
     }
 
     async fn pool_config_store(
@@ -257,8 +260,11 @@ where
     async fn get_positions(
         &self,
         user_address: Address,
+        block_number: Option<u64>,
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
-        self.provider.get_positions(user_address).await
+        self.provider
+            .get_positions(user_address, block_number)
+            .await
     }
 }
 
