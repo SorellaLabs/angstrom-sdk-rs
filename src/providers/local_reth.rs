@@ -51,6 +51,7 @@ pub type RethLayerProviderWrapperType<P> = FillProvider<
     RethDbProvider<P, BlockchainProvider<NodeTypesWithDBAdapter<EthereumNode, Arc<DatabaseEnv>>>>,
 >;
 
+#[derive(Clone)]
 pub struct RethDbProviderWrapper<P: Provider + Clone> {
     db_client: Arc<RethLibmdbxClient>,
     provider: P,
