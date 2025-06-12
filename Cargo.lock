@@ -1104,7 +1104,7 @@ dependencies = [
  "anyhow",
  "futures",
  "futures-util",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "pade",
  "reth-ethereum-primitives",
  "reth-primitives",
@@ -1146,7 +1146,7 @@ dependencies = [
  "eyre",
  "futures",
  "homedir",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "linked_hash_set",
  "once_cell",
  "order-pool",
@@ -1257,7 +1257,7 @@ dependencies = [
  "dashmap 6.1.0",
  "eyre",
  "futures",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "k256",
  "malachite",
  "pade",
@@ -1869,7 +1869,7 @@ dependencies = [
  "bitflags 2.9.1",
  "cexpr",
  "clang-sys",
- "itertools 0.13.0",
+ "itertools 0.11.0",
  "proc-macro2",
  "quote",
  "regex",
@@ -2610,7 +2610,7 @@ dependencies = [
  "angstrom-types",
  "eyre",
  "futures",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "matching-engine",
  "order-pool",
  "rand 0.9.1",
@@ -4367,7 +4367,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.57.0",
+ "windows-core 0.61.2",
 ]
 
 [[package]]
@@ -5129,7 +5129,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lib-reth"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-reth#6e31debc3a266766c95c30d9331752757b1a1731"
+source = "git+https://github.com/jnoorchashm37/lib-reth#68d731317dfeebfbcee3726a37f54b821c0185c2"
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
@@ -5534,7 +5534,7 @@ dependencies = [
  "eyre",
  "futures",
  "futures-util",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "rand 0.9.1",
  "rand_distr",
  "reth-tasks",
@@ -6326,7 +6326,7 @@ name = "pade-macro"
 version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/pade#637c5f01d3058f2fa87c51035bf9cad0d0a57192"
 dependencies = [
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "proc-macro2",
  "quote",
  "syn 2.0.101",
@@ -11123,7 +11123,7 @@ dependencies = [
  "libc",
  "memchr",
  "ntapi",
- "windows 0.57.0",
+ "windows 0.54.0",
 ]
 
 [[package]]
@@ -11203,7 +11203,7 @@ dependencies = [
  "enr",
  "eyre",
  "futures",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "jsonrpsee",
  "matching-engine",
  "order-pool",
@@ -11935,7 +11935,7 @@ dependencies = [
  "futures",
  "futures-util",
  "hex",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "malachite",
  "rand 0.9.1",
  "rayon",
