@@ -67,6 +67,10 @@ impl<P: Provider + Clone> RethDbProviderWrapper<P> {
             .layer(RethDbLayer::new(self.db_client.eth_db_provider().clone()))
             .connect_provider(self.provider.clone())
     }
+
+    pub fn db_client(&self) -> Arc<RethLibmdbxClient> {
+        self.db_client.clone()
+    }
 }
 
 impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
