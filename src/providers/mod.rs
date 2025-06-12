@@ -1,4 +1,6 @@
 pub mod api;
+#[cfg(feature = "local-reth")]
+pub mod local_reth;
 use std::marker::PhantomData;
 
 use angstrom_types::primitive::{AngstromAddressBuilder, init_with_chain_id};
@@ -14,33 +16,28 @@ use crate::apis::node_api::AngstromOrderApiClient;
 pub struct AngstromApiBuilder<P, T, F = ()>
 where
     P: Provider,
-    T: AngstromOrderApiClient
+    T: AngstromOrderApiClient,
 {
-    eth_provider:    Option<P>,
-    angstrom_url:    &'static str,
+    eth_provider: Option<P>,
+    angstrom_url: &'static str,
     address_builder: Option<AngstromAddressBuilder>,
-    _t:              PhantomData<fn() -> (T, F)>
+    _t: PhantomData<fn() -> (T, F)>,
 }
 
 impl<P, T, F> Default for AngstromApiBuilder<P, T, F>
 where
     P: Provider,
-    T: AngstromOrderApiClient
+    T: AngstromOrderApiClient,
 {
     fn default() -> Self {
-        Self {
-            eth_provider:    None,
-            angstrom_url:    "",
-            address_builder: None,
-            _t:              Default::default()
-        }
+        Self { eth_provider: None, angstrom_url: "", address_builder: None, _t: Default::default() }
     }
 }
 
 impl<P, T, F> AngstromApiBuilder<P, T, F>
 where
     P: Provider,
-    T: AngstromOrderApiClient
+    T: AngstromOrderApiClient,
 {
     pub fn with_angstrom_addresses(self, address_builder: AngstromAddressBuilder) -> Self {
         Self { address_builder: Some(address_builder), ..self }

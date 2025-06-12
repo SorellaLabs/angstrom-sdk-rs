@@ -325,6 +325,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "alloy-evm"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "394b09cf3a32773eedf11828987f9c72dfa74545040be0422e3f5f09a2a3fab9"
+dependencies = [
+ "alloy-consensus",
+ "alloy-eips",
+ "alloy-hardforks",
+ "alloy-primitives",
+ "alloy-sol-types",
+ "auto_impl",
+ "derive_more",
+ "revm 24.0.1",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "alloy-genesis"
 version = "1.0.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1173,7 +1190,7 @@ dependencies = [
  "reth-tasks",
  "serde",
  "serde_json",
- "strum 0.27.1",
+ "strum 0.26.3",
  "thiserror 1.0.69",
  "tokio-stream",
  "tracing",
@@ -1205,8 +1222,13 @@ dependencies = [
  "jsonrpsee-core",
  "jsonrpsee-http-client",
  "jsonrpsee-ws-client",
+ "lib-reth",
  "pade",
  "rand 0.9.1",
+ "reth-db",
+ "reth-node-ethereum",
+ "reth-node-types",
+ "reth-provider",
  "revm 24.0.1",
  "revm-database",
  "rust-utils",
@@ -4345,7 +4367,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.61.2",
+ "windows-core 0.57.0",
 ]
 
 [[package]]
@@ -5103,6 +5125,63 @@ name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
+
+[[package]]
+name = "lib-reth"
+version = "0.1.0"
+source = "git+https://github.com/jnoorchashm37/lib-reth#6e31debc3a266766c95c30d9331752757b1a1731"
+dependencies = [
+ "alloy-consensus",
+ "alloy-eips",
+ "alloy-evm 0.10.0",
+ "alloy-json-rpc",
+ "alloy-network",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-pubsub",
+ "alloy-rpc-client",
+ "alloy-rpc-types",
+ "alloy-rpc-types-eth",
+ "alloy-transport",
+ "alloy-transport-http",
+ "clap",
+ "eyre",
+ "futures",
+ "rayon",
+ "reth-chain-state",
+ "reth-chainspec",
+ "reth-config",
+ "reth-db",
+ "reth-db-api",
+ "reth-engine-local",
+ "reth-engine-tree",
+ "reth-engine-util",
+ "reth-libmdbx",
+ "reth-network-api",
+ "reth-node-builder",
+ "reth-node-ethereum",
+ "reth-node-events",
+ "reth-node-types",
+ "reth-payload-builder",
+ "reth-primitives-traits",
+ "reth-provider",
+ "reth-prune",
+ "reth-revm",
+ "reth-rpc",
+ "reth-rpc-eth-api",
+ "reth-rpc-eth-types",
+ "reth-rpc-server-types",
+ "reth-rpc-types-compat",
+ "reth-static-file",
+ "reth-storage-errors",
+ "reth-tasks",
+ "reth-tokio-util",
+ "reth-transaction-pool",
+ "revm 24.0.1",
+ "revm-database",
+ "tokio",
+ "tokio-stream",
+]
 
 [[package]]
 name = "libc"
@@ -7305,7 +7384,7 @@ dependencies = [
  "alloy-chains",
  "alloy-consensus",
  "alloy-eips",
- "alloy-evm",
+ "alloy-evm 0.8.1",
  "alloy-genesis",
  "alloy-primitives",
  "alloy-trie",
@@ -7840,7 +7919,7 @@ source = "git+https://github.com/paradigmxyz/reth?tag=v1.4.3#fe3653ffe602d4e85ad
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
- "alloy-evm",
+ "alloy-evm 0.8.1",
  "alloy-primitives",
  "alloy-rlp",
  "alloy-rpc-types-engine",
@@ -8187,7 +8266,7 @@ source = "git+https://github.com/paradigmxyz/reth?tag=v1.4.3#fe3653ffe602d4e85ad
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
- "alloy-evm",
+ "alloy-evm 0.8.1",
  "alloy-primitives",
  "auto_impl",
  "derive_more",
@@ -8210,7 +8289,7 @@ source = "git+https://github.com/paradigmxyz/reth?tag=v1.4.3#fe3653ffe602d4e85ad
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
- "alloy-evm",
+ "alloy-evm 0.8.1",
  "alloy-primitives",
  "reth-chainspec",
  "reth-ethereum-forks",
@@ -8226,7 +8305,7 @@ name = "reth-execution-errors"
 version = "1.4.3"
 source = "git+https://github.com/paradigmxyz/reth?tag=v1.4.3#fe3653ffe602d4e85ad213e8bd9f06e7b710c0c5"
 dependencies = [
- "alloy-evm",
+ "alloy-evm 0.8.1",
  "alloy-primitives",
  "alloy-rlp",
  "nybbles",
@@ -8241,7 +8320,7 @@ source = "git+https://github.com/paradigmxyz/reth?tag=v1.4.3#fe3653ffe602d4e85ad
 dependencies = [
  "alloy-consensus",
  "alloy-eips",
- "alloy-evm",
+ "alloy-evm 0.8.1",
  "alloy-primitives",
  "derive_more",
  "reth-ethereum-primitives",
@@ -9082,7 +9161,7 @@ dependencies = [
  "alloy-consensus",
  "alloy-dyn-abi",
  "alloy-eips",
- "alloy-evm",
+ "alloy-evm 0.8.1",
  "alloy-genesis",
  "alloy-network",
  "alloy-primitives",
