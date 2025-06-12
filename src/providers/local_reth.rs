@@ -58,7 +58,7 @@ pub struct RethDbProviderWrapper<P: Provider + Clone> {
 }
 
 impl<P: Provider + Clone> RethDbProviderWrapper<P> {
-    pub fn new(db_client: RethLibmdbxClient, provider: P) -> eyre::Result<Self> {
+    pub fn new(db_client: RethLibmdbxClient, provider: P) -> Self {
         Ok(Self { db_client: Arc::new(db_client), provider })
     }
 
