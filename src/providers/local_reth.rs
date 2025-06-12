@@ -58,8 +58,8 @@ pub struct RethDbProviderWrapper<P: Provider + Clone> {
 }
 
 impl<P: Provider + Clone> RethDbProviderWrapper<P> {
-    pub fn new(db_client: RethLibmdbxClient, provider: P) -> Self {
-        Ok(Self { db_client: Arc::new(db_client), provider })
+    pub fn new(db_client: Arc<RethLibmdbxClient>, provider: P) -> Self {
+        Ok(Self { db_client, provider })
     }
 
     pub fn as_provider_with_db_layer(&self) -> RethLayerProviderWrapperType<P> {
