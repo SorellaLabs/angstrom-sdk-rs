@@ -1041,7 +1041,7 @@ checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
 [[package]]
 name = "angstrom"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "alloy",
  "alloy-chains",
@@ -1056,11 +1056,13 @@ dependencies = [
  "consensus",
  "eyre",
  "futures",
+ "hsm-signer",
  "matching-engine",
  "order-pool",
  "parking_lot",
  "rayon",
  "reth",
+ "reth-db",
  "reth-metrics",
  "reth-network",
  "reth-node-builder",
@@ -1079,7 +1081,7 @@ dependencies = [
 [[package]]
 name = "angstrom-amm-quoter"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "alloy",
  "angstrom-types",
@@ -1097,14 +1099,14 @@ dependencies = [
 [[package]]
 name = "angstrom-eth"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "alloy",
  "angstrom-types",
  "anyhow",
  "futures",
  "futures-util",
- "itertools 0.11.0",
+ "itertools 0.14.0",
  "pade",
  "reth-ethereum-primitives",
  "reth-primitives",
@@ -1118,7 +1120,7 @@ dependencies = [
 [[package]]
 name = "angstrom-metrics"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "angstrom-types",
  "eyre",
@@ -1136,7 +1138,7 @@ dependencies = [
 [[package]]
 name = "angstrom-network"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "alloy",
  "alloy-chains",
@@ -1146,7 +1148,7 @@ dependencies = [
  "eyre",
  "futures",
  "homedir",
- "itertools 0.11.0",
+ "itertools 0.14.0",
  "linked_hash_set",
  "once_cell",
  "order-pool",
@@ -1176,7 +1178,7 @@ dependencies = [
 [[package]]
 name = "angstrom-rpc"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "alloy-primitives",
  "angstrom-amm-quoter",
@@ -1190,7 +1192,7 @@ dependencies = [
  "reth-tasks",
  "serde",
  "serde_json",
- "strum 0.26.3",
+ "strum 0.27.1",
  "thiserror 1.0.69",
  "tokio-stream",
  "tracing",
@@ -1245,7 +1247,7 @@ dependencies = [
 [[package]]
 name = "angstrom-types"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "alloy",
  "alloy-primitives",
@@ -1257,7 +1259,8 @@ dependencies = [
  "dashmap 6.1.0",
  "eyre",
  "futures",
- "itertools 0.11.0",
+ "hsm-signer",
+ "itertools 0.14.0",
  "k256",
  "malachite",
  "pade",
@@ -1289,7 +1292,7 @@ dependencies = [
 [[package]]
 name = "angstrom-utils"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "futures",
  "tokio",
@@ -1869,7 +1872,7 @@ dependencies = [
  "bitflags 2.9.1",
  "cexpr",
  "clang-sys",
- "itertools 0.11.0",
+ "itertools 0.13.0",
  "proc-macro2",
  "quote",
  "regex",
@@ -2421,7 +2424,7 @@ checksum = "0b023947811758c97c59bf9d1c188fd619ad4718dcaa767947df1cadb14f39f4"
 dependencies = [
  "glob",
  "libc",
- "libloading",
+ "libloading 0.8.8",
 ]
 
 [[package]]
@@ -2602,7 +2605,7 @@ dependencies = [
 [[package]]
 name = "consensus"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "alloy",
  "angstrom-metrics",
@@ -2610,7 +2613,7 @@ dependencies = [
  "angstrom-types",
  "eyre",
  "futures",
- "itertools 0.11.0",
+ "itertools 0.14.0",
  "matching-engine",
  "order-pool",
  "rand 0.9.1",
@@ -2892,6 +2895,29 @@ dependencies = [
  "generic-array",
  "rand_core 0.6.4",
  "typenum",
+]
+
+[[package]]
+name = "cryptoki"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2b34e469ac5a28d546ed7aae9dd69037b38f4e966cd9adb2a01250a5d257de02"
+dependencies = [
+ "bitflags 1.3.2",
+ "cryptoki-sys",
+ "libloading 0.7.4",
+ "log",
+ "paste",
+ "secrecy",
+]
+
+[[package]]
+name = "cryptoki-sys"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d279ad423469b93e631f4bc53f277c7424cf01353c70eba685046d294dc042c7"
+dependencies = [
+ "libloading 0.7.4",
 ]
 
 [[package]]
@@ -4155,6 +4181,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "hsm-signer"
+version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/hsm-signer#84650e387c4636a1129620071a59d310aaaf0989"
+dependencies = [
+ "alloy-consensus",
+ "alloy-network",
+ "alloy-primitives",
+ "alloy-signer",
+ "async-trait",
+ "cryptoki",
+ "eyre",
+ "hex",
+ "k256",
+ "once_cell",
+ "parking_lot",
+ "sec1",
+ "thiserror 1.0.69",
+ "tracing",
+]
+
+[[package]]
 name = "http"
 version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5203,6 +5250,16 @@ dependencies = [
 
 [[package]]
 name = "libloading"
+version = "0.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b67380fd3b2fbe7527a606e18729d21c6f3951633d0500574c4dc22d2d638b9f"
+dependencies = [
+ "cfg-if",
+ "winapi",
+]
+
+[[package]]
+name = "libloading"
 version = "0.8.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07033963ba89ebaf1584d767badaa2e8fcec21aedea6b8c0346d487d49c28667"
@@ -5524,7 +5581,7 @@ dependencies = [
 [[package]]
 name = "matching-engine"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "alloy",
  "alloy-primitives",
@@ -5534,7 +5591,7 @@ dependencies = [
  "eyre",
  "futures",
  "futures-util",
- "itertools 0.11.0",
+ "itertools 0.14.0",
  "rand 0.9.1",
  "rand_distr",
  "reth-tasks",
@@ -6255,7 +6312,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "order-pool"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "alloy",
  "angstrom-metrics",
@@ -6326,7 +6383,7 @@ name = "pade-macro"
 version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/pade#637c5f01d3058f2fa87c51035bf9cad0d0a57192"
 dependencies = [
- "itertools 0.11.0",
+ "itertools 0.14.0",
  "proc-macro2",
  "quote",
  "syn 2.0.101",
@@ -10559,6 +10616,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "secrecy"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bd1c54ea06cfd2f6b63219704de0b9b4f72dcc2b8fdef820be6cd799780e91e"
+dependencies = [
+ "zeroize",
+]
+
+[[package]]
 name = "security-framework"
 version = "2.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11123,7 +11189,7 @@ dependencies = [
  "libc",
  "memchr",
  "ntapi",
- "windows 0.54.0",
+ "windows 0.57.0",
 ]
 
 [[package]]
@@ -11186,7 +11252,7 @@ dependencies = [
 [[package]]
 name = "testing-tools"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "alloy",
  "alloy-chains",
@@ -11203,7 +11269,7 @@ dependencies = [
  "enr",
  "eyre",
  "futures",
- "itertools 0.11.0",
+ "itertools 0.14.0",
  "jsonrpsee",
  "matching-engine",
  "order-pool",
@@ -11922,7 +11988,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "uniswap-v4"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "alloy",
  "alloy-primitives",
@@ -11935,7 +12001,7 @@ dependencies = [
  "futures",
  "futures-util",
  "hex",
- "itertools 0.11.0",
+ "itertools 0.14.0",
  "malachite",
  "rand 0.9.1",
  "rayon",
@@ -12041,7 +12107,7 @@ dependencies = [
 [[package]]
 name = "validation"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#296c5eadf6f1abf9b476703a2d51371b56e607ce"
+source = "git+https://github.com/SorellaLabs/angstrom.git#03c18911efa15bc91e452542a2b482e1ca40650c"
 dependencies = [
  "alloy",
  "angstrom-metrics",
