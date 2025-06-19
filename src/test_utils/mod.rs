@@ -9,6 +9,7 @@ use alloy_provider::{
     Identity, Provider, RootProvider,
     fillers::{BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller},
 };
+use alloy_signer_local::PrivateKeySigner;
 use angstrom_types::primitive::{AngstromSigner, init_with_chain_id};
 use auto_impl::auto_impl;
 use jsonrpsee_http_client::HttpClient;
@@ -36,7 +37,7 @@ pub fn eth_ws_url() -> String {
     std::env::var("ETH_WS_URL").unwrap_or_else(|_| panic!("ETH_WS_URL not found in .env"))
 }
 
-pub fn testing_private_key() -> AngstromSigner {
+pub fn testing_private_key() -> AngstromSigner<PrivateKeySigner> {
     dotenv::dotenv().ok();
     AngstromSigner::new(
         std::env::var("TESTING_PRIVATE_KEY")
