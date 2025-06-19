@@ -28,12 +28,12 @@ use pade::PadeDecode;
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
 use super::utils::*;
-use crate::types::*;
+use crate::types::{errors::AngstromSdkError, *};
 
 pub trait AngstromDataApi {
-    async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>>;
+    async fn all_token_pairs(&self) -> Result<Vec<TokenPairInfo>, AngstromSdkError>;
 
-    async fn all_tokens(&self) -> eyre::Result<Vec<TokenInfoWithMeta>>;
+    async fn all_tokens(&self) -> Result<Vec<TokenInfoWithMeta>, AngstromSdkError>;
 
     async fn pool_key(
         &self,
@@ -41,13 +41,13 @@ pub trait AngstromDataApi {
         token1: Address,
         uniswap_key: bool,
         block_number: Option<u64>,
-    ) -> eyre::Result<PoolKey>;
+    ) -> Result<PoolKey, AngstromSdkError>;
 
     async fn all_pool_keys(
         &self,
         uniswap_key: bool,
         block_number: Option<u64>,
-    ) -> eyre::Result<Vec<PoolKey>> {
+    ) -> Result<Vec<PoolKey>, AngstromSdkError> {
         let (config_store, all_token_pairs) =
             tokio::try_join!(self.pool_config_store(block_number), self.all_token_pairs())?;
 
@@ -85,7 +85,7 @@ pub trait AngstromDataApi {
         token1: Address,
         uniswap_key: bool,
         block_number: Option<u64>,
-    ) -> eyre::Result<PoolId> {
+    ) -> Result<PoolId, AngstromSdkError> {
         self.pool_key(token0, token1, uniswap_key, block_number)
             .await
             .map(Into::into)
@@ -95,26 +95,26 @@ pub trait AngstromDataApi {
         &self,
         filter: HistoricalOrdersFilter,
         block_stream_buffer: Option<usize>,
-    ) -> eyre::Result<Vec<HistoricalOrders>>;
+    ) -> Result<Vec<HistoricalOrders>, AngstromSdkError>;
 
     async fn historical_bundles(
         &self,
         start_block: Option<u64>,
         end_block: Option<u64>,
         block_stream_buffer: Option<usize>,
-    ) -> eyre::Result<Vec<AngstromBundle>>;
+    ) -> Result<Vec<AngstromBundle>, AngstromSdkError>;
 
     async fn pool_data(
         &self,
         token0: Address,
         token1: Address,
         block_number: Option<u64>,
-    ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)>;
+    ) -> Result<(u64, EnhancedUniswapPool<DataLoader>), AngstromSdkError>;
 
     async fn all_pool_data(
         &self,
         block_number: Option<u64>,
-    ) -> eyre::Result<Vec<(u64, EnhancedUniswapPool<DataLoader>)>> {
+    ) -> Result<Vec<(u64, EnhancedUniswapPool<DataLoader>)>, AngstromSdkError> {
         let token_pairs = self.all_token_pairs().await?;
 
         let pools = futures::future::try_join_all(
@@ -130,11 +130,11 @@ pub trait AngstromDataApi {
     async fn pool_config_store(
         &self,
         block_number: Option<u64>,
-    ) -> eyre::Result<AngstromPoolConfigStore>;
+    ) -> Result<AngstromPoolConfigStore, AngstromSdkError>;
 }
 
 impl<P: Provider> AngstromDataApi for P {
-    async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
+    async fn all_token_pairs(&self) -> Result<Vec<TokenPairInfo>, AngstromSdkError> {
         let config_store = self.pool_config_store(None).await?;
         let partial_key_entries = config_store.all_entries();
 
@@ -159,7 +159,7 @@ impl<P: Provider> AngstromDataApi for P {
             .collect::<Result<Vec<_>, _>>()?)
     }
 
-    async fn all_tokens(&self) -> eyre::Result<Vec<TokenInfoWithMeta>> {
+    async fn all_tokens(&self) -> Result<Vec<TokenInfoWithMeta>, AngstromSdkError> {
         let all_tokens_addresses = self
             .all_token_pairs()
             .await?
@@ -185,13 +185,16 @@ impl<P: Provider> AngstromDataApi for P {
         token1: Address,
         uniswap_key: bool,
         block_number: Option<u64>,
-    ) -> eyre::Result<PoolKey> {
+    ) -> Result<PoolKey, AngstromSdkError> {
         let (token0, token1) = sort_tokens(token0, token1);
 
         let config_store = self.pool_config_store(block_number).await?;
-        let pool_config_store = config_store
-            .get_entry(token0, token1)
-            .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
+        let pool_config_store =
+            config_store
+                .get_entry(token0, token1)
+                .ok_or(AngstromSdkError::AngstromRpc(format!(
+                    "no config store entry for tokens {token0:?} - {token1:?}"
+                )))?;
 
         Ok(PoolKey {
             currency0: token0,
@@ -210,7 +213,7 @@ impl<P: Provider> AngstromDataApi for P {
         &self,
         filter: HistoricalOrdersFilter,
         block_stream_buffer: Option<usize>,
-    ) -> eyre::Result<Vec<HistoricalOrders>> {
+    ) -> Result<Vec<HistoricalOrders>, AngstromSdkError> {
         let filter = &filter;
         let pool_stores = &AngstromPoolTokenIndexToPair::new_with_tokens(self, filter).await?;
 
@@ -245,7 +248,7 @@ impl<P: Provider> AngstromDataApi for P {
         start_block: Option<u64>,
         end_block: Option<u64>,
         block_stream_buffer: Option<usize>,
-    ) -> eyre::Result<Vec<AngstromBundle>> {
+    ) -> Result<Vec<AngstromBundle>, AngstromSdkError> {
         let start_block = start_block.unwrap_or(*ANGSTROM_DEPLOYED_BLOCK.get().unwrap());
         let end_block = if let Some(e) = end_block { e } else { self.get_block_number().await? };
 
@@ -285,7 +288,7 @@ impl<P: Provider> AngstromDataApi for P {
         token0: Address,
         token1: Address,
         block_number: Option<u64>,
-    ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
+    ) -> Result<(u64, EnhancedUniswapPool<DataLoader>), AngstromSdkError> {
         let (token0, token1) = sort_tokens(token0, token1);
 
         let mut pool_key = self.pool_key(token0, token1, false, block_number).await?;
@@ -317,19 +320,21 @@ impl<P: Provider> AngstromDataApi for P {
     async fn pool_config_store(
         &self,
         block_number: Option<u64>,
-    ) -> eyre::Result<AngstromPoolConfigStore> {
+    ) -> Result<AngstromPoolConfigStore, AngstromSdkError> {
         AngstromPoolConfigStore::load_from_chain(
             *ANGSTROM_ADDRESS.get().unwrap(),
             block_number.map(Into::into).unwrap_or(BlockId::latest()),
             self,
         )
         .await
-        .map_err(|e| eyre::eyre!("{e:?}"))
+        .map_err(|e| AngstromSdkError::EthCall(()))
     }
 }
 
 #[cfg(test)]
 mod tests {
+
+    use std::str::FromStr;
 
     use alloy_primitives::aliases::{I24, U24};
 
