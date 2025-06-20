@@ -14,6 +14,15 @@ use angstrom_types::primitive::{AngstromSigner, init_with_chain_id};
 use auto_impl::auto_impl;
 use jsonrpsee_http_client::HttpClient;
 
+pub const USDC: alloy_primitives::Address =
+    alloy_primitives::address!("0x1c7d4b196cb0c7b01d743fbc6116a902379c7238");
+
+pub const WETH: alloy_primitives::Address =
+    alloy_primitives::address!("0xfff9976782d46cc05630d1f6ebab18b2324d6b14");
+
+pub const UNI: alloy_primitives::Address =
+    alloy_primitives::address!("0x1f9840a85d5af5bf1d1762f925bdaddc4201f984");
+
 pub type AlloyRpcProvider<P> = FillProvider<
     JoinFill<
         Identity,

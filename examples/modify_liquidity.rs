@@ -10,7 +10,7 @@ use alloy_sol_types::SolCall;
 use angstrom_sdk_rs::{
     AngstromApi,
     apis::{AngstromDataApi, AngstromOrderBuilder},
-    types::{USDC, WETH}
+    test_utils::{USDC, WETH},
 };
 
 #[tokio::main]
@@ -42,7 +42,7 @@ async fn main() -> eyre::Result<()> {
         pool.fetch_lowest_tick(),
         pool.fetch_highest_tick(),
         pool.tick_spacing,
-        amount
+        amount,
     );
 
     // no callback contract is deployed so this will currently fail

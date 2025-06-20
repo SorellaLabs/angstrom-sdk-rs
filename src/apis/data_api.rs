@@ -334,7 +334,7 @@ mod tests {
     use alloy_primitives::aliases::{I24, U24};
 
     use super::*;
-    use crate::test_utils::spawn_angstrom_api;
+    use crate::test_utils::*;
 
     #[tokio::test]
     async fn test_all_token_pairs() {
@@ -403,6 +403,12 @@ mod tests {
     #[tokio::test]
     async fn test_pool_data() {
         let provider = spawn_angstrom_api().await.unwrap();
-        let _ = provider.pool_data(USDC, WETH, None).await.unwrap();
+        // let _ = provider.pool_data(USDC, WETH, None).await.unwrap();
+
+        let all_pools = provider.all_pool_data(None).await.unwrap();
+
+        all_pools
+            .into_iter()
+            .for_each(|(_, pool)| println!("{:?}\n\n", pool));
     }
 }
