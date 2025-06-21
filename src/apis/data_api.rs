@@ -302,7 +302,7 @@ impl<P: Provider> AngstromDataApi for P {
             *POOL_MANAGER_ADDRESS.get().unwrap(),
         );
 
-        let mut enhanced_uni_pool = EnhancedUniswapPool::new(data_loader, 200);
+        let mut enhanced_uni_pool = EnhancedUniswapPool::new(data_loader, 400);
 
         let block_number =
             if let Some(bn) = block_number { bn } else { self.get_block_number().await? };
