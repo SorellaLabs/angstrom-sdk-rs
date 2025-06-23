@@ -1,18 +1,16 @@
 pub mod filler_orders;
 pub mod valid_orders;
 
-use crate::apis::AngstromOrderApiClient;
-
-use crate::{AngstromApi, providers::backend::AngstromProvider};
-use alloy_provider::WsConnect;
 use alloy_provider::{
-    Identity, Provider, RootProvider,
-    fillers::{BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller},
+    Identity, Provider, RootProvider, WsConnect,
+    fillers::{BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller}
 };
 use alloy_signer_local::PrivateKeySigner;
 use angstrom_types::primitive::{AngstromSigner, init_with_chain_id};
 use auto_impl::auto_impl;
 use jsonrpsee_http_client::HttpClient;
+
+use crate::{AngstromApi, apis::AngstromOrderApiClient, providers::backend::AngstromProvider};
 
 pub const USDC: alloy_primitives::Address =
     alloy_primitives::address!("0x1c7d4b196cb0c7b01d743fbc6116a902379c7238");
@@ -26,9 +24,9 @@ pub const UNI: alloy_primitives::Address =
 pub type AlloyRpcProvider<P> = FillProvider<
     JoinFill<
         Identity,
-        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
+        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>
     >,
-    P,
+    P
 >;
 
 #[auto_impl(&, Box, Arc)]
@@ -52,7 +50,7 @@ pub fn testing_private_key() -> AngstromSigner<PrivateKeySigner> {
         std::env::var("TESTING_PRIVATE_KEY")
             .expect("TESTING_PRIVATE_KEY not found in .env")
             .parse()
-            .unwrap(),
+            .unwrap()
     )
 }
 
