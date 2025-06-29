@@ -1,5 +1,3 @@
-mod utils;
-
 use std::str::FromStr;
 
 use alloy_primitives::{Address, I256, TxKind};
@@ -10,11 +8,10 @@ use alloy_sol_types::SolCall;
 use angstrom_sdk_rs::{
     AngstromApi,
     apis::{AngstromDataApi, AngstromOrderBuilder},
-    test_utils::{USDC, WETH}
+    test_utils::{USDC, WETH},
 };
 
-#[tokio::main]
-async fn main() -> eyre::Result<()> {
+async fn modify_liquidity() -> eyre::Result<()> {
     dotenv::dotenv().ok();
     let angstrom_http_url = &std::env::var("ANGSTROM_SEPOLIA_HTTP_URL")
         .expect("ANGSTROM_SEPOLIA_HTTP_URL not found in .env");
@@ -42,7 +39,7 @@ async fn main() -> eyre::Result<()> {
         pool.fetch_lowest_tick(),
         pool.fetch_highest_tick(),
         pool.tick_spacing,
-        amount
+        amount,
     );
 
     // no callback contract is deployed so this will currently fail

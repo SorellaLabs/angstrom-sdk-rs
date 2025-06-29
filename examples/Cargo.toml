@@ -1,0 +1,46 @@
+[package]
+name = "angstrom-sdk-rs-examples"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "angstrom_sdk_rs_examples"
+
+[dependencies]
+angstrom-sdk-rs = { path = "../", features = ["example-utils"] }
+
+alloy = { version = "1.0.13", features = [
+    "rlp",
+    "full",
+    "node-bindings",
+    "rpc-types-debug",
+    "rpc-types-trace",
+    "json-rpc",
+    "rpc-client",
+    "signer-keystore",
+    "signer-ledger",
+    "signer-mnemonic",
+    "signer-trezor",
+    "signer-yubihsm",
+    "sol-types",
+    "contract",
+] }
+alloy-json-rpc = { version = "1.0.13", default-features = false }
+alloy-primitives = { version = "1.1.0", default-features = false, features = ["map-foldhash"] }
+alloy-provider = { version = "1.0.13", default-features = false, features = ["reqwest"] }
+alloy-rpc-types = { version = "1.0.13", default-features = false, features = ["eth"] }
+alloy-signer-local = { version = "1.0.13", default-features = false }
+alloy-sol-types = "1.2.0"
+angstrom-types = { git = "https://github.com/SorellaLabs/angstrom.git" }
+dotenv = "0.15"
+eyre = "0.6.12"
+tokio = { version = "1", features = ["full"] }
+uniswap_v3_math = { git = "https://github.com/SorellaLabs/v3-math", branch = "main" }
+
+[features]
+default = ["ipc", "ws"]
+full = ["ipc", "ws", "local-reth"]
+local-reth = []
+
+ipc = []
+ws = []

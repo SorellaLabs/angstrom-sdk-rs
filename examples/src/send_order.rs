@@ -1,18 +1,15 @@
-mod utils;
-
 use std::str::FromStr;
 
+use crate::utils::order_gen::ValidOrderGenerator;
 use alloy_provider::{Provider, RootProvider};
 use alloy_signer_local::PrivateKeySigner;
 use angstrom_sdk_rs::{
     AngstromApi,
     apis::AngstromNodeApi,
-    test_utils::{USDC, WETH}
+    test_utils::{USDC, WETH},
 };
-use utils::order_gen::ValidOrderGenerator;
 
-#[tokio::main]
-async fn main() -> eyre::Result<()> {
+async fn send_order() -> eyre::Result<()> {
     dotenv::dotenv().ok();
     let angstrom_http_url = &std::env::var("ANGSTROM_SEPOLIA_HTTP_URL")
         .expect("ANGSTROM_SEPOLIA_HTTP_URL not found in .env");
