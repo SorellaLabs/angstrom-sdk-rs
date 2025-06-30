@@ -5,7 +5,7 @@ use alloy_eips::BlockId;
 use alloy_network::Ethereum;
 use alloy_primitives::{
     Address, FixedBytes, TxKind,
-    aliases::{I24, U24}
+    aliases::{I24, U24},
 };
 use alloy_provider::{Identity, Provider, ProviderBuilder, fillers::*};
 use alloy_sol_types::SolCall;
@@ -13,14 +13,14 @@ use angstrom_types::{
     contract_bindings::{
         angstrom::Angstrom::{PoolKey, executeCall},
         controller_v_1::ControllerV1::getPoolByKeyCall,
-        mintable_mock_erc_20::MintableMockERC20
+        mintable_mock_erc_20::MintableMockERC20,
     },
     contract_payloads::angstrom::{AngstromBundle, AngstromPoolConfigStore},
     primitive::{
         ANGSTROM_ADDRESS, ANGSTROM_DEPLOYED_BLOCK, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS,
-        PoolId
+        PoolId,
     },
-    reth_db_provider::{RethDbLayer, RethDbProvider}
+    reth_db_provider::{RethDbLayer, RethDbProvider},
 };
 use futures::StreamExt;
 use lib_reth::{EthApiServer, reth_libmdbx::RethLibmdbxClient, traits::EthRevm};
@@ -37,15 +37,15 @@ use crate::{apis::AngstromDataApi, types::*};
 pub type RethLayerProviderWrapperType<P> = FillProvider<
     JoinFill<
         Identity,
-        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>
+        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>,
     >,
-    RethDbProvider<P, BlockchainProvider<NodeTypesWithDBAdapter<EthereumNode, Arc<DatabaseEnv>>>>
+    RethDbProvider<P, BlockchainProvider<NodeTypesWithDBAdapter<EthereumNode, Arc<DatabaseEnv>>>>,
 >;
 
 #[derive(Clone)]
 pub struct RethDbProviderWrapper<P: Provider + Clone> {
     db_client: Arc<RethLibmdbxClient>,
-    provider:  P
+    provider: P,
 }
 
 impl<P: Provider + Clone> RethDbProviderWrapper<P> {
@@ -65,6 +65,7 @@ impl<P: Provider + Clone> RethDbProviderWrapper<P> {
     }
 }
 
+#[async_trait::async_trait]
 impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
         let config_store = self.pool_config_store(None).await?;
@@ -76,7 +77,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
                 reth_db_view_call(
                     &self.db_client,
                     *CONTROLLER_V1_ADDRESS.get().unwrap(),
-                    getPoolByKeyCall { key: FixedBytes::from(*key.pool_partial_key) }
+                    getPoolByKeyCall { key: FixedBytes::from(*key.pool_partial_key) },
                 )
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -85,9 +86,9 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             .into_iter()
             .map(|val_res| {
                 val_res.map(|val| TokenPairInfo {
-                    token0:    val.asset0,
-                    token1:    val.asset1,
-                    is_active: true
+                    token0: val.asset0,
+                    token1: val.asset1,
+                    is_active: true,
                 })
             })
             .collect::<Result<Vec<_>, _>>()?)
@@ -115,7 +116,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         token0: Address,
         token1: Address,
         uniswap_key: bool,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<PoolKey> {
         let (token0, token1) = sort_tokens(token0, token1);
 
@@ -125,22 +126,22 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
 
         Ok(PoolKey {
-            currency0:   token0,
-            currency1:   token1,
-            fee:         if uniswap_key {
+            currency0: token0,
+            currency1: token1,
+            fee: if uniswap_key {
                 U24::from(8388608u32)
             } else {
                 U24::from(pool_config_store.fee_in_e6)
             },
             tickSpacing: I24::unchecked_from(pool_config_store.tick_spacing),
-            hooks:       *ANGSTROM_ADDRESS.get().unwrap()
+            hooks: *ANGSTROM_ADDRESS.get().unwrap(),
         })
     }
 
     async fn historical_orders(
         &self,
         filter: HistoricalOrdersFilter,
-        block_stream_buffer: Option<usize>
+        block_stream_buffer: Option<usize>,
     ) -> eyre::Result<Vec<HistoricalOrders>> {
         let filter = &filter;
         let pool_stores = &AngstromPoolTokenIndexToPair::new_with_tokens(self, filter).await?;
@@ -179,7 +180,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         &self,
         start_block: Option<u64>,
         end_block: Option<u64>,
-        block_stream_buffer: Option<usize>
+        block_stream_buffer: Option<usize>,
     ) -> eyre::Result<Vec<AngstromBundle>> {
         let start_block = start_block.unwrap_or(*ANGSTROM_DEPLOYED_BLOCK.get().unwrap());
         let end_block =
@@ -204,7 +205,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
                             let call = executeCall::abi_decode(input).ok()?;
                             let mut input = call.encoded.as_ref();
                             AngstromBundle::pade_decode(&mut input, None).ok()
-                        })
+                        }),
                 )
             })
             .buffer_unordered(block_stream_buffer.unwrap_or(10));
@@ -221,7 +222,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         &self,
         token0: Address,
         token1: Address,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
         let (token0, token1) = sort_tokens(token0, token1);
 
@@ -236,7 +237,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             private_pool_id,
             public_pool_id,
             registry,
-            *POOL_MANAGER_ADDRESS.get().unwrap()
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
         );
 
         let mut enhanced_uni_pool = EnhancedUniswapPool::new(data_loader, 200);
@@ -256,12 +257,12 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
 
     async fn pool_config_store(
         &self,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<AngstromPoolConfigStore> {
         AngstromPoolConfigStore::load_from_chain(
             *ANGSTROM_ADDRESS.get().unwrap(),
             block_number.map(Into::into).unwrap_or(BlockId::latest()),
-            &self.as_provider_with_db_layer()
+            &self.as_provider_with_db_layer(),
         )
         .await
         .map_err(|e| eyre::eyre!("{e:?}"))
@@ -271,10 +272,10 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
 pub(crate) fn reth_db_view_call<IC>(
     provider: &RethLibmdbxClient,
     contract: Address,
-    call: IC
+    call: IC,
 ) -> eyre::Result<Result<IC::Return, alloy_sol_types::Error>>
 where
-    IC: SolCall + Send
+    IC: SolCall + Send,
 {
     let tx = TxEnv {
         kind: TxKind::Call(contract),

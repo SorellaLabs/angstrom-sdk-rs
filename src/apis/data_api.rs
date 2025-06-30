@@ -23,14 +23,15 @@ use angstrom_types::{
         PoolId,
     },
 };
-use futures::{StreamExt, TryFutureExt};
+use futures::{FutureExt, StreamExt, TryFutureExt};
 use pade::PadeDecode;
 use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
 
 use super::utils::*;
 use crate::types::*;
 
-pub trait AngstromDataApi {
+#[async_trait::async_trait]
+pub trait AngstromDataApi: Send {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>>;
 
     async fn all_tokens(&self) -> eyre::Result<Vec<TokenInfoWithMeta>>;
@@ -133,6 +134,7 @@ pub trait AngstromDataApi {
     ) -> eyre::Result<AngstromPoolConfigStore>;
 }
 
+#[async_trait::async_trait]
 impl<P: Provider> AngstromDataApi for P {
     async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
         let config_store = self.pool_config_store(None).await?;
@@ -168,11 +170,11 @@ impl<P: Provider> AngstromDataApi for P {
             .collect::<HashSet<_>>();
 
         Ok(futures::future::try_join_all(all_tokens_addresses.into_iter().map(|address| {
-            view_call(self, address, MintableMockERC20::symbolCall {}).and_then(
-                async move |val_res| {
+            view_call(self, address, MintableMockERC20::symbolCall {})
+                .and_then(async move |val_res| {
                     Ok(val_res.map(|val| TokenInfoWithMeta { address, symbol: val }))
-                },
-            )
+                })
+                .boxed()
         }))
         .await?
         .into_iter()
@@ -188,7 +190,7 @@ impl<P: Provider> AngstromDataApi for P {
     ) -> eyre::Result<PoolKey> {
         let (token0, token1) = sort_tokens(token0, token1);
 
-        let config_store = self.pool_config_store(block_number).await?;
+        let config_store = Box::pin(self.pool_config_store(block_number)).await?;
         let pool_config_store = config_store
             .get_entry(token0, token1)
             .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
@@ -309,6 +311,7 @@ impl<P: Provider> AngstromDataApi for P {
 
         enhanced_uni_pool
             .initialize(Some(block_number), Arc::new(self))
+            .boxed()
             .await?;
 
         Ok((block_number, enhanced_uni_pool))

@@ -161,6 +161,7 @@ where
     }
 }
 
+#[async_trait::async_trait]
 impl<P, T, F> AngstromNodeApi<T> for AngstromApi<P, T, F>
 where
     P: Provider,
@@ -187,6 +188,7 @@ where
     }
 }
 
+#[async_trait::async_trait]
 impl<P, T, F> AngstromDataApi for AngstromApi<P, T, F>
 where
     P: Provider,
@@ -251,6 +253,7 @@ where
     }
 }
 
+#[async_trait::async_trait]
 impl<P, T, F> AngstromUserApi for AngstromApi<P, T, F>
 where
     P: Provider,
