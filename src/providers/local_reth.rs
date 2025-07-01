@@ -67,8 +67,8 @@ impl<P: Provider + Clone> RethDbProviderWrapper<P> {
 
 #[async_trait::async_trait]
 impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
-    async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
-        let config_store = self.pool_config_store(None).await?;
+    async fn all_token_pairs(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenPairInfo>> {
+        let config_store = self.pool_config_store(block_number).await?;
         let partial_key_entries = config_store.all_entries();
 
         let all_pools_call = partial_key_entries
@@ -94,9 +94,9 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             .collect::<Result<Vec<_>, _>>()?)
     }
 
-    async fn all_tokens(&self) -> eyre::Result<Vec<TokenInfoWithMeta>> {
+    async fn all_tokens(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenInfoWithMeta>> {
         let all_tokens_addresses = self
-            .all_token_pairs()
+            .all_token_pairs(block_number)
             .await?
             .into_iter()
             .flat_map(|val| [val.token0, val.token1])

@@ -77,12 +77,12 @@ where
     P: Provider,
     T: AngstromOrderApiClient,
 {
-    async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
-        self.eth_provider.all_token_pairs().await
+    async fn all_token_pairs(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenPairInfo>> {
+        self.eth_provider.all_token_pairs(block_number).await
     }
 
-    async fn all_tokens(&self) -> eyre::Result<Vec<TokenInfoWithMeta>> {
-        self.eth_provider.all_tokens().await
+    async fn all_tokens(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenInfoWithMeta>> {
+        self.eth_provider.all_tokens(block_number).await
     }
 
     async fn pool_key(

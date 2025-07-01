@@ -195,12 +195,12 @@ where
     F: AngstromFiller,
     T: AngstromOrderApiClient,
 {
-    async fn all_token_pairs(&self) -> eyre::Result<Vec<TokenPairInfo>> {
-        self.provider.all_token_pairs().await
+    async fn all_token_pairs(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenPairInfo>> {
+        self.provider.all_token_pairs(block_number).await
     }
 
-    async fn all_tokens(&self) -> eyre::Result<Vec<TokenInfoWithMeta>> {
-        self.provider.all_tokens().await
+    async fn all_tokens(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenInfoWithMeta>> {
+        self.provider.all_tokens(block_number).await
     }
 
     async fn historical_orders(
