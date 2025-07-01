@@ -30,7 +30,9 @@ use reth_node_ethereum::EthereumNode;
 use reth_node_types::NodeTypesWithDBAdapter;
 use reth_provider::providers::BlockchainProvider;
 use revm::{ExecuteEvm, context::TxEnv};
-use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoader};
+use uniswap_v4::uniswap::{
+    pool::EnhancedUniswapPool, pool_data_loader::DataLoader, pool_factory::INITIAL_TICKS_PER_SIDE,
+};
 
 use crate::{apis::AngstromDataApi, types::*};
 
@@ -240,7 +242,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             *POOL_MANAGER_ADDRESS.get().unwrap(),
         );
 
-        let mut enhanced_uni_pool = EnhancedUniswapPool::new(data_loader, 200);
+        let mut enhanced_uni_pool = EnhancedUniswapPool::new(data_loader, INITIAL_TICKS_PER_SIDE);
 
         let block_number = if let Some(bn) = block_number {
             bn
