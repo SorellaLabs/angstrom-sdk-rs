@@ -1211,6 +1211,7 @@ dependencies = [
  "alloy-sol-types",
  "angstrom-rpc",
  "angstrom-types",
+ "async-trait",
  "auto_impl",
  "dotenv",
  "eyre",
