@@ -1,12 +1,19 @@
-[package]
-name = "angstrom-sdk-rs"
+[workspace]
+members = ["sdk", "examples/liquidity/*", "examples/swap/*", "examples/data/*", "examples/advanced/*"]
+
+resolver = "2"
+
+[workspace.package]
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.88.0"
+license = "BUSL-1.1"
+exclude = [".github/"]
 
-[lib]
-name = "angstrom_sdk_rs"
+[workspace.dependencies]
 
-[dependencies]
+angstrom-sdk-rs = { path = "./sdk" }
+
 alloy = { version = "1.0.13", features = [
   "rlp",
   "full",
@@ -55,44 +62,17 @@ tokio = { version = "1", features = ["full"] }
 uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git" }
 validation = { git = "https://github.com/SorellaLabs/angstrom.git" }
 
-lib-reth = { git = "https://github.com/jnoorchashm37/lib-reth", optional = true }
-reth-db = { git = "https://github.com/paradigmxyz/reth", version = "1.5.0", tag = "v1.5.0", optional = true, default-features = false, features = [
+lib-reth = { git = "https://github.com/jnoorchashm37/lib-reth" }
+reth-db = { git = "https://github.com/paradigmxyz/reth", version = "1.5.0", tag = "v1.5.0", default-features = false, features = [
   "mdbx",
 ] }
-reth-node-ethereum = { git = "https://github.com/paradigmxyz/reth", version = "1.5.0", tag = "v1.5.0", optional = true }
-reth-node-types = { git = "https://github.com/paradigmxyz/reth", version = "1.5.0", tag = "v1.5.0", optional = true }
-reth-provider = { git = "https://github.com/paradigmxyz/reth", version = "1.5.0", tag = "v1.5.0", optional = true }
+reth-node-ethereum = { git = "https://github.com/paradigmxyz/reth", version = "1.5.0", tag = "v1.5.0" }
+reth-node-types = { git = "https://github.com/paradigmxyz/reth", version = "1.5.0", tag = "v1.5.0" }
+reth-provider = { git = "https://github.com/paradigmxyz/reth", version = "1.5.0", tag = "v1.5.0" }
 revm = { version = "26.0.1", features = [
   "std",
   "secp256k1",
   "optional_balance_check",
   "optional_block_gas_limit",
-], default-features = false, optional = true }
-revm-database = { version = "6.0.0", default-features = false, optional = true }
-
-[dev-dependencies]
-revm = { version = "26.0.1", features = [
-  "std",
-  "secp256k1",
-  "optional_balance_check",
-  "optional_block_gas_limit",
-  "alloydb",
 ], default-features = false }
 revm-database = { version = "6.0.0", default-features = false }
-
-[features]
-default = ["ipc", "ws"]
-full = ["ipc", "ws", "local-reth"]
-local-reth = [
-  "dep:lib-reth",
-  "dep:revm",
-  "dep:reth-db",
-  "dep:reth-node-ethereum",
-  "dep:reth-node-types",
-  "dep:reth-provider",
-]
-
-ipc = []
-ws = []
-
-example-utils = ["revm/alloydb", "dep:revm-database"]

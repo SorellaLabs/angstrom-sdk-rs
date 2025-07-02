@@ -4140,6 +4140,263 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-collecting-fees"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+ "uniswap_v3_math",
+]
+
+[[package]]
+name = "example-internal-balances"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+]
+
+[[package]]
+name = "example-liquidity-positions"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+]
+
+[[package]]
+name = "example-lp-fees"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+]
+
+[[package]]
+name = "example-modifying-liquidity"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+ "uniswap_v3_math",
+]
+
+[[package]]
+name = "example-orders"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+]
+
+[[package]]
+name = "example-pool-info"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+]
+
+[[package]]
+name = "example-pool-keys"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+]
+
+[[package]]
+name = "example-post-bundle-unlock"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+ "uniswap_v3_math",
+]
+
+[[package]]
+name = "example-post-bundle-unlock-simulation"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+]
+
+[[package]]
+name = "example-top-of-block-auction"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+]
+
+[[package]]
+name = "example-top-of-block-order"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+ "uniswap_v3_math",
+]
+
+[[package]]
+name = "example-ucp"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+]
+
+[[package]]
+name = "example-user-order"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "alloy-json-rpc",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-rpc-types",
+ "alloy-signer-local",
+ "alloy-sol-types",
+ "angstrom-sdk-rs",
+ "angstrom-types",
+ "dotenv",
+ "eyre",
+ "tokio",
+ "uniswap_v3_math",
+]
+
+[[package]]
 name = "eyre"
 version = "0.6.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
