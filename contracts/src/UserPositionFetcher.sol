@@ -35,29 +35,40 @@ contract UserPositionFetcher {
     uint256 internal constant ID_BAD = 1;
     uint256 internal constant ID_GOOD = 2;
 
-    constructor(IPositionManager manager, address angstrom, address owner) {
+    constructor(
+        IPositionManager manager,
+        address angstrom,
+        address owner,
+        uint256 startTokenId,
+        uint256 lastTokenId,
+        uint256 maxResults
+    ) {
         _MANAGER = manager;
         _ANGSTROM = angstrom;
 
         // getPositions will return data directly via assembly and stop execution
-        getPositions(owner);
+        getPositions(owner, startTokenId, lastTokenId, maxResults);
     }
 
     /// So that these types can be auto built by our build script.
     function includeBuild(
-        address owner
+        address owner,
+        uint256 tokenId,
+        uint256 lastTokenId,
+        uint256 maxResults
     ) public view returns (AllUserPositions memory) {}
 
     uint256 internal constant _POSITION_STRUCT_SIZE = 0x80;
 
     function getPositions(
-        address owner
+        address owner,
+        uint256 tokenId,
+        uint256 lastTokenId,
+        uint256 maxResults
     ) public returns (uint256, uint256, Position[] memory) {
-        uint256 lastTokenId = _MANAGER.nextTokenId();
+        if (lastTokenId == 0) lastTokenId = _MANAGER.nextTokenId();
 
-        uint256 tokenId = 1;
-
-        uint256 maxResults = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+        if (maxResults == 0) return (tokenId, lastTokenId, new Position[](0));
 
         uint256 returnData_ptr;
         assembly ("memory-safe") {

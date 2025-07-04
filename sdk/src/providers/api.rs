@@ -21,7 +21,6 @@ use crate::{
     providers::backend::{AlloyWalletRpcProvider, AngstromProvider},
     types::{
         HistoricalOrders, HistoricalOrdersFilter, PoolKeyWithAngstromFee, TokenPairInfo,
-        UserLiquidityPosition,
         errors::AngstromSdkError,
         fillers::{
             AngstromFillProvider, AngstromFiller, AngstromSignerFiller, FillWrapper,

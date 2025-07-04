@@ -35,6 +35,9 @@ pub trait AngstromUserApi: AngstromDataApi {
     async fn all_user_positions(
         &self,
         owner: Address,
+        start_token_id: U256,
+        last_token_id: U256,
+        max_results: U256,
         block_number: Option<u64>
     ) -> eyre::Result<Vec<UserLiquidityPosition>>;
 }
@@ -74,24 +77,31 @@ impl<P: Provider> AngstromUserApi for P {
     async fn all_user_positions(
         &self,
         owner: Address,
+        start_token_id: U256,
+        last_token_id: U256,
+        max_results: U256,
         block_number: Option<u64>
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
+        assert_ne!(start_token_id, U256::ZERO, "start_token_id cannot be 0");
+
         let block_number =
             if let Some(b) = block_number { b } else { self.get_block_number().await? };
 
         let deployer = UserPositionFetcher::deploy_builder(
-            self.clone(),
+            self,
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             *ANGSTROM_ADDRESS.get().unwrap(),
-            owner
+            owner,
+            start_token_id,
+            last_token_id,
+            max_results
         )
         .block(block_number.into());
 
         let deploy_tx = deployer.clone().into_transaction_request();
 
-        let evm_cache = CacheDB::new(
-            WrapDatabaseAsync::new(AlloyDB::new(self.clone(), block_number.into())).unwrap()
-        );
+        let evm_cache =
+            CacheDB::new(WrapDatabaseAsync::new(AlloyDB::new(self, block_number.into())).unwrap());
         let mut revm = Context::mainnet()
             .with_block(BlockEnv { number: U256::from(block_number), ..Default::default() })
             .with_db(evm_cache)
@@ -131,6 +141,8 @@ impl<P: Provider> AngstromUserApi for P {
 #[cfg(test)]
 mod tests {
 
+    use alloy_primitives::U256;
+
     use crate::{
         apis::AngstromUserApi,
         test_utils::valid_test_params::init_valid_position_params_with_provider
@@ -163,18 +175,22 @@ mod tests {
         assert_eq!(pos_info.position_liquidity, position_liquidity);
     }
 
-    #[tokio::test]
+    #[tokio::test(flavor = "multi_thread")]
     async fn test_all_user_positions() {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
         let block_number = pos_info.block_number;
 
         let position_liquidity = provider
-            .all_user_positions(pos_info.owner, Some(block_number))
+            .all_user_positions(
+                pos_info.owner,
+                pos_info.position_token_id - U256::from(100u64),
+                pos_info.position_token_id + U256::from(100u64),
+                U256::MAX,
+                Some(block_number)
+            )
             .await
             .unwrap();
 
         println!("{:?}", position_liquidity);
-
-        // assert_eq!(pos_info.position_liquidity, position_liquidity);
     }
 }
