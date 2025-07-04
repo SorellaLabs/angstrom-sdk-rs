@@ -12,6 +12,7 @@ name = "angstrom_sdk_rs"
 [dependencies]
 alloy.workspace = true
 alloy-consensus.workspace = true
+alloy-contract.workspace = true
 alloy-eips.workspace = true
 alloy-json-rpc.workspace = true
 alloy-network.workspace = true
@@ -29,6 +30,7 @@ auto_impl.workspace = true
 dotenv.workspace = true
 eyre.workspace = true
 futures.workspace = true
+itertools.workspace = true
 jsonrpsee-core.workspace = true
 jsonrpsee-http-client.workspace = true
 jsonrpsee-ws-client.workspace = true
@@ -49,14 +51,19 @@ reth-node-ethereum = { workspace = true, optional = true }
 reth-node-types = { workspace = true, optional = true }
 reth-provider = { workspace = true, optional = true }
 revm = { workspace = true, optional = true }
-revm-database = { workspace = true, optional = true }
+revm-database = { workspace = true, features = ["alloydb"] }
 
 [dev-dependencies]
 revm = { workspace = true, features = ["alloydb"], default-features = false }
 revm-database.workspace = true
 
+[build-dependencies]
+convert_case = "0"
+eyre.workspace = true
+itertools.workspace = true
+
 [features]
-default = ["ipc", "ws"]
+default = ["ipc", "ws", "local-reth"]
 full = ["ipc", "ws", "local-reth"]
 local-reth = [
     "dep:lib-reth",
@@ -70,4 +77,4 @@ local-reth = [
 ipc = []
 ws = []
 
-example-utils = ["revm/alloydb", "dep:revm-database"]
+example-utils = ["revm/alloydb"]

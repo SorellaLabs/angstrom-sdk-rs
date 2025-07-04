@@ -1,7 +1,9 @@
 use alloy_primitives::{
     Address, U256,
-    aliases::{I24, U24}
+    aliases::{I24, U24},
+    keccak256
 };
+use alloy_sol_types::SolValue;
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::PoolKey,
     contract_payloads::angstrom::AngPoolConfigEntry,
@@ -11,9 +13,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TokenPairInfo {
-    pub token0:    Address,
-    pub token1:    Address,
-    pub is_active: bool
+    pub token0: Address,
+    pub token1: Address
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -93,7 +94,7 @@ impl UserLiquidityPosition {
         pool_key: PoolKey,
         position: angstrom_types::contract_bindings::position_fetcher::PositionFetcher::Position
     ) -> Self {
-        let pool_id = pool_key.clone().into();
+        let pool_id = keccak256(pool_key.abi_encode());
         Self {
             pool_id,
             token_id: position.tokenId,
@@ -109,4 +110,42 @@ pub struct BinanceTokenPrice {
     pub address:   Address,
     pub price:     Option<f64>,
     pub error_msg: Option<String>
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Hash)]
+pub struct PoolKeyWithAngstromFee {
+    pub pool_key:       PoolKey,
+    pub pool_fee_in_e6: U24
+}
+
+impl PoolKeyWithAngstromFee {
+    pub fn as_angstrom_pool_id(&self) -> PoolId {
+        let mut this = self.clone();
+        this.pool_key.fee = this.pool_fee_in_e6;
+        this.pool_key.into()
+    }
+
+    pub fn as_angstrom_pool_key_type(
+        &self
+    ) -> angstrom_types::contract_bindings::angstrom::Angstrom::PoolKey {
+        angstrom_types::contract_bindings::angstrom::Angstrom::PoolKey {
+            currency0:   self.pool_key.currency0,
+            currency1:   self.pool_key.currency1,
+            fee:         self.pool_key.fee,
+            tickSpacing: self.pool_key.tickSpacing,
+            hooks:       self.pool_key.hooks
+        }
+    }
+}
+
+impl From<PoolKeyWithAngstromFee> for PoolId {
+    fn from(value: PoolKeyWithAngstromFee) -> Self {
+        keccak256(value.pool_key.abi_encode())
+    }
+}
+
+impl From<&PoolKeyWithAngstromFee> for PoolId {
+    fn from(value: &PoolKeyWithAngstromFee) -> Self {
+        keccak256(value.pool_key.abi_encode())
+    }
 }

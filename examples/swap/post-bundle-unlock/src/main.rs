@@ -1,4 +1,1 @@
-#[tokio::main]
-async fn main() -> eyre::Result<()> {
-    Ok(())
-}
+fn main() {}

@@ -347,7 +347,7 @@ mod tests {
             .unwrap();
 
         let tob_pool_id = provider
-            .pool_id(orders.tob.token_in(), orders.tob.token_out(), false, None)
+            .pool_id(orders.tob.token_in(), orders.tob.token_out(), None)
             .await
             .unwrap();
         let tob_orders = provider
@@ -357,7 +357,7 @@ mod tests {
         assert_eq!(vec![orders.tob.clone()], tob_orders);
 
         let user_pool_id = provider
-            .pool_id(orders.user.token_in(), orders.user.token_out(), false, None)
+            .pool_id(orders.user.token_in(), orders.user.token_out(), None)
             .await
             .unwrap();
         let user_orders = provider

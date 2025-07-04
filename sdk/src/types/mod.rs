@@ -6,3 +6,8 @@ pub use historical_order_filters::*;
 
 pub mod errors;
 pub mod fillers;
+
+pub mod fees;
+
+pub mod contract_bindings;
+pub mod positions;

@@ -3,8 +3,9 @@ use alloy_primitives::{Address, FixedBytes, Signature};
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::{
-    contract_bindings::angstrom::Angstrom::PoolKey,
-    contract_payloads::angstrom::{AngstromBundle, AngstromPoolConfigStore},
+    contract_payloads::angstrom::{
+        AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
+    },
     sol_bindings::grouped_orders::AllOrders
 };
 use jsonrpsee_http_client::HttpClient;
@@ -19,7 +20,7 @@ use crate::{
     },
     providers::backend::{AlloyWalletRpcProvider, AngstromProvider},
     types::{
-        HistoricalOrders, HistoricalOrdersFilter, TokenInfoWithMeta, TokenPairInfo,
+        HistoricalOrders, HistoricalOrdersFilter, PoolKeyWithAngstromFee, TokenPairInfo,
         UserLiquidityPosition,
         errors::AngstromSdkError,
         fillers::{
@@ -195,11 +196,31 @@ where
     F: AngstromFiller,
     T: AngstromOrderApiClient
 {
+    async fn tokens_by_partial_pool_key(
+        &self,
+        pool_partial_key: AngstromPoolPartialKey,
+        block_number: Option<u64>
+    ) -> eyre::Result<TokenPairInfo> {
+        self.provider
+            .tokens_by_partial_pool_key(pool_partial_key, block_number)
+            .await
+    }
+
+    async fn all_token_pairs_with_config_store(
+        &self,
+        block_number: Option<u64>,
+        config_store: AngstromPoolConfigStore
+    ) -> eyre::Result<Vec<TokenPairInfo>> {
+        self.provider
+            .all_token_pairs_with_config_store(block_number, config_store)
+            .await
+    }
+
     async fn all_token_pairs(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenPairInfo>> {
         self.provider.all_token_pairs(block_number).await
     }
 
-    async fn all_tokens(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenInfoWithMeta>> {
+    async fn all_tokens(&self, block_number: Option<u64>) -> eyre::Result<Vec<Address>> {
         self.provider.all_tokens(block_number).await
     }
 
@@ -213,13 +234,15 @@ where
             .await
     }
 
-    async fn pool_data(
+    async fn pool_data_by_tokens(
         &self,
         token0: Address,
         token1: Address,
         block_number: Option<u64>
     ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
-        self.provider.pool_data(token0, token1, block_number).await
+        self.provider
+            .pool_data_by_tokens(token0, token1, block_number)
+            .await
     }
 
     async fn historical_bundles(
@@ -233,15 +256,14 @@ where
             .await
     }
 
-    async fn pool_key(
+    async fn pool_key_by_tokens(
         &self,
         token0: Address,
         token1: Address,
-        uniswap_key: bool,
         block_number: Option<u64>
-    ) -> eyre::Result<PoolKey> {
+    ) -> eyre::Result<PoolKeyWithAngstromFee> {
         self.provider
-            .pool_key(token0, token1, uniswap_key, block_number)
+            .pool_key_by_tokens(token0, token1, block_number)
             .await
     }
 
@@ -253,23 +275,23 @@ where
     }
 }
 
-#[async_trait::async_trait]
-impl<P, T, F> AngstromUserApi for AngstromApi<P, T, F>
-where
-    P: Provider,
-    F: AngstromFiller,
-    T: AngstromOrderApiClient
-{
-    async fn get_positions(
-        &self,
-        user_address: Address,
-        block_number: Option<u64>
-    ) -> eyre::Result<Vec<UserLiquidityPosition>> {
-        self.provider
-            .get_positions(user_address, block_number)
-            .await
-    }
-}
+// #[async_trait::async_trait]
+// impl<P, T, F> AngstromUserApi for AngstromApi<P, T, F>
+// where
+//     P: Provider,
+//     F: AngstromFiller,
+//     T: AngstromOrderApiClient
+// {
+//     async fn get_positions(
+//         &self,
+//         user_address: Address,
+//         block_number: Option<u64>
+//     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
+//         self.provider
+//             .get_positions(user_address, block_number)
+//             .await
+//     }
+// }
 
 #[cfg(test)]
 impl<P, T, F> AngstromApi<P, T, F>

@@ -16,25 +16,25 @@ use crate::apis::node_api::AngstromOrderApiClient;
 pub struct AngstromApiBuilder<P, T, F = ()>
 where
     P: Provider,
-    T: AngstromOrderApiClient
+    T: AngstromOrderApiClient,
 {
-    eth_provider:    Option<P>,
-    angstrom_url:    String,
+    eth_provider: Option<P>,
+    angstrom_url: String,
     address_builder: Option<AngstromAddressBuilder>,
-    _t:              PhantomData<fn() -> (T, F)>
+    _t: PhantomData<fn() -> (T, F)>,
 }
 
 impl<P, T, F> Default for AngstromApiBuilder<P, T, F>
 where
     P: Provider,
-    T: AngstromOrderApiClient
+    T: AngstromOrderApiClient,
 {
     fn default() -> Self {
         Self {
-            eth_provider:    None,
-            angstrom_url:    "".to_owned(),
+            eth_provider: None,
+            angstrom_url: "".to_owned(),
             address_builder: None,
-            _t:              Default::default()
+            _t: Default::default(),
         }
     }
 }
@@ -42,7 +42,7 @@ where
 impl<P, T, F> AngstromApiBuilder<P, T, F>
 where
     P: Provider,
-    T: AngstromOrderApiClient
+    T: AngstromOrderApiClient,
 {
     pub fn with_angstrom_addresses(self, address_builder: AngstromAddressBuilder) -> Self {
         Self { address_builder: Some(address_builder), ..self }

@@ -13,5 +13,5 @@ pub enum FillerError {
     #[error(
         "insufficient balance - token {0:?} with amount {1:?} in ourder, but user only has {2:?}"
     )]
-    InsufficientBalanceError(Address, U256, U256)
+    InsufficientBalanceError(Address, U256, U256),
 }

@@ -1,7 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc
-};
+use std::{collections::HashMap, sync::Arc};
 
 use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
@@ -14,16 +11,18 @@ use alloy_sol_types::SolCall;
 use angstrom_types::{
     contract_bindings::{
         angstrom::Angstrom::{PoolKey, executeCall},
-        controller_v_1::ControllerV1::getPoolByKeyCall,
-        mintable_mock_erc_20::MintableMockERC20
+        controller_v_1::ControllerV1::getPoolByKeyCall
     },
-    contract_payloads::angstrom::{AngstromBundle, AngstromPoolConfigStore},
+    contract_payloads::angstrom::{
+        AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
+    },
     primitive::{
         ANGSTROM_ADDRESS, ANGSTROM_DEPLOYED_BLOCK, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS,
         PoolId
     }
 };
-use futures::{FutureExt, StreamExt, TryFutureExt};
+use futures::{FutureExt, StreamExt};
+use itertools::Itertools;
 use pade::PadeDecode;
 use uniswap_v4::uniswap::{
     pool::EnhancedUniswapPool, pool_data_loader::DataLoader, pool_factory::INITIAL_TICKS_PER_SIDE
@@ -34,27 +33,92 @@ use crate::types::*;
 
 #[async_trait::async_trait]
 pub trait AngstromDataApi: Send {
-    async fn all_token_pairs(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenPairInfo>>;
+    async fn all_token_pairs(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenPairInfo>> {
+        let config_store = self.pool_config_store(block_number).await?;
+        self.all_token_pairs_with_config_store(block_number, config_store)
+            .await
+    }
 
-    async fn all_tokens(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenInfoWithMeta>>;
+    async fn all_token_pairs_with_config_store(
+        &self,
+        block_number: Option<u64>,
+        config_store: AngstromPoolConfigStore
+    ) -> eyre::Result<Vec<TokenPairInfo>>;
 
-    async fn pool_key(
+    async fn all_tokens(&self, block_number: Option<u64>) -> eyre::Result<Vec<Address>> {
+        let config_store = self.pool_config_store(block_number).await?;
+        self.all_tokens_with_config_store(block_number, config_store)
+            .await
+    }
+
+    async fn all_tokens_with_config_store(
+        &self,
+        block_number: Option<u64>,
+        config_store: AngstromPoolConfigStore
+    ) -> eyre::Result<Vec<Address>> {
+        Ok(self
+            .all_token_pairs_with_config_store(block_number, config_store)
+            .await?
+            .into_iter()
+            .flat_map(|val| [val.token0, val.token1])
+            .unique()
+            .collect())
+    }
+
+    async fn pool_key_by_tokens(
         &self,
         token0: Address,
         token1: Address,
-        uniswap_key: bool,
         block_number: Option<u64>
-    ) -> eyre::Result<PoolKey>;
+    ) -> eyre::Result<PoolKeyWithAngstromFee>;
+
+    async fn pool_key_by_pool_id(
+        &self,
+        pool_id: PoolId,
+
+        block_number: Option<u64>
+    ) -> eyre::Result<Option<PoolKeyWithAngstromFee>> {
+        let config_store = self.pool_config_store(block_number).await?;
+        self.pool_key_by_pool_id_with_config_store(pool_id, block_number, config_store)
+            .await
+    }
+
+    async fn pool_key_by_pool_id_with_config_store(
+        &self,
+        pool_id: PoolId,
+        block_number: Option<u64>,
+        config_store: AngstromPoolConfigStore
+    ) -> eyre::Result<Option<PoolKeyWithAngstromFee>> {
+        Ok(self
+            .all_pool_keys_with_config_store(block_number, config_store)
+            .await?
+            .into_iter()
+            .find(|pool_key| pool_id == PoolId::from(pool_key)))
+    }
+
+    async fn tokens_by_partial_pool_key(
+        &self,
+        partial_pool_key: AngstromPoolPartialKey,
+        block_number: Option<u64>
+    ) -> eyre::Result<TokenPairInfo>;
 
     async fn all_pool_keys(
         &self,
-        uniswap_key: bool,
         block_number: Option<u64>
-    ) -> eyre::Result<Vec<PoolKey>> {
-        let (config_store, all_token_pairs) = tokio::try_join!(
-            self.pool_config_store(block_number),
-            self.all_token_pairs(block_number)
-        )?;
+    ) -> eyre::Result<Vec<PoolKeyWithAngstromFee>> {
+        let config_store = self.pool_config_store(block_number).await?;
+        self.all_pool_keys_with_config_store(block_number, config_store)
+            .await
+    }
+
+    async fn all_pool_keys_with_config_store(
+        &self,
+        block_number: Option<u64>,
+        config_store: AngstromPoolConfigStore
+    ) -> eyre::Result<Vec<PoolKeyWithAngstromFee>> {
+        let all_token_pairs = self
+            .all_token_pairs_with_config_store(block_number, config_store.clone())
+            .await?;
 
         let tokens_to_partial_keys = all_token_pairs
             .into_iter()
@@ -73,17 +137,14 @@ pub trait AngstromDataApi: Send {
                 let (k, v) = entry.pair();
                 let (token0, token1) = tokens_to_partial_keys.get(k).unwrap();
 
-                PoolKey {
+                let pool_key = PoolKey {
                     currency0:   *token0,
                     currency1:   *token1,
-                    fee:         if uniswap_key {
-                        U24::from(8388608u32)
-                    } else {
-                        U24::from(v.fee_in_e6)
-                    },
+                    fee:         U24::from(0x800000),
                     tickSpacing: I24::unchecked_from(v.tick_spacing),
                     hooks:       *ANGSTROM_ADDRESS.get().unwrap()
-                }
+                };
+                PoolKeyWithAngstromFee { pool_key, pool_fee_in_e6: U24::from(v.fee_in_e6) }
             })
             .collect())
     }
@@ -92,12 +153,11 @@ pub trait AngstromDataApi: Send {
         &self,
         token0: Address,
         token1: Address,
-        uniswap_key: bool,
         block_number: Option<u64>
     ) -> eyre::Result<PoolId> {
-        self.pool_key(token0, token1, uniswap_key, block_number)
+        self.pool_key_by_tokens(token0, token1, block_number)
             .await
-            .map(Into::into)
+            .map(|key| key.pool_key.into())
     }
 
     async fn historical_orders(
@@ -113,12 +173,29 @@ pub trait AngstromDataApi: Send {
         block_stream_buffer: Option<usize>
     ) -> eyre::Result<Vec<AngstromBundle>>;
 
-    async fn pool_data(
+    async fn pool_data_by_tokens(
         &self,
         token0: Address,
         token1: Address,
         block_number: Option<u64>
     ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)>;
+
+    async fn pool_data_by_pool_id(
+        &self,
+        pool_id: PoolId,
+        block_number: Option<u64>
+    ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
+        let pool_key = self
+            .pool_key_by_pool_id(pool_id, block_number)
+            .await?
+            .ok_or_else(|| eyre::eyre!("pool key does not exist for these tokens"))?;
+        self.pool_data_by_tokens(
+            pool_key.pool_key.currency0,
+            pool_key.pool_key.currency1,
+            block_number
+        )
+        .await
+    }
 
     async fn all_pool_data(
         &self,
@@ -129,7 +206,7 @@ pub trait AngstromDataApi: Send {
         let pools = futures::future::try_join_all(
             token_pairs
                 .into_iter()
-                .map(|pair| self.pool_data(pair.token0, pair.token1, block_number))
+                .map(|pair| self.pool_data_by_tokens(pair.token0, pair.token1, block_number))
         )
         .await?;
 
@@ -144,75 +221,62 @@ pub trait AngstromDataApi: Send {
 
 #[async_trait::async_trait]
 impl<P: Provider> AngstromDataApi for P {
-    async fn all_token_pairs(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenPairInfo>> {
-        let config_store = self.pool_config_store(block_number).await?;
-        let partial_key_entries = config_store.all_entries();
+    async fn tokens_by_partial_pool_key(
+        &self,
+        pool_partial_key: AngstromPoolPartialKey,
+        block_number: Option<u64>
+    ) -> eyre::Result<TokenPairInfo> {
+        let out = view_call(
+            self,
+            block_number,
+            *CONTROLLER_V1_ADDRESS.get().unwrap(),
+            getPoolByKeyCall { key: FixedBytes::from(*pool_partial_key) }
+        )
+        .await??;
 
-        let all_pools_call = futures::future::try_join_all(partial_key_entries.iter().map(|key| {
-            view_call(
-                self,
-                *CONTROLLER_V1_ADDRESS.get().unwrap(),
-                getPoolByKeyCall { key: FixedBytes::from(*key.pool_partial_key) }
-            )
-        }))
+        Ok(TokenPairInfo { token0: out.asset0, token1: out.asset1 })
+    }
+
+    async fn all_token_pairs_with_config_store(
+        &self,
+        block_number: Option<u64>,
+        config_store: AngstromPoolConfigStore
+    ) -> eyre::Result<Vec<TokenPairInfo>> {
+        let partial_key_entries = config_store.all_entries();
+        let token_pairs = futures::future::try_join_all(
+            partial_key_entries
+                .iter()
+                .map(|key| self.tokens_by_partial_pool_key(key.pool_partial_key, block_number))
+        )
         .await?;
 
-        Ok(all_pools_call
-            .into_iter()
-            .map(|val_res| {
-                val_res.map(|val| TokenPairInfo {
-                    token0:    val.asset0,
-                    token1:    val.asset1,
-                    is_active: true
-                })
-            })
-            .collect::<Result<Vec<_>, _>>()?)
+        Ok(token_pairs)
     }
 
-    async fn all_tokens(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenInfoWithMeta>> {
-        let all_tokens_addresses = self
-            .all_token_pairs(block_number)
-            .await?
-            .into_iter()
-            .flat_map(|val| [val.token0, val.token1])
-            .collect::<HashSet<_>>();
-
-        Ok(futures::future::try_join_all(all_tokens_addresses.into_iter().map(|address| {
-            view_call(self, address, MintableMockERC20::symbolCall {})
-                .and_then(async move |val_res| {
-                    Ok(val_res.map(|val| TokenInfoWithMeta { address, symbol: val }))
-                })
-                .boxed()
-        }))
-        .await?
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()?)
-    }
-
-    async fn pool_key(
+    async fn pool_key_by_tokens(
         &self,
         token0: Address,
         token1: Address,
-        uniswap_key: bool,
         block_number: Option<u64>
-    ) -> eyre::Result<PoolKey> {
+    ) -> eyre::Result<PoolKeyWithAngstromFee> {
         let (token0, token1) = sort_tokens(token0, token1);
 
-        let config_store = Box::pin(self.pool_config_store(block_number)).await?;
+        let config_store = self.pool_config_store(block_number).await?;
         let pool_config_store = config_store
             .get_entry(token0, token1)
             .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
 
-        Ok(PoolKey {
+        let pool_key = PoolKey {
             currency0:   token0,
             currency1:   token1,
-            fee:         if uniswap_key {
-                U24::from(8388608u32)
-            } else {
-                U24::from(pool_config_store.fee_in_e6)
-            },
+            fee:         U24::from(0x800000),
             tickSpacing: I24::unchecked_from(pool_config_store.tick_spacing),
             hooks:       *ANGSTROM_ADDRESS.get().unwrap()
+        };
+
+        Ok(PoolKeyWithAngstromFee {
+            pool_key,
+            pool_fee_in_e6: U24::from(pool_config_store.fee_in_e6)
         })
     }
 
@@ -290,7 +354,7 @@ impl<P: Provider> AngstromDataApi for P {
         Ok(all_bundles)
     }
 
-    async fn pool_data(
+    async fn pool_data_by_tokens(
         &self,
         token0: Address,
         token1: Address,
@@ -298,12 +362,13 @@ impl<P: Provider> AngstromDataApi for P {
     ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
         let (token0, token1) = sort_tokens(token0, token1);
 
-        let mut pool_key = self.pool_key(token0, token1, false, block_number).await?;
-        let public_pool_id = pool_key.clone().into();
-        let registry = vec![pool_key.clone()].into();
+        let pool_key = self
+            .pool_key_by_tokens(token0, token1, block_number)
+            .await?;
 
-        pool_key.fee = U24::from(0x800000);
+        let public_pool_id = pool_key.clone().into();
         let private_pool_id: PoolId = pool_key.clone().into();
+        let registry = vec![pool_key.as_angstrom_pool_key_type()].into();
 
         let data_loader = DataLoader::new_with_registry(
             private_pool_id,
@@ -367,15 +432,15 @@ mod tests {
         let pool_keys = provider.all_tokens(None).await.unwrap();
         assert!(!pool_keys.is_empty());
 
-        let contains_usdc = pool_keys
-            .iter()
-            .any(|token| token.address == USDC && &token.symbol == "USDC");
-        let contains_weth = pool_keys
-            .iter()
-            .any(|token| token.address == WETH && &token.symbol == "WETH");
+        // let contains_usdc = pool_keys
+        //     .iter()
+        //     .any(|token| token.address == USDC && &token.symbol == "USDC");
+        // let contains_weth = pool_keys
+        //     .iter()
+        //     .any(|token| token.address == WETH && &token.symbol == "WETH");
 
-        assert!(contains_usdc);
-        assert!(contains_weth);
+        // assert!(contains_usdc);
+        // assert!(contains_weth);
     }
 
     #[tokio::test]
@@ -385,7 +450,7 @@ mod tests {
         let token1 = WETH;
 
         let pool_key = provider
-            .pool_key(token0, token1, false, None)
+            .pool_key_by_tokens(token0, token1, None)
             .await
             .unwrap();
         let expected_pool_key = PoolKey {
@@ -396,7 +461,7 @@ mod tests {
             hooks:       *ANGSTROM_ADDRESS.get().unwrap()
         };
 
-        assert_eq!(pool_key, expected_pool_key);
+        assert_eq!(pool_key.pool_key, expected_pool_key);
     }
 
     #[tokio::test]
@@ -414,7 +479,7 @@ mod tests {
     #[tokio::test]
     async fn test_pool_data() {
         let provider = spawn_angstrom_api().await.unwrap();
-        // let _ = provider.pool_data(USDC, WETH, None).await.unwrap();
+        // let _ = provider.pool_data_by_tokens(USDC, WETH, None).await.unwrap();
 
         let all_pools = provider.all_pool_data(None).await.unwrap();
 
