@@ -12,5 +12,5 @@ pub enum AngstromSdkError {
     #[error("angstrom-rpc error: {0:?}")]
     AngstromRpc(String),
     #[error(transparent)]
-    Deser(#[from] serde_json::Error),
+    Deser(#[from] serde_json::Error)
 }

@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    str::FromStr,
+    str::FromStr
 };
 
 use alloy_consensus::Transaction;
@@ -10,7 +10,7 @@ use alloy_sol_types::SolCall;
 use angstrom_types::{
     contract_bindings::angstrom::Angstrom::{PoolKey, executeCall},
     contract_payloads::angstrom::{AngstromBundle, TopOfBlockOrder, UserOrder},
-    primitive::{ANGSTROM_ADDRESS, PoolId},
+    primitive::{ANGSTROM_ADDRESS, PoolId}
 };
 use pade::PadeDecode;
 
@@ -19,10 +19,10 @@ use crate::apis::data_api::AngstromDataApi;
 
 #[derive(Debug, Default, Clone)]
 pub struct HistoricalOrdersFilter {
-    pub order_kinds: HashSet<OrderKind>,
+    pub order_kinds:   HashSet<OrderKind>,
     pub order_filters: HashSet<OrderFilter>,
-    pub from_block: Option<u64>,
-    pub to_block: Option<u64>,
+    pub from_block:    Option<u64>,
+    pub to_block:      Option<u64>
 }
 
 impl HistoricalOrdersFilter {
@@ -63,7 +63,7 @@ impl HistoricalOrdersFilter {
     pub(crate) fn filter_block(
         &self,
         block: Block,
-        pool_stores: &AngstromPoolTokenIndexToPair,
+        pool_stores: &AngstromPoolTokenIndexToPair
     ) -> Vec<HistoricalOrders> {
         block
             .transactions
@@ -82,7 +82,7 @@ impl HistoricalOrdersFilter {
     fn apply_kinds(
         &self,
         bundle: AngstromBundle,
-        pool_stores: &AngstromPoolTokenIndexToPair,
+        pool_stores: &AngstromPoolTokenIndexToPair
     ) -> Vec<HistoricalOrders> {
         let mut all_orders = Vec::new();
 
@@ -125,7 +125,7 @@ impl HistoricalOrdersFilter {
                 .0
                 .get(&order_pair_index)
                 .map(|pool| pool.token0 == *token0 && pool.token1 == *token1)
-                .unwrap_or_default(),
+                .unwrap_or_default()
         })
     }
 }
@@ -133,7 +133,7 @@ impl HistoricalOrdersFilter {
 #[derive(Debug, Copy, Hash, Clone, PartialEq, Eq)]
 pub enum OrderKind {
     TOB,
-    User,
+    User
 }
 
 impl FromStr for OrderKind {
@@ -144,7 +144,7 @@ impl FromStr for OrderKind {
         match lower_s.as_str() {
             "tob" => Ok(Self::TOB),
             "user" => Ok(Self::User),
-            _ => Err(eyre::eyre!("{s} is not a valid OrderKind")),
+            _ => Err(eyre::eyre!("{s} is not a valid OrderKind"))
         }
     }
 }
@@ -153,7 +153,7 @@ impl FromStr for OrderKind {
 pub enum OrderFilter {
     PoolId(PoolId),
     PoolKey(PoolKey),
-    Tokens(Address, Address),
+    Tokens(Address, Address)
 }
 
 impl OrderFilter {
@@ -165,7 +165,7 @@ impl OrderFilter {
 #[derive(Debug, Clone)]
 pub enum HistoricalOrders {
     TOB(TopOfBlockOrder),
-    User(UserOrder),
+    User(UserOrder)
 }
 
 #[derive(Debug)]
@@ -174,10 +174,10 @@ pub(crate) struct AngstromPoolTokenIndexToPair(HashMap<u16, PoolMetadata>);
 impl AngstromPoolTokenIndexToPair {
     pub(crate) async fn new_with_tokens<P>(
         provider: &P,
-        filter: &HistoricalOrdersFilter,
+        filter: &HistoricalOrdersFilter
     ) -> eyre::Result<Self>
     where
-        P: AngstromDataApi,
+        P: AngstromDataApi
     {
         let token_pairs = filter
             .order_filters

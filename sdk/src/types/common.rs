@@ -80,31 +80,6 @@ pub(crate) fn sort_tokens(token0: Address, token1: Address) -> (Address, Address
     if token0 < token1 { (token0, token1) } else { (token1, token0) }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct UserLiquidityPosition {
-    pub pool_id:    PoolId,
-    pub token_id:   U256,
-    pub tick_lower: i32,
-    pub tick_upper: i32,
-    pub pool_key:   PoolKey
-}
-
-impl UserLiquidityPosition {
-    pub fn new(
-        pool_key: PoolKey,
-        position: angstrom_types::contract_bindings::position_fetcher::PositionFetcher::Position
-    ) -> Self {
-        let pool_id = keccak256(pool_key.abi_encode());
-        Self {
-            pool_id,
-            token_id: position.tokenId,
-            tick_lower: position.tickLower.as_i32(),
-            tick_upper: position.tickUpper.as_i32(),
-            pool_key
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct BinanceTokenPrice {
     pub address:   Address,

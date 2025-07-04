@@ -19,7 +19,13 @@ impl From<UserPositionFetcher::UserPosition> for UserLiquidityPosition {
             tick_lower: value.tickLower,
             tick_upper: value.tickUpper,
             liquidity:  value.liquidity,
-            pool_key:   value.poolKey
+            pool_key:   PoolKey {
+                currency0:   value.poolKey.currency0,
+                currency1:   value.poolKey.currency1,
+                fee:         value.poolKey.fee,
+                tickSpacing: value.poolKey.tickSpacing,
+                hooks:       value.poolKey.hooks
+            }
         }
     }
 }

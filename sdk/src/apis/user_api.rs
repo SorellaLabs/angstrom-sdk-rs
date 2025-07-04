@@ -1,3 +1,4 @@
+use alloy_network::TransactionBuilder;
 use alloy_primitives::{Address, U256};
 use alloy_provider::Provider;
 use alloy_sol_types::SolType;
@@ -13,9 +14,8 @@ use revm_database::{AlloyDB, CacheDB, WrapDatabaseAsync};
 
 use super::{data_api::AngstromDataApi, utils::*};
 use crate::types::{
-    UserLiquidityPosition,
     contract_bindings::UserPositionFetcher::{self, AllUserPositions},
-    positions::{UnpackPositionInfo, UnpackedPositionInfo}
+    positions::{UnpackPositionInfo, UnpackedPositionInfo, UserLiquidityPosition}
 };
 
 #[async_trait::async_trait]
@@ -119,7 +119,7 @@ impl<P: Provider> AngstromUserApi for P {
 
         let positions = match out.result {
             ExecutionResult::Revert { output, .. } => {
-                AllUserPositions::abi_decode(&output)?.positions;
+                AllUserPositions::abi_decode(&output)?.positions
             }
             _ => eyre::bail!("failed to deploy UserPositionFetcher contract - {out:?}")
         };

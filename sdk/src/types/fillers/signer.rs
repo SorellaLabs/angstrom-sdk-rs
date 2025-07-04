@@ -5,8 +5,8 @@ use angstrom_types::{
     primitive::ANGSTROM_DOMAIN,
     sol_bindings::{
         grouped_orders::AllOrders,
-        rpc_orders::{OmitOrderMeta, OrderMeta},
-    },
+        rpc_orders::{OmitOrderMeta, OrderMeta}
+    }
 };
 use pade::PadeEncode;
 
@@ -24,7 +24,11 @@ impl<S: Signer + SignerSync + Clone> AngstromSignerFiller<S> {
     fn sign_into_meta<O: OmitOrderMeta>(&self, order: &O) -> Result<OrderMeta, FillerError> {
         let hash = order.no_meta_eip712_signing_hash(ANGSTROM_DOMAIN.get().unwrap());
         let sig = self.0.sign_hash_sync(&hash)?;
-        Ok(OrderMeta { isEcdsa: true, from: self.0.address(), signature: sig.pade_encode().into() })
+        Ok(OrderMeta {
+            isEcdsa:   true,
+            from:      self.0.address(),
+            signature: sig.pade_encode().into()
+        })
     }
 }
 
@@ -35,11 +39,11 @@ impl<S: Signer + SignerSync + Send + Sync + Clone> FillWrapper for AngstromSigne
     async fn prepare<P, T>(
         &self,
         _: &AngstromProvider<P, T>,
-        order: &AllOrders,
+        order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError>
     where
         P: Provider,
-        T: AngstromOrderApiClient,
+        T: AngstromOrderApiClient
     {
         let my_address = self.0.address();
 
@@ -120,7 +124,7 @@ mod tests {
     use super::*;
     use crate::{
         AngstromApi,
-        test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider},
+        test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider}
     };
 
     #[tokio::test(flavor = "multi_thread")]
@@ -136,7 +140,11 @@ mod tests {
 
         let sig_f = |hash| {
             let sig = signer.sign_hash_sync(&hash).unwrap();
-            OrderMeta { isEcdsa: true, from: signer.address(), signature: sig.pade_encode().into() }
+            OrderMeta {
+                isEcdsa:   true,
+                from:      signer.address(),
+                signature: sig.pade_encode().into()
+            }
         };
 
         let ref_api = &api;
