@@ -1,5 +1,5 @@
 use alloy_primitives::{
-    Address, U256, address,
+    Address, TxHash, U256, address,
     aliases::{I24, U24},
     b256
 };
@@ -28,7 +28,9 @@ pub struct ValidPositionTestParameters {
     pub tick_lower: I24,
     pub tick_upper: I24,
     pub position_liquidity: u128,
+    pub bundle_tx_hash: TxHash,
     pub block_number: u64,
+    pub block_for_liquidity_add: u64,
     pub valid_block_after_swaps: u64
 }
 
@@ -81,10 +83,12 @@ pub fn init_valid_position_params() -> ValidPositionTestParameters {
         owner,
         pool_key,
         angstrom_address,
+        block_for_liquidity_add: 8642751,
         valid_block_after_swaps: 8678399,
         pool_manager_address: *POOL_MANAGER_ADDRESS.get().unwrap(),
         position_manager_address: *POSITION_MANAGER_ADDRESS.get().unwrap(),
-        controller_v1_address: *CONTROLLER_V1_ADDRESS.get().unwrap()
+        controller_v1_address: *CONTROLLER_V1_ADDRESS.get().unwrap(),
+        bundle_tx_hash: b256!("0x9ce27e5b59826ceab910d59a526ad9cdb23df71adff51df9bca82e24577c458a")
     }
 }
 

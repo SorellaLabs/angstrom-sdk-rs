@@ -3,23 +3,21 @@ use std::{collections::HashMap, sync::Arc};
 use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
 use alloy_primitives::{
-    Address, FixedBytes,
+    Address, FixedBytes, TxHash,
     aliases::{I24, U24}
 };
 use alloy_provider::Provider;
-use alloy_sol_types::SolCall;
+use alloy_sol_types::{SolCall, SolEvent};
 use angstrom_types::{
     contract_bindings::{
-        angstrom::Angstrom::executeCall, controller_v_1::ControllerV1::getPoolByKeyCall,
-        pool_manager::PoolManager::PoolKey
+        angstrom::Angstrom,
+        controller_v_1::ControllerV1::getPoolByKeyCall,
+        pool_manager::PoolManager::{self, PoolKey}
     },
     contract_payloads::angstrom::{
         AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
     },
-    primitive::{
-        ANGSTROM_ADDRESS, ANGSTROM_DEPLOYED_BLOCK, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS,
-        PoolId
-    }
+    primitive::{ANGSTROM_ADDRESS, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS, PoolId}
 };
 use futures::{FutureExt, StreamExt};
 use itertools::Itertools;
@@ -35,7 +33,7 @@ use crate::types::{
 };
 
 #[async_trait::async_trait]
-pub trait AngstromDataApi: Send {
+pub trait AngstromDataApi: Send + Sized {
     async fn all_token_pairs(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenPair>> {
         let config_store = self.pool_config_store(block_number).await?;
         self.all_token_pairs_with_config_store(config_store, block_number)
@@ -166,14 +164,53 @@ pub trait AngstromDataApi: Send {
         &self,
         filter: HistoricalOrdersFilter,
         block_stream_buffer: Option<usize>
-    ) -> eyre::Result<Vec<HistoricalOrders>>;
+    ) -> eyre::Result<Vec<WithEthMeta<Vec<HistoricalOrders>>>> {
+        let bundles = self
+            .historical_bundles(filter.from_block, filter.to_block, block_stream_buffer)
+            .await?;
+
+        if bundles.is_empty() {
+            return Ok(Vec::new())
+        }
+
+        let pool_stores = AngstromPoolTokenIndexToPair::new_with_tokens(self, &filter).await?;
+
+        Ok(bundles
+            .into_iter()
+            .map(|bundle| bundle.map_inner(|b| filter.filter_bundle(b, &pool_stores)))
+            .collect())
+    }
 
     async fn historical_bundles(
         &self,
         start_block: Option<u64>,
         end_block: Option<u64>,
         block_stream_buffer: Option<usize>
-    ) -> eyre::Result<Vec<AngstromBundle>>;
+    ) -> eyre::Result<Vec<WithEthMeta<AngstromBundle>>>;
+
+    async fn historical_liquidity_changes(
+        &self,
+        start_block: Option<u64>,
+        end_block: Option<u64>
+    ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>>;
+
+    async fn historical_post_bundle_unlock_swaps(
+        &self,
+        start_block: Option<u64>,
+        end_block: Option<u64>
+    ) -> eyre::Result<Vec<WithEthMeta<PoolManager::Swap>>>;
+
+    async fn get_bundle_by_block(
+        &self,
+        block_number: u64,
+        verify_successful_tx: bool
+    ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>>;
+
+    async fn get_bundle_by_tx_hash(
+        &self,
+        tx_hash: TxHash,
+        verify_successful_tx: bool
+    ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>>;
 
     async fn pool_data_by_tokens(
         &self,
@@ -298,78 +335,72 @@ impl<P: Provider> AngstromDataApi for P {
         })
     }
 
-    async fn historical_orders(
-        &self,
-        filter: HistoricalOrdersFilter,
-        block_stream_buffer: Option<usize>
-    ) -> eyre::Result<Vec<HistoricalOrders>> {
-        let filter = &filter;
-        let pool_stores = &AngstromPoolTokenIndexToPair::new_with_tokens(self, filter).await?;
-
-        let start_block = filter
-            .from_block
-            .unwrap_or(*ANGSTROM_DEPLOYED_BLOCK.get().unwrap());
-        let end_block =
-            if let Some(e) = filter.to_block { e } else { self.get_block_number().await? };
-
-        let mut block_stream = futures::stream::iter(start_block..=end_block)
-            .map(|bn| async move {
-                let block = self
-                    .get_block(bn.into())
-                    .full()
-                    .await?
-                    .ok_or(eyre::eyre!("block number {bn} not found"))?;
-
-                Ok::<_, eyre::ErrReport>(filter.filter_block(block, pool_stores))
-            })
-            .buffer_unordered(block_stream_buffer.unwrap_or(10));
-
-        let mut all_orders = Vec::new();
-        while let Some(val) = block_stream.next().await {
-            all_orders.extend(val?);
-        }
-
-        Ok(all_orders)
-    }
-
     async fn historical_bundles(
         &self,
         start_block: Option<u64>,
         end_block: Option<u64>,
         block_stream_buffer: Option<usize>
-    ) -> eyre::Result<Vec<AngstromBundle>> {
-        let start_block = start_block.unwrap_or(*ANGSTROM_DEPLOYED_BLOCK.get().unwrap());
-        let end_block = if let Some(e) = end_block { e } else { self.get_block_number().await? };
+    ) -> eyre::Result<Vec<WithEthMeta<AngstromBundle>>> {
+        let filter = historical_pool_manager_swap_filter(start_block, end_block);
+        let logs = self.get_logs(&filter).await?;
 
-        let mut block_stream = futures::stream::iter(start_block..=end_block)
-            .map(|bn| async move {
-                let block = self
-                    .get_block(bn.into())
-                    .full()
-                    .await?
-                    .ok_or(eyre::eyre!("block number {bn} not found"))?;
+        let blocks_with_bundles = logs.into_iter().flat_map(|log| {
+            let swap_log = PoolManager::Swap::decode_log(&log.inner).ok()?;
+            (swap_log.fee == U24::ZERO)
+                .then(|| log.block_number)
+                .flatten()
+        });
 
-                Ok::<_, eyre::ErrReport>(
-                    block
-                        .transactions
-                        .into_transactions()
-                        .filter(|tx| tx.to() == Some(*ANGSTROM_ADDRESS.get().unwrap()))
-                        .filter_map(|transaction| {
-                            let input: &[u8] = transaction.input();
-                            let call = executeCall::abi_decode(input).ok()?;
-                            let mut input = call.encoded.as_ref();
-                            AngstromBundle::pade_decode(&mut input, None).ok()
-                        })
-                )
-            })
-            .buffer_unordered(block_stream_buffer.unwrap_or(10));
+        let mut bundle_stream = futures::stream::iter(blocks_with_bundles)
+            .map(|block_number| self.get_bundle_by_block(block_number, true))
+            .buffer_unordered(block_stream_buffer.unwrap_or(100));
 
         let mut all_bundles = Vec::new();
-        while let Some(val) = block_stream.next().await {
+        while let Some(val) = bundle_stream.next().await {
             all_bundles.extend(val?);
         }
 
         Ok(all_bundles)
+    }
+
+    async fn historical_liquidity_changes(
+        &self,
+        start_block: Option<u64>,
+        end_block: Option<u64>
+    ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
+        let filter = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
+        let logs = self.get_logs(&filter).await?;
+
+        Ok(logs
+            .into_iter()
+            .flat_map(|log| {
+                PoolManager::ModifyLiquidity::decode_log(&log.inner)
+                    .ok()
+                    .map(|inner_log| {
+                        WithEthMeta::new(log.block_number, log.transaction_hash, inner_log.data)
+                    })
+            })
+            .collect())
+    }
+
+    async fn historical_post_bundle_unlock_swaps(
+        &self,
+        start_block: Option<u64>,
+        end_block: Option<u64>
+    ) -> eyre::Result<Vec<WithEthMeta<PoolManager::Swap>>> {
+        let filter = historical_pool_manager_swap_filter(start_block, end_block);
+        let logs = self.get_logs(&filter).await?;
+
+        Ok(logs
+            .into_iter()
+            .flat_map(|log| {
+                PoolManager::Swap::decode_log(&log.inner)
+                    .ok()
+                    .map(|inner_log| {
+                        WithEthMeta::new(log.block_number, log.transaction_hash, inner_log.data)
+                    })
+            })
+            .collect())
     }
 
     async fn pool_data_by_tokens(
@@ -433,6 +464,90 @@ impl<P: Provider> AngstromDataApi for P {
             pool_id
         )
         .await?)
+    }
+
+    async fn get_bundle_by_block(
+        &self,
+        block_number: u64,
+        verify_successful_tx: bool
+    ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
+        let Some(block) = self.get_block(block_number.into()).full().await? else {
+            return Ok(None)
+        };
+
+        let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
+
+        let mut angstrom_bundles = block
+            .transactions
+            .into_transactions()
+            .filter(|tx| tx.to() == Some(angstrom_address))
+            .filter_map(|transaction| {
+                let input: &[u8] = transaction.input();
+                let call = Angstrom::executeCall::abi_decode(input).ok()?;
+                let mut input = call.encoded.as_ref();
+                Some((
+                    *transaction.inner.tx_hash(),
+                    WithEthMeta::new(
+                        transaction.block_number,
+                        Some(*transaction.inner.tx_hash()),
+                        AngstromBundle::pade_decode(&mut input, None).ok()?
+                    )
+                ))
+            });
+
+        if verify_successful_tx {
+            let bundles =
+                futures::future::try_join_all(angstrom_bundles.map(async |(tx_hash, bundle)| {
+                    if self
+                        .get_transaction_receipt(tx_hash)
+                        .await?
+                        .unwrap()
+                        .status()
+                    {
+                        Ok::<_, eyre::ErrReport>(Some(bundle))
+                    } else {
+                        Ok(None)
+                    }
+                }))
+                .await?;
+            Ok(bundles.into_iter().flatten().next())
+        } else {
+            Ok(angstrom_bundles.next().map(|(_, bundle)| bundle))
+        }
+    }
+
+    async fn get_bundle_by_tx_hash(
+        &self,
+        tx_hash: TxHash,
+        verify_successful_tx: bool
+    ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
+        let Some(transaction) = self.get_transaction_by_hash(tx_hash).await? else {
+            return Ok(None)
+        };
+
+        if verify_successful_tx {
+            if !self
+                .get_transaction_receipt(tx_hash)
+                .await?
+                .ok_or_else(|| eyre::eyre!("reciepts not enabled on node - tx hash: {tx_hash:?}"))?
+                .status()
+            {
+                return Ok(None);
+            }
+        }
+
+        let input: &[u8] = transaction.input();
+        Ok(Angstrom::executeCall::abi_decode(input)
+            .ok()
+            .map(|decoded| {
+                let mut input = decoded.encoded.as_ref();
+                Some(WithEthMeta::new(
+                    transaction.block_number,
+                    Some(*transaction.inner.tx_hash()),
+                    AngstromBundle::pade_decode(&mut input, None).ok()?
+                ))
+            })
+            .flatten())
     }
 }
 
@@ -607,7 +722,7 @@ mod tests {
 
         let filter = HistoricalOrdersFilter::new()
             .from_block(state.valid_block_after_swaps)
-            .to_block(state.valid_block_after_swaps + 1)
+            .to_block(state.valid_block_after_swaps)
             .order_kind(OrderKind::User);
         let orders = provider.historical_orders(filter, None).await.unwrap();
 
@@ -621,13 +736,28 @@ mod tests {
         let orders = provider
             .historical_bundles(
                 Some(state.valid_block_after_swaps),
-                Some(state.valid_block_after_swaps + 1),
+                Some(state.valid_block_after_swaps),
                 None
             )
             .await
             .unwrap();
 
         assert_eq!(orders.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_historical_liquidity_changes() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let modify_liquidity = provider
+            .historical_liquidity_changes(
+                Some(state.block_for_liquidity_add),
+                Some(state.block_for_liquidity_add)
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(modify_liquidity.len(), 1);
     }
 
     #[tokio::test]
@@ -712,5 +842,29 @@ mod tests {
             .unwrap();
 
         assert_eq!(slot0.tick, state.current_pool_tick);
+    }
+
+    #[tokio::test]
+    async fn test_get_bundle_by_block() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let bundle = provider
+            .get_bundle_by_block(state.valid_block_after_swaps, true)
+            .await
+            .unwrap();
+
+        assert!(bundle.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_get_bundle_by_tx_hash() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let bundle = provider
+            .get_bundle_by_tx_hash(state.bundle_tx_hash, true)
+            .await
+            .unwrap();
+
+        assert!(bundle.is_some());
     }
 }

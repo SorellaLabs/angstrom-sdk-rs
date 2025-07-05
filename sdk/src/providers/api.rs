@@ -1,9 +1,9 @@
 use alloy_network::TxSigner;
-use alloy_primitives::{Address, FixedBytes, Signature, U256};
+use alloy_primitives::{Address, FixedBytes, Signature, TxHash, U256};
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::{
-    contract_bindings::pool_manager::PoolManager::PoolKey,
+    contract_bindings::pool_manager::PoolManager::{self, PoolKey},
     contract_payloads::angstrom::{
         AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
     },
@@ -22,7 +22,7 @@ use crate::{
     },
     providers::backend::{AlloyWalletRpcProvider, AngstromProvider},
     types::{
-        HistoricalOrders, HistoricalOrdersFilter, PoolKeyWithAngstromFee, TokenPair,
+        HistoricalOrders, HistoricalOrdersFilter, PoolKeyWithAngstromFee, TokenPair, WithEthMeta,
         errors::AngstromSdkError,
         fillers::{
             AngstromFillProvider, AngstromFiller, AngstromSignerFiller, FillWrapper,
@@ -234,7 +234,7 @@ where
         &self,
         filter: HistoricalOrdersFilter,
         block_stream_buffer: Option<usize>
-    ) -> eyre::Result<Vec<HistoricalOrders>> {
+    ) -> eyre::Result<Vec<WithEthMeta<Vec<HistoricalOrders>>>> {
         self.provider
             .historical_orders(filter, block_stream_buffer)
             .await
@@ -256,9 +256,29 @@ where
         start_block: Option<u64>,
         end_block: Option<u64>,
         block_stream_buffer: Option<usize>
-    ) -> eyre::Result<Vec<AngstromBundle>> {
+    ) -> eyre::Result<Vec<WithEthMeta<AngstromBundle>>> {
         self.provider
             .historical_bundles(start_block, end_block, block_stream_buffer)
+            .await
+    }
+
+    async fn historical_liquidity_changes(
+        &self,
+        start_block: Option<u64>,
+        end_block: Option<u64>
+    ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
+        self.provider
+            .historical_liquidity_changes(start_block, end_block)
+            .await
+    }
+
+    async fn historical_post_bundle_unlock_swaps(
+        &self,
+        start_block: Option<u64>,
+        end_block: Option<u64>
+    ) -> eyre::Result<Vec<WithEthMeta<PoolManager::Swap>>> {
+        self.provider
+            .historical_post_bundle_unlock_swaps(start_block, end_block)
             .await
     }
 
@@ -286,6 +306,26 @@ where
         block_number: Option<u64>
     ) -> eyre::Result<UnpackedSlot0> {
         self.provider.slot0_by_pool_id(pool_id, block_number).await
+    }
+
+    async fn get_bundle_by_block(
+        &self,
+        block_number: u64,
+        verify_successful_tx: bool
+    ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
+        self.provider
+            .get_bundle_by_block(block_number, verify_successful_tx)
+            .await
+    }
+
+    async fn get_bundle_by_tx_hash(
+        &self,
+        tx_hash: TxHash,
+        verify_successful_tx: bool
+    ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
+        self.provider
+            .get_bundle_by_tx_hash(tx_hash, verify_successful_tx)
+            .await
     }
 }
 

@@ -1,5 +1,5 @@
 use alloy_primitives::{
-    Address,
+    Address, TxHash,
     aliases::{I24, U24},
     keccak256
 };
@@ -122,5 +122,26 @@ impl From<PoolKeyWithAngstromFee> for PoolId {
 impl From<&PoolKeyWithAngstromFee> for PoolId {
     fn from(value: &PoolKeyWithAngstromFee) -> Self {
         keccak256(value.pool_key.abi_encode())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct WithEthMeta<D> {
+    pub block_number: Option<u64>,
+    pub tx_hash:      Option<TxHash>,
+    pub inner:        D
+}
+
+impl<D> WithEthMeta<D> {
+    pub fn new(block_number: Option<u64>, tx_hash: Option<TxHash>, inner: D) -> Self {
+        Self { block_number, tx_hash, inner }
+    }
+
+    pub fn map_inner<O>(self, f: impl Fn(D) -> O) -> WithEthMeta<O> {
+        WithEthMeta {
+            block_number: self.block_number,
+            tx_hash:      self.tx_hash,
+            inner:        f(self.inner)
+        }
     }
 }

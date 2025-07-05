@@ -3,16 +3,12 @@ use std::{
     str::FromStr
 };
 
-use alloy_consensus::Transaction;
 use alloy_primitives::Address;
-use alloy_rpc_types::Block;
-use alloy_sol_types::SolCall;
 use angstrom_types::{
-    contract_bindings::{angstrom::Angstrom::executeCall, pool_manager::PoolManager::PoolKey},
+    contract_bindings::pool_manager::PoolManager::PoolKey,
     contract_payloads::angstrom::{AngstromBundle, TopOfBlockOrder, UserOrder},
-    primitive::{ANGSTROM_ADDRESS, PoolId}
+    primitive::PoolId
 };
-use pade::PadeDecode;
 
 use super::PoolMetadata;
 use crate::apis::data_api::AngstromDataApi;
@@ -60,26 +56,7 @@ impl HistoricalOrdersFilter {
         self
     }
 
-    pub(crate) fn filter_block(
-        &self,
-        block: Block,
-        pool_stores: &AngstromPoolTokenIndexToPair
-    ) -> Vec<HistoricalOrders> {
-        block
-            .transactions
-            .into_transactions()
-            .filter(|tx| tx.to() == Some(*ANGSTROM_ADDRESS.get().unwrap()))
-            .filter_map(|transaction| {
-                let input: &[u8] = transaction.input();
-                let call = executeCall::abi_decode(input).ok()?;
-                let mut input = call.encoded.as_ref();
-                AngstromBundle::pade_decode(&mut input, None).ok()
-            })
-            .flat_map(|bundle| self.apply_kinds(bundle, pool_stores))
-            .collect()
-    }
-
-    fn apply_kinds(
+    pub(crate) fn filter_bundle(
         &self,
         bundle: AngstromBundle,
         pool_stores: &AngstromPoolTokenIndexToPair
@@ -177,7 +154,7 @@ impl AngstromPoolTokenIndexToPair {
         filter: &HistoricalOrdersFilter
     ) -> eyre::Result<Self>
     where
-        P: AngstromDataApi
+        P: AngstromDataApi + Sized
     {
         let token_pairs = filter
             .order_filters

@@ -1,12 +1,12 @@
 use alloy_network::{Ethereum, EthereumWallet, TxSigner};
-use alloy_primitives::{Address, Signature, U256};
+use alloy_primitives::{Address, Signature, TxHash, U256};
 use alloy_provider::{
     Identity, Provider,
     fillers::{FillProvider, JoinFill, WalletFiller}
 };
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::{
-    contract_bindings::pool_manager::PoolManager::PoolKey,
+    contract_bindings::pool_manager::PoolManager::{self, PoolKey},
     contract_payloads::angstrom::{
         AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
     },
@@ -130,7 +130,7 @@ where
         &self,
         filter: HistoricalOrdersFilter,
         block_stream_buffer: Option<usize>
-    ) -> eyre::Result<Vec<HistoricalOrders>> {
+    ) -> eyre::Result<Vec<WithEthMeta<Vec<HistoricalOrders>>>> {
         self.eth_provider
             .historical_orders(filter, block_stream_buffer)
             .await
@@ -141,9 +141,29 @@ where
         start_block: Option<u64>,
         end_block: Option<u64>,
         block_stream_buffer: Option<usize>
-    ) -> eyre::Result<Vec<AngstromBundle>> {
+    ) -> eyre::Result<Vec<WithEthMeta<AngstromBundle>>> {
         self.eth_provider
             .historical_bundles(start_block, end_block, block_stream_buffer)
+            .await
+    }
+
+    async fn historical_liquidity_changes(
+        &self,
+        start_block: Option<u64>,
+        end_block: Option<u64>
+    ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
+        self.eth_provider
+            .historical_liquidity_changes(start_block, end_block)
+            .await
+    }
+
+    async fn historical_post_bundle_unlock_swaps(
+        &self,
+        start_block: Option<u64>,
+        end_block: Option<u64>
+    ) -> eyre::Result<Vec<WithEthMeta<PoolManager::Swap>>> {
+        self.eth_provider
+            .historical_post_bundle_unlock_swaps(start_block, end_block)
             .await
     }
 
@@ -172,6 +192,26 @@ where
     ) -> eyre::Result<UnpackedSlot0> {
         self.eth_provider
             .slot0_by_pool_id(pool_id, block_number)
+            .await
+    }
+
+    async fn get_bundle_by_block(
+        &self,
+        block_number: u64,
+        verify_successful_tx: bool
+    ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
+        self.eth_provider
+            .get_bundle_by_block(block_number, verify_successful_tx)
+            .await
+    }
+
+    async fn get_bundle_by_tx_hash(
+        &self,
+        tx_hash: TxHash,
+        verify_successful_tx: bool
+    ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
+        self.eth_provider
+            .get_bundle_by_tx_hash(tx_hash, verify_successful_tx)
             .await
     }
 }
