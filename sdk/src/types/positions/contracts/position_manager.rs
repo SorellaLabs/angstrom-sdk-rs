@@ -25,7 +25,7 @@ pub fn position_manager_position_info_slot(token_id: U256) -> B256 {
     keccak256((token_id, U256::from(POSITION_MANAGER_POSITION_INFO_SLOT)).abi_encode())
 }
 
-pub fn position_manager_pool_key_slot(position_info: U256) -> B256 {
+pub fn position_manager_pool_key_and_info_slot(position_info: U256) -> B256 {
     let position_id = position_info.position_manager_pool_map_key();
     keccak256((position_id, U256::from(POSITION_MANAGER_POOL_KEYS_SLOT)).abi_encode())
 }
@@ -45,7 +45,7 @@ pub async fn position_manager_position_info<F: StorageSlotFetcher>(
     Ok(position_info)
 }
 
-pub async fn position_manager_pool_key<F: StorageSlotFetcher>(
+pub async fn position_manager_pool_key_and_info<F: StorageSlotFetcher>(
     slot_fetcher: &F,
     position_manager_address: Address,
     block_number: Option<u64>,
@@ -59,7 +59,7 @@ pub async fn position_manager_pool_key<F: StorageSlotFetcher>(
     )
     .await?;
     let pool_key_slot_base =
-        U256::from_be_slice(position_manager_pool_key_slot(position_info).as_slice());
+        U256::from_be_slice(position_manager_pool_key_and_info_slot(position_info).as_slice());
 
     let (slot0, slot1, slot2) = tokio::try_join!(
         slot_fetcher.storage_at(position_manager_address, pool_key_slot_base.into(), block_number),
@@ -154,11 +154,11 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_position_manager_pool_key() {
+    async fn test_position_manager_pool_key_and_info() {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
         let block_number = pos_info.block_number;
 
-        let (results, _) = position_manager_pool_key(
+        let (results, _) = position_manager_pool_key_and_info(
             &provider,
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             Some(block_number),

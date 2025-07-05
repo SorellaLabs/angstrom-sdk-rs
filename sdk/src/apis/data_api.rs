@@ -29,7 +29,10 @@ use uniswap_v4::uniswap::{
 };
 
 use super::utils::*;
-use crate::types::*;
+use crate::types::{
+    positions::{pool_manager_pool_slot0, utils::UnpackedSlot0},
+    *
+};
 
 #[async_trait::async_trait]
 pub trait AngstromDataApi: Send {
@@ -217,6 +220,12 @@ pub trait AngstromDataApi: Send {
         &self,
         block_number: Option<u64>
     ) -> eyre::Result<AngstromPoolConfigStore>;
+
+    async fn pool_slot0(
+        &self,
+        pool_id: PoolId,
+        block_number: Option<u64>
+    ) -> eyre::Result<UnpackedSlot0>;
 }
 
 #[async_trait::async_trait]
@@ -401,6 +410,20 @@ impl<P: Provider> AngstromDataApi for P {
         )
         .await
         .map_err(|e| eyre::eyre!("{e:?}"))
+    }
+
+    async fn pool_slot0(
+        &self,
+        pool_id: PoolId,
+        block_number: Option<u64>
+    ) -> eyre::Result<UnpackedSlot0> {
+        Ok(pool_manager_pool_slot0(
+            self.root(),
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            block_number,
+            pool_id
+        )
+        .await?)
     }
 }
 

@@ -7,8 +7,11 @@ use angstrom_types::{
 
 use super::data_api::AngstromDataApi;
 use crate::types::positions::{
-    UserLiquidityPosition, pool_manager_liquidity, position_manager_next_token_id,
-    position_manager_owner_of, position_manager_pool_key, utils::UnpackedPositionInfo
+    UserLiquidityPosition,
+    fees::{LiquidityPositionFees, position_fees},
+    pool_manager_position_state_liquidity, position_manager_next_token_id,
+    position_manager_owner_of, position_manager_pool_key_and_info,
+    utils::UnpackedPositionInfo
 };
 
 #[async_trait::async_trait]
@@ -33,6 +36,12 @@ pub trait AngstromUserApi: AngstromDataApi {
         max_results: Option<usize>,
         block_number: Option<u64>
     ) -> eyre::Result<Vec<UserLiquidityPosition>>;
+
+    async fn user_position_fees(
+        &self,
+        position_token_id: U256,
+        block_number: Option<u64>
+    ) -> eyre::Result<LiquidityPositionFees>;
 }
 
 #[async_trait::async_trait]
@@ -42,7 +51,7 @@ impl<P: Provider> AngstromUserApi for P {
         position_token_id: U256,
         block_number: Option<u64>
     ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
-        let (pool_key, position_info) = position_manager_pool_key(
+        let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             block_number,
@@ -58,7 +67,7 @@ impl<P: Provider> AngstromUserApi for P {
         position_token_id: U256,
         block_number: Option<u64>
     ) -> eyre::Result<u128> {
-        let (pool_key, position_info) = position_manager_pool_key(
+        let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             block_number,
@@ -66,11 +75,11 @@ impl<P: Provider> AngstromUserApi for P {
         )
         .await?;
 
-        let liquidity = pool_manager_liquidity(
+        let liquidity = pool_manager_position_state_liquidity(
             self.root(),
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             block_number,
-            pool_key,
+            pool_key.into(),
             position_token_id,
             position_info.tick_lower,
             position_info.tick_upper
@@ -119,7 +128,7 @@ impl<P: Provider> AngstromUserApi for P {
                 continue;
             }
 
-            let (pool_key, position_info) = position_manager_pool_key(
+            let (pool_key, position_info) = position_manager_pool_key_and_info(
                 root,
                 position_manager_address,
                 block_number,
@@ -132,11 +141,11 @@ impl<P: Provider> AngstromUserApi for P {
                 continue;
             }
 
-            let liquidity = pool_manager_liquidity(
+            let liquidity = pool_manager_position_state_liquidity(
                 root,
                 pool_manager_address,
                 block_number,
-                pool_key.clone(),
+                pool_key.clone().into(),
                 start_token_id,
                 position_info.tick_lower,
                 position_info.tick_upper
@@ -161,6 +170,34 @@ impl<P: Provider> AngstromUserApi for P {
         }
 
         Ok(all_positions)
+    }
+
+    async fn user_position_fees(
+        &self,
+        position_token_id: U256,
+        block_number: Option<u64>
+    ) -> eyre::Result<LiquidityPositionFees> {
+        let ((pool_key, position_info), position_liquidity) = tokio::try_join!(
+            self.position_and_pool_info(position_token_id, block_number),
+            self.position_liquidity(position_token_id, block_number),
+        )?;
+
+        let pool_id = pool_key.clone().into();
+        let slot0 = self.pool_slot0(pool_id, block_number).await?;
+
+        Ok(position_fees(
+            self.root(),
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            *ANGSTROM_ADDRESS.get().unwrap(),
+            block_number,
+            pool_id,
+            slot0.tick,
+            position_token_id,
+            position_info.tick_lower,
+            position_info.tick_upper,
+            position_liquidity
+        )
+        .await?)
     }
 }
 
@@ -220,5 +257,18 @@ mod tests {
             .unwrap();
 
         assert_eq!(position_liquidity.len(), 4);
+    }
+
+    #[tokio::test]
+    async fn test_user_position_fees() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.block_number;
+
+        let results = provider
+            .user_position_fees(pos_info.position_token_id, Some(block_number))
+            .await
+            .unwrap();
+
+        println!("{results:?}");
     }
 }

@@ -35,7 +35,13 @@ use uniswap_v4::uniswap::{
     pool::EnhancedUniswapPool, pool_data_loader::DataLoader, pool_factory::INITIAL_TICKS_PER_SIDE
 };
 
-use crate::{apis::AngstromDataApi, types::*};
+use crate::{
+    apis::AngstromDataApi,
+    types::{
+        positions::{pool_manager_pool_slot0, utils::UnpackedSlot0},
+        *
+    }
+};
 
 pub type RethLayerProviderWrapperType<P> = FillProvider<
     JoinFill<
@@ -257,6 +263,20 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         )
         .await
         .map_err(|e| eyre::eyre!("{e:?}"))
+    }
+
+    async fn pool_slot0(
+        &self,
+        pool_id: PoolId,
+        block_number: Option<u64>
+    ) -> eyre::Result<UnpackedSlot0> {
+        Ok(pool_manager_pool_slot0(
+            self,
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            block_number,
+            pool_id
+        )
+        .await?)
     }
 }
 

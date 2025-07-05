@@ -6,6 +6,7 @@ use angstrom_types::{
     contract_payloads::angstrom::{
         AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
     },
+    primitive::PoolId,
     sol_bindings::grouped_orders::AllOrders
 };
 use jsonrpsee_http_client::HttpClient;
@@ -24,7 +25,8 @@ use crate::{
         fillers::{
             AngstromFillProvider, AngstromFiller, AngstromSignerFiller, FillWrapper,
             NonceGeneratorFiller, TokenBalanceCheckFiller
-        }
+        },
+        positions::utils::UnpackedSlot0
     }
 };
 
@@ -270,6 +272,14 @@ where
         block_number: Option<u64>
     ) -> eyre::Result<AngstromPoolConfigStore> {
         self.provider.pool_config_store(block_number).await
+    }
+
+    async fn pool_slot0(
+        &self,
+        pool_id: PoolId,
+        block_number: Option<u64>
+    ) -> eyre::Result<UnpackedSlot0> {
+        self.provider.pool_slot0(pool_id, block_number).await
     }
 }
 

@@ -5,8 +5,11 @@ use alloy_provider::{
     fillers::{FillProvider, JoinFill, WalletFiller}
 };
 use alloy_signer::{Signer, SignerSync};
-use angstrom_types::contract_payloads::angstrom::{
-    AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
+use angstrom_types::{
+    contract_payloads::angstrom::{
+        AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
+    },
+    primitive::PoolId
 };
 use jsonrpsee_http_client::HttpClient;
 use jsonrpsee_ws_client::{WsClient, WsClientBuilder};
@@ -17,7 +20,7 @@ use crate::{
         data_api::AngstromDataApi,
         node_api::{AngstromNodeApi, AngstromOrderApiClient}
     },
-    types::*
+    types::{positions::utils::UnpackedSlot0, *}
 };
 
 pub type AlloyWalletRpcProvider<P> =
@@ -151,6 +154,14 @@ where
         block_number: Option<u64>
     ) -> eyre::Result<AngstromPoolConfigStore> {
         self.eth_provider.pool_config_store(block_number).await
+    }
+
+    async fn pool_slot0(
+        &self,
+        pool_id: PoolId,
+        block_number: Option<u64>
+    ) -> eyre::Result<UnpackedSlot0> {
+        self.eth_provider.pool_slot0(pool_id, block_number).await
     }
 }
 
