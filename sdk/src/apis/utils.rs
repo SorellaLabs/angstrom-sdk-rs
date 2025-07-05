@@ -1,4 +1,5 @@
 use alloy::transports::TransportErrorKind;
+use alloy_eips::BlockId;
 use alloy_json_rpc::RpcError;
 use alloy_primitives::{Address, TxKind};
 use alloy_provider::Provider;
@@ -7,6 +8,7 @@ use alloy_sol_types::SolCall;
 
 pub(crate) async fn view_call<P, IC>(
     provider: &P,
+    block_number: Option<u64>,
     contract: Address,
     call: IC
 ) -> Result<Result<IC::Return, alloy_sol_types::Error>, RpcError<TransportErrorKind>>
@@ -20,6 +22,9 @@ where
         ..Default::default()
     };
 
-    let data = provider.call(tx).await?;
+    let data = provider
+        .call(tx)
+        .block(block_number.map(Into::into).unwrap_or(BlockId::latest()))
+        .await?;
     Ok(IC::abi_decode_returns(&data))
 }

@@ -1,14 +1,15 @@
-use alloy_primitives::{
-    Address, Bytes, I256,
-    aliases::{I24, U24}
-};
-use alloy_sol_types::SolCall;
+use alloy_primitives::{B256, Bytes, I256, U256, aliases::I24};
+use alloy_sol_types::{SolCall, SolValue};
 use angstrom_types::{
-    contract_bindings::pool_manager::{IPoolManager, PoolManager},
-    primitive::ANGSTROM_ADDRESS,
+    contract_bindings::{
+        pool_manager::{IPoolManager, PoolManager},
+        position_manager::PositionManager
+    },
     sol_bindings::{grouped_orders::AllOrders, rpc_orders::TopOfBlockOrder}
 };
 use testing_tools::type_generator::orders::{ToBOrderBuilder, UserOrderBuilder};
+
+use crate::builders::PositionManagerLiquidity;
 
 pub struct AngstromOrderBuilder;
 
@@ -25,56 +26,36 @@ impl AngstromOrderBuilder {
         f(UserOrderBuilder::new().standing())
     }
 
+    /// through PoolManager
     pub fn modify_liquidity(
-        token0: Address,
-        token1: Address,
-        tick_lower: i32,
-        tick_upper: i32,
-        pool_tick_spacing: i32,
-        liquidity_delta: I256
+        pool_key: PoolManager::PoolKey,
+        tick_lower: I24,
+        tick_upper: I24,
+        liquidity_delta: I256,
+        hook_data: Bytes,
+        salt: B256
     ) -> PoolManager::unlockCall {
         let params = IPoolManager::ModifyLiquidityParams {
-            tickLower:      I24::unchecked_from(tick_lower),
-            tickUpper:      I24::unchecked_from(tick_upper),
+            tickLower: tick_lower,
+            tickUpper: tick_upper,
             liquidityDelta: liquidity_delta,
-            salt:           Default::default()
-        };
-
-        let pool_key = PoolManager::PoolKey {
-            currency0:   token0,
-            currency1:   token1,
-            fee:         U24::from(0x800000),
-            tickSpacing: I24::unchecked_from(pool_tick_spacing),
-            hooks:       *ANGSTROM_ADDRESS.get().unwrap()
+            salt
         };
 
         let modify_liq_call =
-            PoolManager::modifyLiquidityCall { key: pool_key, params, hookData: Bytes::default() };
+            PoolManager::modifyLiquidityCall { key: pool_key, params, hookData: hook_data };
 
         PoolManager::unlockCall { data: modify_liq_call.abi_encode().into() }
     }
-}
 
-mod _liquidity_calls {
-    use alloy::sol;
-
-    sol! {
-        function addLiquidity(
-            address asset0,
-            address asset1,
-            int24 tickLower,
-            int24 tickUpper,
-            uint256 liquidity,
-            bytes32 salt
-        ) public returns (int256 callerDelta, int256 feesAccrued);
-
-        function removeLiquidity(
-            address asset0,
-            address asset1,
-            int24 tickLower,
-            int24 tickUpper,
-            uint256 liquidity,
-            bytes32 salt
-        ) public returns (int256 callerDelta, int256 feesAccrued);
+    /// through PositionManager
+    pub fn modify_liquidities(
+        position_manager_liquidity: PositionManagerLiquidity,
+        deadline: U256
+    ) -> PositionManager::modifyLiquiditiesCall {
+        PositionManager::modifyLiquiditiesCall {
+            unlockData: position_manager_liquidity.abi_encode().into(),
+            deadline
+        }
     }
 }

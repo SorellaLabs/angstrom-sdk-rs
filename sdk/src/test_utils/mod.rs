@@ -1,25 +1,25 @@
 pub mod filler_orders;
-pub mod valid_orders;
+pub mod valid_test_params;
 
 use alloy_provider::{
     Identity, Provider, RootProvider, WsConnect,
     fillers::{BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller}
 };
 use alloy_signer_local::PrivateKeySigner;
-use angstrom_types::primitive::{AngstromSigner, init_with_chain_id};
+use angstrom_types::primitive::{AngstromSigner, try_init_with_chain_id};
 use auto_impl::auto_impl;
 use jsonrpsee_http_client::HttpClient;
 
 use crate::{AngstromApi, apis::AngstromOrderApiClient, providers::backend::AngstromProvider};
 
-pub const USDC: alloy_primitives::Address =
-    alloy_primitives::address!("0x1c7d4b196cb0c7b01d743fbc6116a902379c7238");
+// pub const USDC: alloy_primitives::Address =
+//     alloy_primitives::address!("0x1c7d4b196cb0c7b01d743fbc6116a902379c7238");
 
-pub const WETH: alloy_primitives::Address =
-    alloy_primitives::address!("0xfff9976782d46cc05630d1f6ebab18b2324d6b14");
+// pub const WETH: alloy_primitives::Address =
+//     alloy_primitives::address!("0xfff9976782d46cc05630d1f6ebab18b2324d6b14");
 
-pub const UNI: alloy_primitives::Address =
-    alloy_primitives::address!("0x1f9840a85d5af5bf1d1762f925bdaddc4201f984");
+// pub const UNI: alloy_primitives::Address =
+//     alloy_primitives::address!("0x1f9840a85d5af5bf1d1762f925bdaddc4201f984");
 
 pub type AlloyRpcProvider<P> = FillProvider<
     JoinFill<
@@ -65,7 +65,7 @@ async fn spawn_angstrom_provider()
 
 pub async fn spawn_angstrom_api()
 -> eyre::Result<AngstromApi<AlloyRpcProvider<RootProvider>, HttpClient>> {
-    init_with_chain_id(11155111);
+    let _ = try_init_with_chain_id(11155111);
     Ok(AngstromApi::new_with_provider(spawn_angstrom_provider().await?))
 }
 

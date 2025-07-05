@@ -1,19 +1,20 @@
 use alloy_primitives::{
-    Address, U256,
-    aliases::{I24, U24}
+    Address,
+    aliases::{I24, U24},
+    keccak256
 };
+use alloy_sol_types::SolValue;
 use angstrom_types::{
-    contract_bindings::angstrom::Angstrom::PoolKey,
+    contract_bindings::pool_manager::PoolManager::PoolKey,
     contract_payloads::angstrom::AngPoolConfigEntry,
     primitive::{ANGSTROM_ADDRESS, PoolId}
 };
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct TokenPairInfo {
-    pub token0:    Address,
-    pub token1:    Address,
-    pub is_active: bool
+pub struct TokenPair {
+    pub token0: Address,
+    pub token1: Address
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -79,34 +80,47 @@ pub(crate) fn sort_tokens(token0: Address, token1: Address) -> (Address, Address
     if token0 < token1 { (token0, token1) } else { (token1, token0) }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct UserLiquidityPosition {
-    pub pool_id:    PoolId,
-    pub token_id:   U256,
-    pub tick_lower: i32,
-    pub tick_upper: i32,
-    pub pool_key:   PoolKey
-}
-
-impl UserLiquidityPosition {
-    pub fn new(
-        pool_key: PoolKey,
-        position: angstrom_types::contract_bindings::position_fetcher::PositionFetcher::Position
-    ) -> Self {
-        let pool_id = pool_key.clone().into();
-        Self {
-            pool_id,
-            token_id: position.tokenId,
-            tick_lower: position.tickLower.as_i32(),
-            tick_upper: position.tickUpper.as_i32(),
-            pool_key
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct BinanceTokenPrice {
     pub address:   Address,
     pub price:     Option<f64>,
     pub error_msg: Option<String>
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Hash)]
+pub struct PoolKeyWithAngstromFee {
+    pub pool_key:       PoolKey,
+    pub pool_fee_in_e6: U24
+}
+
+impl PoolKeyWithAngstromFee {
+    pub fn as_angstrom_pool_id(&self) -> PoolId {
+        let mut this = self.clone();
+        this.pool_key.fee = this.pool_fee_in_e6;
+        this.pool_key.into()
+    }
+
+    pub fn as_angstrom_pool_key_type(
+        &self
+    ) -> angstrom_types::contract_bindings::angstrom::Angstrom::PoolKey {
+        angstrom_types::contract_bindings::angstrom::Angstrom::PoolKey {
+            currency0:   self.pool_key.currency0,
+            currency1:   self.pool_key.currency1,
+            fee:         self.pool_key.fee,
+            tickSpacing: self.pool_key.tickSpacing,
+            hooks:       self.pool_key.hooks
+        }
+    }
+}
+
+impl From<PoolKeyWithAngstromFee> for PoolId {
+    fn from(value: PoolKeyWithAngstromFee) -> Self {
+        keccak256(value.pool_key.abi_encode())
+    }
+}
+
+impl From<&PoolKeyWithAngstromFee> for PoolId {
+    fn from(value: &PoolKeyWithAngstromFee) -> Self {
+        keccak256(value.pool_key.abi_encode())
+    }
 }

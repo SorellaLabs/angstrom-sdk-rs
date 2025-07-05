@@ -1,136 +1,274 @@
-use std::collections::{HashMap, HashSet};
-
 use alloy_primitives::{Address, U256};
 use alloy_provider::Provider;
 use angstrom_types::{
-    contract_bindings::{
-        angstrom::Angstrom::PoolKey, position_fetcher::PositionFetcher,
-        position_manager::PositionManager
-    },
-    primitive::{POSITION_MANAGER_ADDRESS, PoolId}
+    contract_bindings::pool_manager::PoolManager::PoolKey,
+    primitive::{ANGSTROM_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS}
 };
-use futures::{FutureExt, TryFutureExt};
 
-use super::{data_api::AngstromDataApi, utils::*};
-use crate::types::UserLiquidityPosition;
+use super::data_api::AngstromDataApi;
+use crate::types::positions::{
+    UserLiquidityPosition,
+    fees::{LiquidityPositionFees, position_fees},
+    pool_manager_position_state_liquidity, position_manager_next_token_id,
+    position_manager_owner_of, position_manager_pool_key_and_info,
+    utils::UnpackedPositionInfo
+};
 
 #[async_trait::async_trait]
 pub trait AngstromUserApi: AngstromDataApi {
-    async fn get_positions(
+    async fn position_and_pool_info(
         &self,
-        user_address: Address,
+        position_token_id: U256,
+        block_number: Option<u64>
+    ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)>;
+
+    async fn position_liquidity(
+        &self,
+        position_token_id: U256,
+        block_number: Option<u64>
+    ) -> eyre::Result<u128>;
+
+    async fn all_user_positions(
+        &self,
+        owner: Address,
+        start_token_id: U256,
+        last_token_id: U256,
+        max_results: Option<usize>,
         block_number: Option<u64>
     ) -> eyre::Result<Vec<UserLiquidityPosition>>;
 
-    async fn get_positions_in_pool(
+    async fn user_position_fees(
         &self,
-        user_address: Address,
-        token0: Address,
-        token1: Address,
+        position_token_id: U256,
         block_number: Option<u64>
-    ) -> eyre::Result<Vec<UserLiquidityPosition>> {
-        let all_positions = self.get_positions(user_address, block_number).await?;
-        let pool_id = self.pool_id(token0, token1, false, block_number).await?;
-
-        Ok(all_positions
-            .into_iter()
-            .filter(|position| PoolId::from(position.pool_key.clone()) == pool_id)
-            .collect())
-    }
+    ) -> eyre::Result<LiquidityPositionFees>;
 }
 
 #[async_trait::async_trait]
 impl<P: Provider> AngstromUserApi for P {
-    async fn get_positions(
+    async fn position_and_pool_info(
         &self,
-        user_address: Address,
-        _block_number: Option<u64>
-    ) -> eyre::Result<Vec<UserLiquidityPosition>> {
-        let user_positons = view_call(
-            self,
+        position_token_id: U256,
+        block_number: Option<u64>
+    ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
+        let (pool_key, position_info) = position_manager_pool_key_and_info(
+            self.root(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
-            PositionFetcher::getPositionsCall {
-                owner:       user_address,
-                tokenId:     U256::from(1u8),
-                lastTokenId: U256::ZERO,
-                maxResults:  U256::MAX
-            }
+            block_number,
+            position_token_id
         )
-        .await??;
+        .await?;
 
-        let unique_pool_ids = user_positons
-            ._2
-            .iter()
-            .map(|pos: &PositionFetcher::Position| pos.poolId)
-            .collect::<HashSet<_>>();
+        Ok((pool_key, position_info))
+    }
 
-        let uni_pool_id_to_ang_pool_ids =
-            futures::future::try_join_all(unique_pool_ids.into_iter().map(|uni_id| {
-                view_call(
-                    self,
-                    *POSITION_MANAGER_ADDRESS.get().unwrap(),
-                    PositionManager::poolKeysCall { poolId: uni_id }
-                )
-                .and_then(async move |ang_id_res| {
-                    Ok(ang_id_res.map(|ang_id| {
-                        (
-                            uni_id,
-                            PoolKey {
-                                currency0:   ang_id.currency0,
-                                currency1:   ang_id.currency1,
-                                fee:         ang_id.fee,
-                                tickSpacing: ang_id.tickSpacing,
-                                hooks:       ang_id.hooks
-                            }
-                        )
-                    }))
-                })
-                .boxed()
-            }))
-            .await?
-            .into_iter()
-            .collect::<Result<HashMap<_, _>, _>>()?;
+    async fn position_liquidity(
+        &self,
+        position_token_id: U256,
+        block_number: Option<u64>
+    ) -> eyre::Result<u128> {
+        let (pool_key, position_info) = position_manager_pool_key_and_info(
+            self.root(),
+            *POSITION_MANAGER_ADDRESS.get().unwrap(),
+            block_number,
+            position_token_id
+        )
+        .await?;
 
-        Ok(user_positons
-            ._2
-            .into_iter()
-            .map(|pos| {
-                UserLiquidityPosition::new(
-                    uni_pool_id_to_ang_pool_ids
-                        .get(&pos.poolId)
-                        .unwrap()
-                        .clone(),
-                    pos
-                )
-            })
-            .collect())
+        let liquidity = pool_manager_position_state_liquidity(
+            self.root(),
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            block_number,
+            pool_key.into(),
+            position_token_id,
+            position_info.tick_lower,
+            position_info.tick_upper
+        )
+        .await?;
+
+        Ok(liquidity)
+    }
+
+    async fn all_user_positions(
+        &self,
+        owner: Address,
+        mut start_token_id: U256,
+        mut end_token_id: U256,
+        max_results: Option<usize>,
+        block_number: Option<u64>
+    ) -> eyre::Result<Vec<UserLiquidityPosition>> {
+        let position_manager_address = *POSITION_MANAGER_ADDRESS.get().unwrap();
+        let pool_manager_address = *POOL_MANAGER_ADDRESS.get().unwrap();
+        let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
+
+        let root = self.root();
+
+        if start_token_id == U256::ZERO {
+            start_token_id = U256::from(1u8);
+        }
+
+        if end_token_id == U256::ZERO {
+            end_token_id =
+                position_manager_next_token_id(root, position_manager_address, block_number)
+                    .await?;
+        }
+
+        let mut all_positions = Vec::new();
+        while start_token_id <= end_token_id {
+            let owner_of = position_manager_owner_of(
+                root,
+                position_manager_address,
+                block_number,
+                start_token_id
+            )
+            .await?;
+
+            if owner_of != owner {
+                start_token_id += U256::from(1u8);
+                continue;
+            }
+
+            let (pool_key, position_info) = position_manager_pool_key_and_info(
+                root,
+                position_manager_address,
+                block_number,
+                start_token_id
+            )
+            .await?;
+
+            if pool_key.hooks != angstrom_address {
+                start_token_id += U256::from(1u8);
+                continue;
+            }
+
+            let liquidity = pool_manager_position_state_liquidity(
+                root,
+                pool_manager_address,
+                block_number,
+                pool_key.clone().into(),
+                start_token_id,
+                position_info.tick_lower,
+                position_info.tick_upper
+            )
+            .await?;
+
+            all_positions.push(UserLiquidityPosition {
+                token_id: start_token_id,
+                tick_lower: position_info.tick_lower,
+                tick_upper: position_info.tick_upper,
+                liquidity,
+                pool_key
+            });
+
+            if let Some(max_res) = max_results {
+                if all_positions.len() >= max_res {
+                    break;
+                }
+            }
+
+            start_token_id += U256::from(1u8);
+        }
+
+        Ok(all_positions)
+    }
+
+    async fn user_position_fees(
+        &self,
+        position_token_id: U256,
+        block_number: Option<u64>
+    ) -> eyre::Result<LiquidityPositionFees> {
+        let ((pool_key, position_info), position_liquidity) = tokio::try_join!(
+            self.position_and_pool_info(position_token_id, block_number),
+            self.position_liquidity(position_token_id, block_number),
+        )?;
+
+        let pool_id = pool_key.clone().into();
+        let slot0 = self.slot0_by_pool_id(pool_id, block_number).await?;
+
+        Ok(position_fees(
+            self.root(),
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            *ANGSTROM_ADDRESS.get().unwrap(),
+            block_number,
+            pool_id,
+            slot0.tick,
+            position_token_id,
+            position_info.tick_lower,
+            position_info.tick_upper,
+            position_liquidity
+        )
+        .await?)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    // use alloy_primitives::address;
 
-    // use super::*;
-    // use crate::test_utils::spawn_angstrom_api;
+    use alloy_primitives::U256;
+
+    use crate::{
+        apis::AngstromUserApi,
+        test_utils::valid_test_params::init_valid_position_params_with_provider
+    };
 
     #[tokio::test]
-    async fn test_get_positions() {
-        // init_with_chain_id(11155111);
-        // let angstrom_api = spawn_angstrom_api().await.unwrap();
+    async fn test_position_and_pool_info_by_token_id() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.block_number;
 
-        // let positions = angstrom_api
-        //     .get_positions(address!("0xa7f1Aeb6e43443c683865Fdb9E15Dd01386C955b"))
-        //     .await
-        //     .unwrap();
+        let (pool_key, unpacked_position_info) = provider
+            .position_and_pool_info(pos_info.position_token_id, Some(block_number))
+            .await
+            .unwrap();
 
-        // println!("{positions:?}");
-
-        todo!()
+        assert_eq!(pool_key, pos_info.pool_key);
+        assert_eq!(unpacked_position_info, pos_info.as_unpacked_position_info());
     }
 
     #[tokio::test]
-    async fn test_get_positions_in_pool() {
-        todo!()
+    async fn test_position_liquidity_by_token_id() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.block_number;
+
+        let position_liquidity = provider
+            .position_liquidity(pos_info.position_token_id, Some(block_number))
+            .await
+            .unwrap();
+
+        assert_eq!(pos_info.position_liquidity, position_liquidity);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_all_user_positions() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.block_number;
+
+        let bound: u64 = 10;
+
+        let position_liquidity = provider
+            .all_user_positions(
+                pos_info.owner,
+                pos_info.position_token_id - U256::from(bound),
+                pos_info.position_token_id + U256::from(bound),
+                None,
+                Some(block_number)
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(position_liquidity.len(), 4);
+    }
+
+    #[tokio::test]
+    async fn test_user_position_fees() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.block_number;
+
+        let results = provider
+            .user_position_fees(pos_info.position_token_id, Some(block_number))
+            .await
+            .unwrap();
+
+        println!("{results:?}");
     }
 }
