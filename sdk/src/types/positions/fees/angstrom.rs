@@ -71,7 +71,6 @@ mod tests {
             .pool_data_by_pool_id(pos_info.pool_id, Some(block_number))
             .await
             .unwrap();
-        println!("{:?}", pool.tick);
 
         let results = angstrom_position_rewards(
             &provider,

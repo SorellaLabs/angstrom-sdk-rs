@@ -68,6 +68,7 @@ impl<S: StorageSlotFetcher + DatabaseRef> StorageSlotFetcher for CacheDB<S> {
     }
 }
 
+#[cfg(feature = "local-reth")]
 mod reth_db_impls {
     use lib_reth::{EthApiServer, reth_libmdbx::RethLibmdbxClient, traits::EthRevm};
     use revm::DatabaseRef;
