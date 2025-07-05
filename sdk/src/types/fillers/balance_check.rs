@@ -83,10 +83,7 @@ mod tests {
     use super::*;
     use crate::{
         AngstromApi,
-        test_utils::{
-            filler_orders::{AllOrdersSpecific, AnvilAngstromProvider},
-            *
-        }
+        test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider}
     };
 
     #[tokio::test(flavor = "multi_thread")]
@@ -100,7 +97,7 @@ mod tests {
         let from = Address::random();
         let amount = 1000000000000000;
         let max_fee = 1000000000;
-        let asset = USDC;
+        let asset = Address::ZERO;
 
         let ref_api = &api;
         orders

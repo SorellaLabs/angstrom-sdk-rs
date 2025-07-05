@@ -8,7 +8,7 @@ use alloy_primitives::Address;
 use alloy_rpc_types::Block;
 use alloy_sol_types::SolCall;
 use angstrom_types::{
-    contract_bindings::angstrom::Angstrom::{PoolKey, executeCall},
+    contract_bindings::{angstrom::Angstrom::executeCall, pool_manager::PoolManager::PoolKey},
     contract_payloads::angstrom::{AngstromBundle, TopOfBlockOrder, UserOrder},
     primitive::{ANGSTROM_ADDRESS, PoolId}
 };

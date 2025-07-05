@@ -20,7 +20,7 @@ use crate::{
     },
     providers::backend::{AlloyWalletRpcProvider, AngstromProvider},
     types::{
-        HistoricalOrders, HistoricalOrdersFilter, PoolKeyWithAngstromFee, TokenPairInfo,
+        HistoricalOrders, HistoricalOrdersFilter, PoolKeyWithAngstromFee, TokenPair,
         errors::AngstromSdkError,
         fillers::{
             AngstromFillProvider, AngstromFiller, AngstromSignerFiller, FillWrapper,
@@ -200,7 +200,7 @@ where
         &self,
         pool_partial_key: AngstromPoolPartialKey,
         block_number: Option<u64>
-    ) -> eyre::Result<TokenPairInfo> {
+    ) -> eyre::Result<TokenPair> {
         self.provider
             .tokens_by_partial_pool_key(pool_partial_key, block_number)
             .await
@@ -208,15 +208,15 @@ where
 
     async fn all_token_pairs_with_config_store(
         &self,
-        block_number: Option<u64>,
-        config_store: AngstromPoolConfigStore
-    ) -> eyre::Result<Vec<TokenPairInfo>> {
+        config_store: AngstromPoolConfigStore,
+        block_number: Option<u64>
+    ) -> eyre::Result<Vec<TokenPair>> {
         self.provider
-            .all_token_pairs_with_config_store(block_number, config_store)
+            .all_token_pairs_with_config_store(config_store, block_number)
             .await
     }
 
-    async fn all_token_pairs(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenPairInfo>> {
+    async fn all_token_pairs(&self, block_number: Option<u64>) -> eyre::Result<Vec<TokenPair>> {
         self.provider.all_token_pairs(block_number).await
     }
 
@@ -274,12 +274,12 @@ where
         self.provider.pool_config_store(block_number).await
     }
 
-    async fn pool_slot0(
+    async fn slot0_by_pool_id(
         &self,
         pool_id: PoolId,
         block_number: Option<u64>
     ) -> eyre::Result<UnpackedSlot0> {
-        self.provider.pool_slot0(pool_id, block_number).await
+        self.provider.slot0_by_pool_id(pool_id, block_number).await
     }
 }
 

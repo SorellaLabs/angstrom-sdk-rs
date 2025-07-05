@@ -5,14 +5,14 @@ use alloy_primitives::{
 };
 use alloy_sol_types::SolValue;
 use angstrom_types::{
-    contract_bindings::angstrom::Angstrom::PoolKey,
+    contract_bindings::pool_manager::PoolManager::PoolKey,
     contract_payloads::angstrom::AngPoolConfigEntry,
     primitive::{ANGSTROM_ADDRESS, PoolId}
 };
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct TokenPairInfo {
+pub struct TokenPair {
     pub token0: Address,
     pub token1: Address
 }

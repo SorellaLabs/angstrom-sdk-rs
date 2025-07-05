@@ -11,8 +11,8 @@ use alloy_provider::{Identity, Provider, ProviderBuilder, fillers::*};
 use alloy_sol_types::SolCall;
 use angstrom_types::{
     contract_bindings::{
-        angstrom::Angstrom::{PoolKey, executeCall},
-        controller_v_1::ControllerV1
+        angstrom::Angstrom::executeCall, controller_v_1::ControllerV1,
+        pool_manager::PoolManager::PoolKey
     },
     contract_payloads::angstrom::{
         AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
@@ -80,7 +80,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         &self,
         pool_partial_key: AngstromPoolPartialKey,
         block_number: Option<u64>
-    ) -> eyre::Result<TokenPairInfo> {
+    ) -> eyre::Result<TokenPair> {
         let out = reth_db_view_call(
             &self.db_client,
             block_number,
@@ -88,14 +88,14 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             ControllerV1::getPoolByKeyCall { key: FixedBytes::from(*pool_partial_key) }
         )??;
 
-        Ok(TokenPairInfo { token0: out.asset0, token1: out.asset1 })
+        Ok(TokenPair { token0: out.asset0, token1: out.asset1 })
     }
 
     async fn all_token_pairs_with_config_store(
         &self,
-        block_number: Option<u64>,
-        config_store: AngstromPoolConfigStore
-    ) -> eyre::Result<Vec<TokenPairInfo>> {
+        config_store: AngstromPoolConfigStore,
+        block_number: Option<u64>
+    ) -> eyre::Result<Vec<TokenPair>> {
         let partial_key_entries = config_store.all_entries();
         let token_pairs = futures::future::try_join_all(
             partial_key_entries
@@ -265,7 +265,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         .map_err(|e| eyre::eyre!("{e:?}"))
     }
 
-    async fn pool_slot0(
+    async fn slot0_by_pool_id(
         &self,
         pool_id: PoolId,
         block_number: Option<u64>

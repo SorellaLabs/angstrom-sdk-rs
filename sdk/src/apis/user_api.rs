@@ -183,7 +183,7 @@ impl<P: Provider> AngstromUserApi for P {
         )?;
 
         let pool_id = pool_key.clone().into();
-        let slot0 = self.pool_slot0(pool_id, block_number).await?;
+        let slot0 = self.slot0_by_pool_id(pool_id, block_number).await?;
 
         Ok(position_fees(
             self.root(),
