@@ -4,7 +4,7 @@ use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
 use alloy_network::Ethereum;
 use alloy_primitives::{
-    Address, FixedBytes, TxKind,
+    Address, FixedBytes, TxKind, U256,
     aliases::{I24, U24}
 };
 use alloy_provider::{Identity, Provider, ProviderBuilder, fillers::*};
@@ -19,7 +19,7 @@ use angstrom_types::{
     },
     primitive::{
         ANGSTROM_ADDRESS, ANGSTROM_DEPLOYED_BLOCK, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS,
-        PoolId
+        POSITION_MANAGER_ADDRESS, PoolId
     },
     reth_db_provider::{RethDbLayer, RethDbProvider}
 };
@@ -36,9 +36,14 @@ use uniswap_v4::uniswap::{
 };
 
 use crate::{
-    apis::AngstromDataApi,
+    apis::{AngstromDataApi, AngstromUserApi},
     types::{
-        positions::{pool_manager_pool_slot0, utils::UnpackedSlot0},
+        positions::{
+            UserLiquidityPosition,
+            fees::{LiquidityPositionFees, position_fees},
+            utils::{UnpackedPositionInfo, UnpackedSlot0},
+            *
+        },
         *
     }
 };
@@ -275,6 +280,161 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             block_number,
             pool_id
+        )
+        .await?)
+    }
+}
+
+#[async_trait::async_trait]
+impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
+    async fn position_and_pool_info(
+        &self,
+        position_token_id: U256,
+        block_number: Option<u64>
+    ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
+        let (pool_key, position_info) = position_manager_pool_key_and_info(
+            self,
+            *POSITION_MANAGER_ADDRESS.get().unwrap(),
+            block_number,
+            position_token_id
+        )
+        .await?;
+
+        Ok((pool_key, position_info))
+    }
+
+    async fn position_liquidity(
+        &self,
+        position_token_id: U256,
+        block_number: Option<u64>
+    ) -> eyre::Result<u128> {
+        let (pool_key, position_info) = position_manager_pool_key_and_info(
+            self,
+            *POSITION_MANAGER_ADDRESS.get().unwrap(),
+            block_number,
+            position_token_id
+        )
+        .await?;
+
+        let liquidity = pool_manager_position_state_liquidity(
+            self,
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            block_number,
+            pool_key.into(),
+            position_token_id,
+            position_info.tick_lower,
+            position_info.tick_upper
+        )
+        .await?;
+
+        Ok(liquidity)
+    }
+
+    async fn all_user_positions(
+        &self,
+        owner: Address,
+        mut start_token_id: U256,
+        mut end_token_id: U256,
+        max_results: Option<usize>,
+        block_number: Option<u64>
+    ) -> eyre::Result<Vec<UserLiquidityPosition>> {
+        let position_manager_address = *POSITION_MANAGER_ADDRESS.get().unwrap();
+        let pool_manager_address = *POOL_MANAGER_ADDRESS.get().unwrap();
+        let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
+
+        if start_token_id == U256::ZERO {
+            start_token_id = U256::from(1u8);
+        }
+
+        if end_token_id == U256::ZERO {
+            end_token_id =
+                position_manager_next_token_id(self, position_manager_address, block_number)
+                    .await?;
+        }
+
+        let mut all_positions = Vec::new();
+        while start_token_id <= end_token_id {
+            let owner_of = position_manager_owner_of(
+                self,
+                position_manager_address,
+                block_number,
+                start_token_id
+            )
+            .await?;
+
+            if owner_of != owner {
+                start_token_id += U256::from(1u8);
+                continue;
+            }
+
+            let (pool_key, position_info) = position_manager_pool_key_and_info(
+                self,
+                position_manager_address,
+                block_number,
+                start_token_id
+            )
+            .await?;
+
+            if pool_key.hooks != angstrom_address {
+                start_token_id += U256::from(1u8);
+                continue;
+            }
+
+            let liquidity = pool_manager_position_state_liquidity(
+                self,
+                pool_manager_address,
+                block_number,
+                pool_key.clone().into(),
+                start_token_id,
+                position_info.tick_lower,
+                position_info.tick_upper
+            )
+            .await?;
+
+            all_positions.push(UserLiquidityPosition {
+                token_id: start_token_id,
+                tick_lower: position_info.tick_lower,
+                tick_upper: position_info.tick_upper,
+                liquidity,
+                pool_key
+            });
+
+            if let Some(max_res) = max_results {
+                if all_positions.len() >= max_res {
+                    break;
+                }
+            }
+
+            start_token_id += U256::from(1u8);
+        }
+
+        Ok(all_positions)
+    }
+
+    async fn user_position_fees(
+        &self,
+        position_token_id: U256,
+        block_number: Option<u64>
+    ) -> eyre::Result<LiquidityPositionFees> {
+        let ((pool_key, position_info), position_liquidity) = tokio::try_join!(
+            self.position_and_pool_info(position_token_id, block_number),
+            self.position_liquidity(position_token_id, block_number),
+        )?;
+
+        let pool_id = pool_key.clone().into();
+        let slot0 = self.slot0_by_pool_id(pool_id, block_number).await?;
+
+        Ok(position_fees(
+            self,
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            *ANGSTROM_ADDRESS.get().unwrap(),
+            block_number,
+            pool_id,
+            slot0.tick,
+            position_token_id,
+            position_info.tick_lower,
+            position_info.tick_upper,
+            position_liquidity
         )
         .await?)
     }

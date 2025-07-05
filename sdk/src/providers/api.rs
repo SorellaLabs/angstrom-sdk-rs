@@ -1,8 +1,9 @@
 use alloy_network::TxSigner;
-use alloy_primitives::{Address, FixedBytes, Signature};
+use alloy_primitives::{Address, FixedBytes, Signature, U256};
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types::{
+    contract_bindings::pool_manager::PoolManager::PoolKey,
     contract_payloads::angstrom::{
         AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
     },
@@ -15,6 +16,7 @@ use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoade
 
 use crate::{
     apis::{
+        AngstromUserApi,
         data_api::AngstromDataApi,
         node_api::{AngstromNodeApi, AngstromOrderApiClient}
     },
@@ -26,7 +28,11 @@ use crate::{
             AngstromFillProvider, AngstromFiller, AngstromSignerFiller, FillWrapper,
             NonceGeneratorFiller, TokenBalanceCheckFiller
         },
-        positions::utils::UnpackedSlot0
+        positions::{
+            UserLiquidityPosition,
+            fees::LiquidityPositionFees,
+            utils::{UnpackedPositionInfo, UnpackedSlot0}
+        }
     }
 };
 
@@ -283,23 +289,56 @@ where
     }
 }
 
-// #[async_trait::async_trait]
-// impl<P, T, F> AngstromUserApi for AngstromApi<P, T, F>
-// where
-//     P: Provider,
-//     F: AngstromFiller,
-//     T: AngstromOrderApiClient
-// {
-//     async fn get_positions(
-//         &self,
-//         user_address: Address,
-//         block_number: Option<u64>
-//     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
-//         self.provider
-//             .get_positions(user_address, block_number)
-//             .await
-//     }
-// }
+#[async_trait::async_trait]
+impl<P, T, F> AngstromUserApi for AngstromApi<P, T, F>
+where
+    P: Provider,
+    F: AngstromFiller,
+    T: AngstromOrderApiClient
+{
+    async fn position_and_pool_info(
+        &self,
+        position_token_id: U256,
+        block_number: Option<u64>
+    ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
+        self.provider
+            .position_and_pool_info(position_token_id, block_number)
+            .await
+    }
+
+    async fn position_liquidity(
+        &self,
+        position_token_id: U256,
+        block_number: Option<u64>
+    ) -> eyre::Result<u128> {
+        self.provider
+            .position_liquidity(position_token_id, block_number)
+            .await
+    }
+
+    async fn all_user_positions(
+        &self,
+        owner: Address,
+        start_token_id: U256,
+        last_token_id: U256,
+        max_results: Option<usize>,
+        block_number: Option<u64>
+    ) -> eyre::Result<Vec<UserLiquidityPosition>> {
+        self.provider
+            .all_user_positions(owner, start_token_id, last_token_id, max_results, block_number)
+            .await
+    }
+
+    async fn user_position_fees(
+        &self,
+        position_token_id: U256,
+        block_number: Option<u64>
+    ) -> eyre::Result<LiquidityPositionFees> {
+        self.provider
+            .user_position_fees(position_token_id, block_number)
+            .await
+    }
+}
 
 #[cfg(test)]
 impl<P, T, F> AngstromApi<P, T, F>
