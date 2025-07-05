@@ -26,7 +26,7 @@ use revm::{
 };
 use revm_database::{AlloyDB, CacheDB, EmptyDBTyped, WrapDatabaseAsync};
 use rust_utils::ToHashMapByKey;
-use testing_tools::order_generator::OrderGenerator;
+use testing_tools::order_generator::{InternalBalanceMode, OrderGenerator};
 use tokio::{runtime::Handle, sync::Notify};
 use uniswap_v4::uniswap::pool_manager::{SyncedUniswapPools, TickRangeToLoad};
 
@@ -58,7 +58,8 @@ where
         block_number,
         cloned,
         20..50,
-        0.5..0.7
+        0.5..0.7,
+        InternalBalanceMode::Random(0.5)
     );
 
     Ok((generator, rx))
