@@ -1,6 +1,5 @@
 [workspace]
 members = ["sdk"]
-exclude = ["examples/liquidity/*", "examples/swap/*", "examples/advanced/*"]
 
 resolver = "2"
 
