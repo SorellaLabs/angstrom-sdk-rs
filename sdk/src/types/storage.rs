@@ -2,13 +2,11 @@ use alloy_eips::BlockId;
 use alloy_network::Ethereum;
 use alloy_primitives::{Address, StorageKey, StorageValue};
 use alloy_provider::{Provider, RootProvider};
-use revm_database::{AlloyDB, async_db::DatabaseAsyncRef};
-
-pub mod angstrom;
-pub mod uniswap;
+use revm::DatabaseRef;
+use revm_database::{AlloyDB, CacheDB, WrapDatabaseAsync, async_db::DatabaseAsyncRef};
 
 #[async_trait::async_trait]
-pub trait StorageSlotFetcher {
+pub trait StorageSlotFetcher: Sync {
     async fn storage_at(
         &self,
         address: Address,
@@ -41,6 +39,32 @@ impl StorageSlotFetcher for AlloyDB<Ethereum, RootProvider> {
         _: Option<u64>
     ) -> eyre::Result<StorageValue> {
         Ok(self.storage_async_ref(address, key.into()).await?)
+    }
+}
+
+#[async_trait::async_trait]
+impl<S: StorageSlotFetcher + DatabaseAsyncRef> StorageSlotFetcher for WrapDatabaseAsync<S> {
+    async fn storage_at(
+        &self,
+        address: Address,
+        key: StorageKey,
+        _: Option<u64>
+    ) -> eyre::Result<StorageValue> {
+        self.storage_ref(address, key.into())
+            .map_err(|e| eyre::eyre!("{e:?}"))
+    }
+}
+
+#[async_trait::async_trait]
+impl<S: StorageSlotFetcher + DatabaseRef> StorageSlotFetcher for CacheDB<S> {
+    async fn storage_at(
+        &self,
+        address: Address,
+        key: StorageKey,
+        _: Option<u64>
+    ) -> eyre::Result<StorageValue> {
+        self.storage_ref(address, key.into())
+            .map_err(|e| eyre::eyre!("{e:?}"))
     }
 }
 

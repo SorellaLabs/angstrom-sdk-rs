@@ -1,5 +1,5 @@
 use alloy_primitives::{
-    Address, U256,
+    Address,
     aliases::{I24, U24},
     keccak256
 };

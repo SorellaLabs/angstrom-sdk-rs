@@ -1222,7 +1222,6 @@ dependencies = [
  "angstrom-types",
  "async-trait",
  "auto_impl",
- "convert_case 0.7.1",
  "dotenv",
  "eyre",
  "futures",

@@ -1,46 +1,12 @@
-use alloy_primitives::{Address, B256, U256, aliases::I24, keccak256};
-use angstrom_types::contract_bindings::position_manager::PositionManager::PoolKey;
+use alloy_primitives::{B256, U256, aliases::I24, keccak256};
+use angstrom_types::primitive::POSITION_MANAGER_ADDRESS;
 
-use crate::types::contract_bindings::UserPositionFetcher;
-
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct UserLiquidityPosition {
-    pub token_id:   U256,
-    pub tick_lower: I24,
-    pub tick_upper: I24,
-    pub liquidity:  u128,
-    pub pool_key:   PoolKey
-}
-
-impl From<UserPositionFetcher::UserPosition> for UserLiquidityPosition {
-    fn from(value: UserPositionFetcher::UserPosition) -> Self {
-        Self {
-            token_id:   value.tokenId,
-            tick_lower: value.tickLower,
-            tick_upper: value.tickUpper,
-            liquidity:  value.liquidity,
-            pool_key:   PoolKey {
-                currency0:   value.poolKey.currency0,
-                currency1:   value.poolKey.currency1,
-                fee:         value.poolKey.fee,
-                tickSpacing: value.poolKey.tickSpacing,
-                hooks:       value.poolKey.hooks
-            }
-        }
-    }
-}
-
-pub fn encode_angstrom_rewards_position_key(
-    owner: Address,
-    position_token_id: U256,
-    tick_lower: I24,
-    tick_upper: I24
-) -> B256 {
+pub fn encode_position_key(position_token_id: U256, tick_lower: I24, tick_upper: I24) -> B256 {
     let mut bytes = [0u8; 70];
-    bytes[12..32].copy_from_slice(&**owner);
-    bytes[32..32 + 3].copy_from_slice(&tick_lower.to_be_bytes::<3>());
-    bytes[32 + 3..32 + 6].copy_from_slice(&tick_upper.to_be_bytes::<3>());
-    bytes[32 + 6..].copy_from_slice(&*B256::from(position_token_id));
+    bytes[12..32].copy_from_slice(&***POSITION_MANAGER_ADDRESS.get().unwrap());
+    bytes[32..35].copy_from_slice(&tick_lower.to_be_bytes::<3>());
+    bytes[35..38].copy_from_slice(&tick_upper.to_be_bytes::<3>());
+    bytes[38..].copy_from_slice(&*B256::from(position_token_id));
     keccak256(&bytes[12..])
 }
 
@@ -99,7 +65,7 @@ mod tests {
 
     use crate::{
         test_utils::valid_test_params::init_valid_position_params,
-        types::positions::UnpackPositionInfo
+        types::positions::utils::UnpackPositionInfo
     };
 
     #[test]

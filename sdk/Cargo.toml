@@ -57,11 +57,6 @@ revm-database = { workspace = true, features = ["alloydb"] }
 revm = { workspace = true, features = ["alloydb"], default-features = false }
 revm-database.workspace = true
 
-[build-dependencies]
-convert_case = "0"
-eyre.workspace = true
-itertools.workspace = true
-
 [features]
 default = ["ipc", "ws", "local-reth"]
 full = ["ipc", "ws", "local-reth"]

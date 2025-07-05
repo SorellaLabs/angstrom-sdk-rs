@@ -15,8 +15,7 @@ use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_data_loader::DataLoade
 use crate::{
     apis::{
         data_api::AngstromDataApi,
-        node_api::{AngstromNodeApi, AngstromOrderApiClient},
-        user_api::AngstromUserApi
+        node_api::{AngstromNodeApi, AngstromOrderApiClient}
     },
     providers::backend::{AlloyWalletRpcProvider, AngstromProvider},
     types::{
