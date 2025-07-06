@@ -32,7 +32,7 @@ use pade::PadeDecode;
 use reth_db::DatabaseEnv;
 use reth_node_ethereum::EthereumNode;
 use reth_node_types::NodeTypesWithDBAdapter;
-use reth_provider::providers::BlockchainProvider;
+use reth_provider::{StaticFileProviderFactory, providers::BlockchainProvider};
 use revm::{ExecuteEvm, context::TxEnv};
 use uniswap_v4::uniswap::{
     pool::EnhancedUniswapPool, pool_data_loader::DataLoader, pool_factory::INITIAL_TICKS_PER_SIDE
@@ -181,6 +181,11 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         end_block: Option<u64>
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
         let filter = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
+        self.db_client()
+            .eth_db_provider()
+            .consistent_provider()?
+            .static_file_provider()
+            .initialize_index()?;
         let logs = self.db_client.eth_filter().logs(filter).await?;
 
         Ok(logs
