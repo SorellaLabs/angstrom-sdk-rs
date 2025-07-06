@@ -48,11 +48,13 @@ pub(crate) fn historical_pool_manager_swap_filter(
 
     if let Some(bn) = start_block {
         filter = filter.from_block(bn);
+        println!("filter: {bn:?} - {end_block:?}");
     } else {
         let deployed_block = *ANGSTROM_DEPLOYED_BLOCK
             .get()
             .expect("ANGSTROM_DEPLOYED_BLOCK has not been set");
         filter = filter.from_block(deployed_block);
+        println!("filter: {deployed_block:?} - {end_block:?}");
     }
 
     if let Some(bn) = end_block {
@@ -76,15 +78,18 @@ pub(crate) fn historical_pool_manager_modify_liquidity_filter(
 
     if let Some(bn) = start_block {
         filter = filter.from_block(bn);
+        println!("filter: {bn:?} - {end_block:?}");
     } else {
         let deployed_block = *ANGSTROM_DEPLOYED_BLOCK
             .get()
             .expect("ANGSTROM_DEPLOYED_BLOCK has not been set");
         filter = filter.from_block(deployed_block);
+        println!("filter: {deployed_block:?} - {end_block:?}");
     }
 
     if let Some(bn) = end_block {
         filter = filter.to_block(bn);
     }
+
     filter
 }
