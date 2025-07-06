@@ -129,18 +129,25 @@ impl From<&PoolKeyWithAngstromFee> for PoolId {
 pub struct WithEthMeta<D> {
     pub block_number: Option<u64>,
     pub tx_hash:      Option<TxHash>,
+    pub tx_idx:       Option<u64>,
     pub inner:        D
 }
 
 impl<D> WithEthMeta<D> {
-    pub fn new(block_number: Option<u64>, tx_hash: Option<TxHash>, inner: D) -> Self {
-        Self { block_number, tx_hash, inner }
+    pub fn new(
+        block_number: Option<u64>,
+        tx_hash: Option<TxHash>,
+        tx_idx: Option<u64>,
+        inner: D
+    ) -> Self {
+        Self { block_number, tx_hash, inner, tx_idx }
     }
 
     pub fn map_inner<O>(self, f: impl Fn(D) -> O) -> WithEthMeta<O> {
         WithEthMeta {
             block_number: self.block_number,
             tx_hash:      self.tx_hash,
+            tx_idx:       self.tx_idx,
             inner:        f(self.inner)
         }
     }

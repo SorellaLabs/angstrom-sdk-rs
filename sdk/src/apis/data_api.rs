@@ -377,7 +377,12 @@ impl<P: Provider> AngstromDataApi for P {
                 PoolManager::ModifyLiquidity::decode_log(&log.inner)
                     .ok()
                     .map(|inner_log| {
-                        WithEthMeta::new(log.block_number, log.transaction_hash, inner_log.data)
+                        WithEthMeta::new(
+                            log.block_number,
+                            log.transaction_hash,
+                            log.transaction_index,
+                            inner_log.data
+                        )
                     })
             })
             .collect())
@@ -397,7 +402,12 @@ impl<P: Provider> AngstromDataApi for P {
                 PoolManager::Swap::decode_log(&log.inner)
                     .ok()
                     .map(|inner_log| {
-                        WithEthMeta::new(log.block_number, log.transaction_hash, inner_log.data)
+                        WithEthMeta::new(
+                            log.block_number,
+                            log.transaction_hash,
+                            log.transaction_index,
+                            inner_log.data
+                        )
                     })
             })
             .collect())
@@ -490,6 +500,7 @@ impl<P: Provider> AngstromDataApi for P {
                     WithEthMeta::new(
                         transaction.block_number,
                         Some(*transaction.inner.tx_hash()),
+                        transaction.transaction_index,
                         AngstromBundle::pade_decode(&mut input, None).ok()?
                     )
                 ))
@@ -544,6 +555,7 @@ impl<P: Provider> AngstromDataApi for P {
                 Some(WithEthMeta::new(
                     transaction.block_number,
                     Some(*transaction.inner.tx_hash()),
+                    transaction.transaction_index,
                     AngstromBundle::pade_decode(&mut input, None).ok()?
                 ))
             })
