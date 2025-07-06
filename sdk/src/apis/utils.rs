@@ -42,7 +42,7 @@ pub(crate) fn historical_pool_manager_swap_filter(
         .get()
         .expect("POOL_MANAGER_ADDRESS has not been set");
 
-    let mut filter = Filter::new()
+    Filter::new()
         .event_signature(swap_event)
         .address(pool_manager)
         .from_block(start_block.unwrap_or_else(|| *ANGSTROM_DEPLOYED_BLOCK.get().unwrap()))
@@ -50,8 +50,7 @@ pub(crate) fn historical_pool_manager_swap_filter(
             end_block
                 .map(Into::into)
                 .unwrap_or_else(|| BlockNumberOrTag::Latest)
-        );
-    filter
+        )
 }
 
 pub(crate) fn historical_pool_manager_modify_liquidity_filter(
@@ -63,7 +62,7 @@ pub(crate) fn historical_pool_manager_modify_liquidity_filter(
         .get()
         .expect("POOL_MANAGER_ADDRESS has not been set");
 
-    let mut filter = Filter::new()
+    Filter::new()
         .event_signature(modify_liquidity_event)
         .address(pool_manager)
         .from_block(start_block.unwrap_or_else(|| *ANGSTROM_DEPLOYED_BLOCK.get().unwrap()))
@@ -71,7 +70,5 @@ pub(crate) fn historical_pool_manager_modify_liquidity_filter(
             end_block
                 .map(Into::into)
                 .unwrap_or_else(|| BlockNumberOrTag::Latest)
-        );
-
-    filter
+        )
 }
