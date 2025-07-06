@@ -97,6 +97,7 @@ impl<P: Provider + Clone> RethDbProviderWrapper<P> {
                     .consistent_provider()?
                     .static_file_provider()
                     .initialize_index()?;
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                 Ok(self.db_client.eth_filter().logs(filter.clone()).await?)
             }
         }
