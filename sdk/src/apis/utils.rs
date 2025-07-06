@@ -1,5 +1,5 @@
 use alloy::transports::TransportErrorKind;
-use alloy_eips::BlockId;
+use alloy_eips::{BlockId, BlockNumberOrTag};
 use alloy_json_rpc::RpcError;
 use alloy_primitives::{Address, TxKind};
 use alloy_provider::Provider;
@@ -44,22 +44,13 @@ pub(crate) fn historical_pool_manager_swap_filter(
 
     let mut filter = Filter::new()
         .event_signature(swap_event)
-        .address(pool_manager);
-
-    if let Some(bn) = start_block {
-        filter = filter.from_block(bn);
-        println!("filter: {bn:?} - {end_block:?}");
-    } else {
-        let deployed_block = *ANGSTROM_DEPLOYED_BLOCK
-            .get()
-            .expect("ANGSTROM_DEPLOYED_BLOCK has not been set");
-        filter = filter.from_block(deployed_block);
-        println!("filter: {deployed_block:?} - {end_block:?}");
-    }
-
-    if let Some(bn) = end_block {
-        filter = filter.to_block(bn);
-    }
+        .address(pool_manager)
+        .from_block(start_block.unwrap_or_else(|| *ANGSTROM_DEPLOYED_BLOCK.get().unwrap()))
+        .to_block(
+            end_block
+                .map(Into::into)
+                .unwrap_or_else(|| BlockNumberOrTag::Latest)
+        );
     filter
 }
 
@@ -67,29 +58,20 @@ pub(crate) fn historical_pool_manager_modify_liquidity_filter(
     start_block: Option<u64>,
     end_block: Option<u64>
 ) -> Filter {
-    let swap_event = PoolManager::ModifyLiquidity::SIGNATURE_HASH;
+    let modify_liquidity_event = PoolManager::ModifyLiquidity::SIGNATURE_HASH;
     let pool_manager = *POOL_MANAGER_ADDRESS
         .get()
         .expect("POOL_MANAGER_ADDRESS has not been set");
 
     let mut filter = Filter::new()
-        .event_signature(swap_event)
-        .address(pool_manager);
-
-    if let Some(bn) = start_block {
-        filter = filter.from_block(bn);
-        println!("filter: {bn:?} - {end_block:?}");
-    } else {
-        let deployed_block = *ANGSTROM_DEPLOYED_BLOCK
-            .get()
-            .expect("ANGSTROM_DEPLOYED_BLOCK has not been set");
-        filter = filter.from_block(deployed_block);
-        println!("filter: {deployed_block:?} - {end_block:?}");
-    }
-
-    if let Some(bn) = end_block {
-        filter = filter.to_block(bn);
-    }
+        .event_signature(modify_liquidity_event)
+        .address(pool_manager)
+        .from_block(start_block.unwrap_or_else(|| *ANGSTROM_DEPLOYED_BLOCK.get().unwrap()))
+        .to_block(
+            end_block
+                .map(Into::into)
+                .unwrap_or_else(|| BlockNumberOrTag::Latest)
+        );
 
     filter
 }
