@@ -8,6 +8,7 @@ use alloy_primitives::{
     aliases::{I24, U24}
 };
 use alloy_provider::{Identity, Provider, ProviderBuilder, fillers::*};
+use alloy_rpc_types::{Filter, Log};
 use alloy_sol_types::{SolCall, SolEvent};
 use angstrom_types::{
     contract_bindings::{
@@ -85,6 +86,21 @@ impl<P: Provider + Clone> RethDbProviderWrapper<P> {
     pub fn db_client(&self) -> Arc<RethLibmdbxClient> {
         self.db_client.clone()
     }
+
+    async fn get_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
+        let logs_res = self.db_client.eth_filter().logs(filter.clone()).await;
+        match logs_res {
+            Ok(vals) => Ok(vals),
+            Err(_) => {
+                self.db_client()
+                    .eth_db_provider()
+                    .consistent_provider()?
+                    .static_file_provider()
+                    .initialize_index()?;
+                Ok(self.db_client.eth_filter().logs(filter.clone()).await?)
+            }
+        }
+    }
 }
 
 #[async_trait::async_trait]
@@ -154,7 +170,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         block_stream_buffer: Option<usize>
     ) -> eyre::Result<Vec<WithEthMeta<AngstromBundle>>> {
         let filter = historical_pool_manager_swap_filter(start_block, end_block);
-        let logs = self.db_client.eth_filter().logs(filter).await?;
+        let logs = self.get_logs(&filter).await?;
 
         let blocks_with_bundles = logs.into_iter().flat_map(|log| {
             let swap_log = PoolManager::Swap::decode_log(&log.inner).ok()?;
@@ -181,12 +197,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         end_block: Option<u64>
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
         let filter = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
-        self.db_client()
-            .eth_db_provider()
-            .consistent_provider()?
-            .static_file_provider()
-            .initialize_index()?;
-        let logs = self.db_client.eth_filter().logs(filter).await?;
+        let logs = self.get_logs(&filter).await?;
 
         Ok(logs
             .into_iter()
@@ -211,7 +222,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         end_block: Option<u64>
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::Swap>>> {
         let filter = historical_pool_manager_swap_filter(start_block, end_block);
-        let logs = self.db_client.eth_filter().logs(filter).await?;
+        let logs = self.get_logs(&filter).await?;
 
         Ok(logs
             .into_iter()
