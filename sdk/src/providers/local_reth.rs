@@ -181,6 +181,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         end_block: Option<u64>
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
         let filter = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
+        println!("filter: {filter:?}");
         let logs = self.db_client.eth_filter().logs(filter).await?;
 
         Ok(logs
