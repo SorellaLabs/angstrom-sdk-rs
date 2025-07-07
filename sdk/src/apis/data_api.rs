@@ -422,7 +422,7 @@ impl<P: Provider> AngstromDataApi for P {
                 PoolManager::Swap::decode_log(&log.inner)
                     .ok()
                     .map(|inner_log| {
-                        (all_pool_ids.contains(&inner_log.id) && inner_log.fee == U24::ZERO).then(
+                        (all_pool_ids.contains(&inner_log.id) && !inner_log.fee.is_zero()).then(
                             || {
                                 WithEthMeta::new(
                                     log.block_number,
