@@ -234,11 +234,23 @@ async fn pool_manager_pool_tick_fee_growth_outside<F: StorageSlotFetcher>(
 #[cfg(test)]
 mod tests {
 
-    use alloy_primitives::{U160, aliases::U24};
-    use angstrom_types::primitive::POOL_MANAGER_ADDRESS;
+    use alloy_primitives::{I256, U160, address, aliases::U24, b256};
+    use angstrom_types::{
+        contract_bindings::{
+            angstrom::IPoolManager::ModifyLiquidityParams, pool_manager::PoolManager
+        },
+        primitive::{ANGSTROM_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS}
+    };
 
     use super::*;
-    use crate::test_utils::valid_test_params::init_valid_position_params_with_provider;
+    use crate::{
+        test_utils::valid_test_params::{
+            init_valid_position_params_with_provider, mainnet_provider
+        },
+        types::positions::{
+            angstrom_growth_inside, angstrom_last_growth_inside, position_manager_position_info
+        }
+    };
 
     #[tokio::test]
     async fn test_pool_manager_position_state_liquidity() {

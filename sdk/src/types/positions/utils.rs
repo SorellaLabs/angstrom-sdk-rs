@@ -13,11 +13,12 @@ pub fn encode_position_key(position_token_id: U256, tick_lower: I24, tick_upper:
 pub use packed_position_info::*;
 mod packed_position_info {
     use alloy_primitives::{U256, aliases::I24};
+    use serde::{Deserialize, Serialize};
 
     const TICK_LOWER_OFFSET: u32 = 8;
     const TICK_UPPER_OFFSET: u32 = 32;
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
     pub struct UnpackedPositionInfo {
         /// key for lookups in the PositionManager's `poolKeys` map
         pub position_manager_pool_map_key: [u8; 25],
@@ -99,8 +100,9 @@ mod packed_slot0 {
         U160, U256,
         aliases::{I24, U24}
     };
+    use serde::{Deserialize, Serialize};
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
     pub struct UnpackedSlot0 {
         pub sqrt_price_x96: U160,
         pub tick:           I24,
@@ -144,7 +146,7 @@ mod packed_slot0 {
             U160::from_limbs([
                 limbs[0],
                 limbs[1],
-                limbs[2] & 0xFFFFFFFF  // Only keep the lower 32 bits
+                limbs[2] & 0xFFFFFFFF // Only keep the lower 32 bits
             ])
         }
 
@@ -164,21 +166,25 @@ mod packed_slot0 {
     }
     #[cfg(test)]
     mod tests {
+        use alloy_primitives::{
+            U160, U256,
+            aliases::{I24, U24}
+        };
+
         use super::*;
-        use alloy_primitives::{U160, U256, aliases::{I24, U24}};
 
         #[test]
         fn test_slot0_simple() {
             // Test with simple values first
             let mut slot0 = U256::ZERO;
-            
+
             // Set tick = 100 at offset 160
             slot0 = slot0 | (U256::from(100u32) << 160);
-            
+
             println!("slot0 after setting tick: {:?}", slot0);
             println!("Extracted tick raw: {:?}", (slot0 >> 160) & MASK_24_BITS);
             println!("Extracted tick value: {:?}", slot0.tick());
-            
+
             assert_eq!(slot0.tick(), I24::unchecked_from(100));
         }
 
