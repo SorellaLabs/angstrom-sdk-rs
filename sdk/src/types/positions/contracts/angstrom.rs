@@ -28,18 +28,20 @@ pub async fn angstrom_growth_inside<F: StorageSlotFetcher>(
     tick_lower: I24,
     tick_upper: I24
 ) -> eyre::Result<U256> {
-    let pool_rewards_slot_base = U256::from_be_bytes(angstrom_pool_rewards_slot(pool_id).0);
-
     let (lower_growth, upper_growth, global_growth) = tokio::try_join!(
-        slot_fetcher.storage_at(
+        angstrom_tick_growth_outside(
+            slot_fetcher,
             angstrom_address,
-            (pool_rewards_slot_base + U256::from_be_slice(&tick_lower.to_be_bytes::<3>())).into(),
-            block_number
+            block_number,
+            pool_id,
+            tick_lower
         ),
-        slot_fetcher.storage_at(
+        angstrom_tick_growth_outside(
+            slot_fetcher,
             angstrom_address,
-            (pool_rewards_slot_base + U256::from_be_slice(&tick_upper.to_be_bytes::<3>())).into(),
-            block_number
+            block_number,
+            pool_id,
+            tick_upper
         ),
         angstrom_global_growth(slot_fetcher, angstrom_address, block_number, pool_id),
     )?;
@@ -66,6 +68,25 @@ pub async fn angstrom_global_growth<F: StorageSlotFetcher>(
         .storage_at(
             angstrom_address,
             (pool_rewards_slot_base + U256::from(ANGSTROM_POOL_REWARDS_GROWTH_ARRAY_SIZE)).into(),
+            block_number
+        )
+        .await?;
+
+    Ok(global_growth)
+}
+
+pub async fn angstrom_tick_growth_outside<F: StorageSlotFetcher>(
+    slot_fetcher: &F,
+    angstrom_address: Address,
+    block_number: Option<u64>,
+    pool_id: PoolId,
+    tick: I24
+) -> eyre::Result<U256> {
+    let pool_rewards_slot_base = U256::from_be_bytes(angstrom_pool_rewards_slot(pool_id).0);
+    let global_growth = slot_fetcher
+        .storage_at(
+            angstrom_address,
+            (pool_rewards_slot_base + U256::from_be_slice(&tick.to_be_bytes::<3>())).into(),
             block_number
         )
         .await?;
