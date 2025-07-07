@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc
+};
 
 use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
@@ -368,6 +371,13 @@ impl<P: Provider> AngstromDataApi for P {
         start_block: Option<u64>,
         end_block: Option<u64>
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
+        let all_pool_ids = self
+            .all_pool_keys(end_block)
+            .await?
+            .into_iter()
+            .map(|val| PoolId::from(val.pool_key))
+            .collect::<HashSet<_>>();
+
         let filter = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
         let logs = self.get_logs(&filter).await?;
 
@@ -377,13 +387,16 @@ impl<P: Provider> AngstromDataApi for P {
                 PoolManager::ModifyLiquidity::decode_log(&log.inner)
                     .ok()
                     .map(|inner_log| {
-                        WithEthMeta::new(
-                            log.block_number,
-                            log.transaction_hash,
-                            log.transaction_index,
-                            inner_log.data
-                        )
+                        all_pool_ids.contains(&inner_log.id).then(|| {
+                            WithEthMeta::new(
+                                log.block_number,
+                                log.transaction_hash,
+                                log.transaction_index,
+                                inner_log.data
+                            )
+                        })
                     })
+                    .flatten()
             })
             .collect())
     }
@@ -393,6 +406,13 @@ impl<P: Provider> AngstromDataApi for P {
         start_block: Option<u64>,
         end_block: Option<u64>
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::Swap>>> {
+        let all_pool_ids = self
+            .all_pool_keys(end_block)
+            .await?
+            .into_iter()
+            .map(|val| PoolId::from(val.pool_key))
+            .collect::<HashSet<_>>();
+
         let filter = historical_pool_manager_swap_filter(start_block, end_block);
         let logs = self.get_logs(&filter).await?;
 
@@ -402,13 +422,16 @@ impl<P: Provider> AngstromDataApi for P {
                 PoolManager::Swap::decode_log(&log.inner)
                     .ok()
                     .map(|inner_log| {
-                        WithEthMeta::new(
-                            log.block_number,
-                            log.transaction_hash,
-                            log.transaction_index,
-                            inner_log.data
-                        )
+                        all_pool_ids.contains(&inner_log.id).then(|| {
+                            WithEthMeta::new(
+                                log.block_number,
+                                log.transaction_hash,
+                                log.transaction_index,
+                                inner_log.data
+                            )
+                        })
                     })
+                    .flatten()
             })
             .collect())
     }
