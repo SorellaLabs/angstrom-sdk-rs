@@ -234,23 +234,11 @@ pub async fn pool_manager_pool_tick_fee_growth_outside<F: StorageSlotFetcher>(
 #[cfg(test)]
 mod tests {
 
-    use alloy_primitives::{I256, U160, address, aliases::U24, b256};
-    use angstrom_types::{
-        contract_bindings::{
-            angstrom::IPoolManager::ModifyLiquidityParams, pool_manager::PoolManager
-        },
-        primitive::{ANGSTROM_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS}
-    };
+    use alloy_primitives::{U160, aliases::U24};
+    use angstrom_types::{self, primitive::POOL_MANAGER_ADDRESS};
 
     use super::*;
-    use crate::{
-        test_utils::valid_test_params::{
-            init_valid_position_params_with_provider, mainnet_provider
-        },
-        types::positions::{
-            angstrom_growth_inside, angstrom_last_growth_inside, position_manager_position_info
-        }
-    };
+    use crate::test_utils::valid_test_params::init_valid_position_params_with_provider;
 
     #[tokio::test]
     async fn test_pool_manager_position_state_liquidity() {
@@ -378,81 +366,4 @@ mod tests {
 
         assert_eq!(results, expected);
     }
-
-    // #[tokio::test]
-    // async fn test_uniswap_last_growth_inside_vuln() {
-    //     let provider = mainnet_provider("ws://100.26.105.109:8546").await;
-    //     let block_number = 22864946;
-
-    //     let pool_key = PoolManager::PoolKey {
-    //         currency0:
-    // address!("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"),
-    //         currency1:
-    // address!("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"),         fee:
-    // U24::from(8388608),         tickSpacing: I24::unchecked_from(10),
-    //         hooks:
-    // address!("0x0000000aa8c2fb9b232f78d2b286dc2ae53bfad4")     };
-
-    //     let salt =
-    // b256!("0x000000000000000000000000000000000000000000000000000000000000837a"
-    // );     let params = ModifyLiquidityParams {
-    //         tickLower: I24::unchecked_from(197910),
-    //         tickUpper: I24::unchecked_from(198100),
-    //         liquidityDelta: I256::unchecked_from(-15437641962586_i128),
-    //         salt
-    //     };
-
-    //     let slot0 = pool_manager_pool_slot0(
-    //         &provider,
-    //         *POOL_MANAGER_ADDRESS.get().unwrap(),
-    //         Some(block_number),
-    //         pool_key.clone().into()
-    //     )
-    //     .await
-    //     .unwrap();
-
-    //     println!("{slot0:?}");
-
-    //     let growth_inside = angstrom_growth_inside(
-    //         &provider,
-    //         *ANGSTROM_ADDRESS.get().unwrap(),
-    //         Some(block_number),
-    //         pool_key.clone().into(),
-    //         slot0.tick,
-    //         params.tickLower,
-    //         params.tickUpper
-    //     )
-    //     .await
-    //     .unwrap();
-
-    //     println!("{growth_inside:?}");
-
-    //     let last_growth_inside = angstrom_last_growth_inside(
-    //         &provider,
-    //         *ANGSTROM_ADDRESS.get().unwrap(),
-    //         Some(block_number),
-    //         pool_key.clone().into(),
-    //         U256::from_be_slice(salt.as_slice()),
-    //         params.tickLower,
-    //         params.tickUpper
-    //     )
-    //     .await
-    //     .unwrap();
-
-    //     println!("{last_growth_inside:?}");
-
-    //     let liquidity = U256::from(
-    //         pool_manager_position_state_liquidity(
-    //             &provider,
-    //             *POOL_MANAGER_ADDRESS.get().unwrap(),
-    //             Some(block_number),
-    //             pool_key.clone().into(),
-    //             U256::from_be_slice(salt.as_slice()),
-    //             params.tickLower,
-    //             params.tickUpper
-    //         )
-    //         .await
-    //         .unwrap()
-    //     );
-    // }
 }

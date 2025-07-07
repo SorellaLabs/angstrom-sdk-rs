@@ -30,7 +30,7 @@ pub async fn angstrom_growth_inside<F: StorageSlotFetcher>(
 ) -> eyre::Result<U256> {
     let pool_rewards_slot_base = U256::from_be_bytes(angstrom_pool_rewards_slot(pool_id).0);
 
-    let (lower_growth, upper_growth) = tokio::try_join!(
+    let (lower_growth, upper_growth, global_growth) = tokio::try_join!(
         slot_fetcher.storage_at(
             angstrom_address,
             (pool_rewards_slot_base + U256::from_be_slice(&tick_lower.to_be_bytes::<3>())).into(),
@@ -41,15 +41,8 @@ pub async fn angstrom_growth_inside<F: StorageSlotFetcher>(
             (pool_rewards_slot_base + U256::from_be_slice(&tick_upper.to_be_bytes::<3>())).into(),
             block_number
         ),
+        angstrom_global_growth(slot_fetcher, angstrom_address, block_number, pool_id),
     )?;
-
-    let global_growth = slot_fetcher
-        .storage_at(
-            angstrom_address,
-            (pool_rewards_slot_base + U256::from(ANGSTROM_POOL_REWARDS_GROWTH_ARRAY_SIZE)).into(),
-            block_number
-        )
-        .await?;
 
     let rewards = if current_pool_tick < tick_lower {
         lower_growth - upper_growth
@@ -60,6 +53,24 @@ pub async fn angstrom_growth_inside<F: StorageSlotFetcher>(
     };
 
     Ok(rewards)
+}
+
+pub async fn angstrom_global_growth<F: StorageSlotFetcher>(
+    slot_fetcher: &F,
+    angstrom_address: Address,
+    block_number: Option<u64>,
+    pool_id: PoolId
+) -> eyre::Result<U256> {
+    let pool_rewards_slot_base = U256::from_be_bytes(angstrom_pool_rewards_slot(pool_id).0);
+    let global_growth = slot_fetcher
+        .storage_at(
+            angstrom_address,
+            (pool_rewards_slot_base + U256::from(ANGSTROM_POOL_REWARDS_GROWTH_ARRAY_SIZE)).into(),
+            block_number
+        )
+        .await?;
+
+    Ok(global_growth)
 }
 
 pub async fn angstrom_last_growth_inside<F: StorageSlotFetcher>(
@@ -127,5 +138,22 @@ mod tests {
         .unwrap();
 
         assert_eq!(results, U256::from(699096039990817998971892310067_u128))
+    }
+
+    #[tokio::test]
+    async fn test_angstrom_global_growth() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.block_number;
+
+        let results = angstrom_global_growth(
+            &provider,
+            *ANGSTROM_ADDRESS.get().unwrap(),
+            Some(block_number),
+            pos_info.pool_id
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(results, U256::from(701740166379348581587029420336_u128))
     }
 }
