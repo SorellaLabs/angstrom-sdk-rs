@@ -48,16 +48,6 @@ pub async fn init_valid_position_params_with_provider()
     (provider, params)
 }
 
-pub async fn mainnet_provider(url: &str) -> RootProvider {
-    let _ = try_init_with_chain_id(1);
-    let eth_provider = RootProvider::builder()
-        .with_recommended_fillers()
-        .connect_ws(alloy_provider::WsConnect::new(url))
-        .await
-        .unwrap();
-    eth_provider.root().clone()
-}
-
 pub fn init_valid_position_params() -> ValidPositionTestParameters {
     let _ = try_init_with_chain_id(11155111);
 
