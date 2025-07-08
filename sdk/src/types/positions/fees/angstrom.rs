@@ -6,7 +6,7 @@ use crate::types::{
     positions::{angstrom_growth_inside, angstrom_last_growth_inside}
 };
 
-pub async fn angstrom_fee_delta<F: StorageSlotFetcher>(
+pub async fn angstrom_fee_delta_x128<F: StorageSlotFetcher>(
     slot_fetcher: &F,
     angstrom_address: Address,
     block_number: Option<u64>,
@@ -48,11 +48,11 @@ mod tests {
     use crate::test_utils::valid_test_params::init_valid_position_params_with_provider;
 
     #[tokio::test]
-    async fn test_angstrom_fee_delta() {
+    async fn test_angstrom_fee_delta_x128() {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
         let block_number = pos_info.block_number;
 
-        let results = angstrom_fee_delta(
+        let results = angstrom_fee_delta_x128(
             &provider,
             *ANGSTROM_ADDRESS.get().unwrap(),
             Some(block_number),

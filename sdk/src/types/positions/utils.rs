@@ -1,4 +1,4 @@
-use alloy_primitives::{B256, U256, aliases::I24, keccak256};
+use alloy_primitives::{B256, U256, U512, aliases::I24, keccak256};
 use angstrom_types::primitive::POSITION_MANAGER_ADDRESS;
 
 pub fn encode_position_key(position_token_id: U256, tick_lower: I24, tick_upper: I24) -> B256 {
@@ -8,6 +8,22 @@ pub fn encode_position_key(position_token_id: U256, tick_lower: I24, tick_upper:
     bytes[35..38].copy_from_slice(&tick_upper.to_be_bytes::<3>());
     bytes[38..].copy_from_slice(&*B256::from(position_token_id));
     keccak256(&bytes[12..])
+}
+
+pub fn full_mul_x128(x: U256, y: U256) -> U256 {
+    if x.is_zero() || y.is_zero() {
+        return U256::ZERO;
+    }
+
+    let prod: U512 = U512::from(x) * U512::from(y);
+
+    let shifted: U512 = prod >> 128u32;
+
+    if (shifted >> 256u32) != U512::ZERO {
+        panic!("We check the final result doesn't overflow by checking that p1_0 = 0"); // same condition that triggers revert in Solidity
+    }
+
+    U256::from(shifted)
 }
 
 pub use packed_position_info::*;

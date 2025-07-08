@@ -5,7 +5,7 @@ mod uniswap;
 use angstrom_types::primitive::PoolId;
 pub use uniswap::*;
 
-use crate::types::StorageSlotFetcher;
+use crate::types::{StorageSlotFetcher, positions::utils::full_mul_x128};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LiquidityPositionFees {
@@ -25,9 +25,9 @@ impl LiquidityPositionFees {
         let pl = U256::from(position_liquidity);
         Self {
             position_liquidity,
-            angstrom_token0_fees: angstrom_fee_delta * pl,
-            uniswap_token0_fees: uniswap_token0_fee_delta * pl,
-            uniswap_token1_fees: uniswap_token1_fee_delta * pl
+            angstrom_token0_fees: full_mul_x128(angstrom_fee_delta, pl),
+            uniswap_token0_fees: full_mul_x128(uniswap_token0_fee_delta, pl),
+            uniswap_token1_fees: full_mul_x128(uniswap_token1_fee_delta, pl)
         }
     }
 }
@@ -45,7 +45,7 @@ pub async fn position_fees<F: StorageSlotFetcher>(
     position_liquidity: u128
 ) -> eyre::Result<LiquidityPositionFees> {
     let (angstrom_fee_delta, (uniswap_token0_fee_delta, uniswap_token1_fee_delta)) = tokio::try_join!(
-        angstrom_fee_delta(
+        angstrom_fee_delta_x128(
             slot_fetcher,
             angstrom_address,
             block_number,

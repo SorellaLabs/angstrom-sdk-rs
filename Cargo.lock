@@ -1230,6 +1230,8 @@ dependencies = [
  "jsonrpsee-http-client",
  "jsonrpsee-ws-client",
  "lib-reth",
+ "malachite",
+ "malachite-q",
  "pade",
  "rand 0.9.1",
  "reth-db",

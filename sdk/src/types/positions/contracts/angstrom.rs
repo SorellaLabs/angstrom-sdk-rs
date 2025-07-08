@@ -177,4 +177,22 @@ mod tests {
 
         assert_eq!(results, U256::from(701740166379348581587029420336_u128))
     }
+
+    #[tokio::test]
+    async fn test_angstrom_tick_growth_outside() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.valid_block_after_swaps;
+
+        let results = angstrom_tick_growth_outside(
+            &provider,
+            *ANGSTROM_ADDRESS.get().unwrap(),
+            Some(block_number),
+            pos_info.pool_id,
+            I24::unchecked_from(188250)
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(results, U256::from(655382197592272071439615771424_u128))
+    }
 }
