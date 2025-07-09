@@ -501,7 +501,11 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
             )
             .await?;
 
-            if pool_key.hooks != angstrom_address {
+            if pool_key.hooks != angstrom_address
+                || pool_id
+                    .map(|id| id != PoolId::from(pool_key.clone()))
+                    .unwrap_or_default()
+            {
                 start_token_id += U256::from(1u8);
                 continue;
             }

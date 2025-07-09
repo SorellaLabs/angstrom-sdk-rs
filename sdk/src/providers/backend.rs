@@ -252,7 +252,14 @@ where
         block_number: Option<u64>
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
         self.eth_provider
-            .all_user_positions(owner, start_token_id, last_token_id, max_results, block_number)
+            .all_user_positions(
+                owner,
+                start_token_id,
+                last_token_id,
+                pool_id,
+                max_results,
+                block_number
+            )
             .await
     }
 
