@@ -1,5 +1,8 @@
-use alloy_primitives::{B256, U256, U512, aliases::I24, keccak256};
+use alloy_primitives::{B256, U256, U512, aliases::I24, b256, keccak256};
 use angstrom_types::primitive::POSITION_MANAGER_ADDRESS;
+
+pub const FIXED_POINT_128: B256 =
+    b256!("0x0000000000000000000000000000000100000000000000000000000000000000");
 
 pub fn encode_position_key(position_token_id: U256, tick_lower: I24, tick_upper: I24) -> B256 {
     let mut bytes = [0u8; 70];
@@ -24,6 +27,50 @@ pub fn full_mul_x128(x: U256, y: U256) -> U256 {
     }
 
     U256::from(shifted)
+}
+
+pub fn mul_div(a: U256, b: U256, denominator: U256) -> U256 {
+    if denominator.is_zero() {
+        panic!("require(denominator != 0)");
+    }
+
+    // 512-bit product
+    let product: U512 = U512::from(a) * U512::from(b);
+
+    // Split into high / low 256-bit words
+    let mask_256: U512 = U512::from(U256::MAX); // 2^256 − 1
+    let prod0 = U256::from(product & mask_256); // low 256 bits
+    let prod1 = U256::from(product >> 256u32); // high 256 bits
+
+    // Overflow check (denominator must be > prod1)
+    if denominator <= prod1 {
+        panic!("require(denominator > prod1)");
+    }
+
+    if prod1.is_zero() {
+        return prod0 / denominator;
+    }
+
+    let quotient = product / U512::from(denominator);
+    U256::from(quotient)
+}
+
+#[cfg(test)]
+mod math_tests {
+    use super::*;
+    #[test]
+    fn test_full_mul_x128() {}
+
+    #[test]
+    fn test_mul_div() {
+        let mult = U256::from_str_radix("587456364760337352996937067840847760644036", 10).unwrap();
+        let liq = U256::from(6047841786519_u128);
+
+        let initial = mult / liq;
+
+        let mul_div = mul_div(initial, liq, U256::from_be_slice(FIXED_POINT_128.as_slice()));
+        println!("{mul_div:?}");
+    }
 }
 
 pub use packed_position_info::*;

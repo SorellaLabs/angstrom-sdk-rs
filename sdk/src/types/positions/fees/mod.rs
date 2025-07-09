@@ -5,7 +5,10 @@ mod uniswap;
 use angstrom_types::primitive::PoolId;
 pub use uniswap::*;
 
-use crate::types::{StorageSlotFetcher, positions::utils::full_mul_x128};
+use crate::types::{
+    StorageSlotFetcher,
+    positions::utils::{FIXED_POINT_128, full_mul_x128, mul_div}
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LiquidityPositionFees {
@@ -26,8 +29,8 @@ impl LiquidityPositionFees {
         Self {
             position_liquidity,
             angstrom_token0_fees: full_mul_x128(angstrom_fee_delta, pl),
-            uniswap_token0_fees: uniswap_token0_fee_delta * pl,
-            uniswap_token1_fees: uniswap_token1_fee_delta * pl
+            uniswap_token0_fees: mul_div(uniswap_token0_fee_delta, pl, FIXED_POINT_128.into()),
+            uniswap_token1_fees: mul_div(uniswap_token1_fee_delta, pl, FIXED_POINT_128.into())
         }
     }
 }
