@@ -257,6 +257,7 @@ mod tests {
                 pos_info.position_token_id - U256::from(bound),
                 pos_info.position_token_id + U256::from(bound),
                 None,
+                None,
                 Some(block_number)
             )
             .await
