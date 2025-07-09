@@ -1100,7 +1100,7 @@ dependencies = [
  "chrono",
  "futures",
  "futures-util",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "pade",
  "reth-ethereum-primitives",
  "reth-execution-types",
@@ -1149,7 +1149,7 @@ dependencies = [
  "eyre",
  "futures",
  "homedir",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "linked_hash_set",
  "once_cell",
  "order-pool",
@@ -1194,7 +1194,7 @@ dependencies = [
  "reth-tasks",
  "serde",
  "serde_json",
- "strum 0.27.1",
+ "strum 0.26.3",
  "thiserror 1.0.69",
  "tokio-stream",
  "tracing",
@@ -1266,7 +1266,7 @@ dependencies = [
  "eyre",
  "futures",
  "hsm-signer",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "k256",
  "malachite",
  "pade",
@@ -2339,7 +2339,7 @@ dependencies = [
  "bitflags 2.9.1",
  "cexpr",
  "clang-sys",
- "itertools 0.12.1",
+ "itertools 0.11.0",
  "lazy_static",
  "lazycell",
  "log",
@@ -2362,7 +2362,7 @@ dependencies = [
  "bitflags 2.9.1",
  "cexpr",
  "clang-sys",
- "itertools 0.13.0",
+ "itertools 0.11.0",
  "proc-macro2",
  "quote",
  "regex",
@@ -3122,7 +3122,7 @@ dependencies = [
  "angstrom-types",
  "eyre",
  "futures",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "matching-engine",
  "order-pool",
  "rand 0.9.1",
@@ -4141,6 +4141,21 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.104",
+]
+
+[[package]]
+name = "exe-runners"
+version = "0.1.0"
+source = "git+https://github.com/jnoorchashm37/exe-runners#e759ef3718bcd94029fa886d68ea2d2d92d0ab7a"
+dependencies = [
+ "auto_impl",
+ "dyn-clone",
+ "futures-util",
+ "reth-tasks",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "tracing-futures",
 ]
 
 [[package]]
@@ -5519,15 +5534,6 @@ dependencies = [
 
 [[package]]
 name = "itertools"
-version = "0.12.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
@@ -5848,7 +5854,7 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 [[package]]
 name = "lib-reth"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-reth#9b475af6f36fa224024d1c658d8df3373b344907"
+source = "git+https://github.com/jnoorchashm37/lib-reth#7cd7e706c85a7118449553d2113f38dd7745cd0b"
 dependencies = [
  "alloy-consensus",
  "alloy-network",
@@ -5857,6 +5863,7 @@ dependencies = [
  "alloy-rpc-client",
  "alloy-rpc-types",
  "alloy-rpc-types-eth",
+ "exe-runners",
  "eyre",
  "futures",
  "rayon",
@@ -6240,7 +6247,7 @@ dependencies = [
  "eyre",
  "futures",
  "futures-util",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "rand 0.9.1",
  "rand_distr",
  "reth-tasks",
@@ -7055,7 +7062,7 @@ name = "pade-macro"
 version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/pade#d19ce62486c7e9d33aa81fe560f03a4c6a3abce7"
 dependencies = [
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "proc-macro2",
  "quote",
  "syn 2.0.104",
@@ -11927,7 +11934,7 @@ dependencies = [
  "libc",
  "memchr",
  "ntapi",
- "windows 0.57.0",
+ "windows 0.54.0",
 ]
 
 [[package]]
@@ -12050,7 +12057,7 @@ dependencies = [
  "enr",
  "eyre",
  "futures",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "jsonrpsee",
  "matching-engine",
  "order-pool",
@@ -12795,7 +12802,7 @@ dependencies = [
  "futures",
  "futures-util",
  "hex",
- "itertools 0.14.0",
+ "itertools 0.11.0",
  "malachite",
  "rand 0.9.1",
  "rayon",
@@ -13267,16 +13274,6 @@ dependencies = [
 
 [[package]]
 name = "windows"
-version = "0.57.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12342cb4d8e3b046f3d80effd474a7a02447231330ef77d71daa6fbc40681143"
-dependencies = [
- "windows-core 0.57.0",
- "windows-targets 0.52.6",
-]
-
-[[package]]
-name = "windows"
 version = "0.58.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd04d41d93c4992d421894c18c8b43496aa748dd4c081bac0dc93eb0489272b6"
@@ -13313,18 +13310,6 @@ version = "0.54.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "12661b9c89351d684a50a8a643ce5f608e20243b9fb84687800163429f161d65"
 dependencies = [
- "windows-result 0.1.2",
- "windows-targets 0.52.6",
-]
-
-[[package]]
-name = "windows-core"
-version = "0.57.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2ed2439a290666cd67ecce2b0ffaad89c2a56b976b736e6ece670297897832d"
-dependencies = [
- "windows-implement 0.57.0",
- "windows-interface 0.57.0",
  "windows-result 0.1.2",
  "windows-targets 0.52.6",
 ]
@@ -13368,17 +13353,6 @@ dependencies = [
 
 [[package]]
 name = "windows-implement"
-version = "0.57.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9107ddc059d5b6fbfbffdfa7a7fe3e22a226def0b2608f72e9d552763d3e1ad7"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.104",
-]
-
-[[package]]
-name = "windows-implement"
 version = "0.58.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2bbd5b46c938e506ecbce286b6628a02171d56153ba733b6c741fc627ec9579b"
@@ -13393,17 +13367,6 @@ name = "windows-implement"
 version = "0.60.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a47fddd13af08290e67f4acabf4b459f647552718f683a7b415d290ac744a836"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.104",
-]
-
-[[package]]
-name = "windows-interface"
-version = "0.57.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29bee4b38ea3cde66011baa44dba677c432a78593e202392d1e9070cf2a7fca7"
 dependencies = [
  "proc-macro2",
  "quote",
