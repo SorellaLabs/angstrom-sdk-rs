@@ -26,8 +26,8 @@ impl LiquidityPositionFees {
         Self {
             position_liquidity,
             angstrom_token0_fees: full_mul_x128(angstrom_fee_delta, pl),
-            uniswap_token0_fees: full_mul_x128(uniswap_token0_fee_delta, pl),
-            uniswap_token1_fees: full_mul_x128(uniswap_token1_fee_delta, pl)
+            uniswap_token0_fees: uniswap_token0_fee_delta * pl,
+            uniswap_token1_fees: uniswap_token1_fee_delta * pl
         }
     }
 }
