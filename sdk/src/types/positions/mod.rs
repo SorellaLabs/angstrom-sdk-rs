@@ -5,8 +5,9 @@ pub mod utils;
 
 use alloy_primitives::{U256, aliases::I24};
 use angstrom_types::contract_bindings::pool_manager::PoolManager::PoolKey;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UserLiquidityPosition {
     pub token_id:   U256,
     pub tick_lower: I24,
