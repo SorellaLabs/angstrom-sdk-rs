@@ -80,7 +80,7 @@ pub trait AngstromDataApi: Send + Sized {
         &self,
         pool_id: PoolId,
         block_number: Option<u64>
-    ) -> eyre::Result<Option<PoolKeyWithAngstromFee>> {
+    ) -> eyre::Result<PoolKeyWithAngstromFee> {
         let config_store = self.pool_config_store(block_number).await?;
         self.pool_key_by_pool_id_with_config_store(pool_id, config_store, block_number)
             .await
@@ -91,12 +91,12 @@ pub trait AngstromDataApi: Send + Sized {
         pool_id: PoolId,
         config_store: AngstromPoolConfigStore,
         block_number: Option<u64>
-    ) -> eyre::Result<Option<PoolKeyWithAngstromFee>> {
-        Ok(self
-            .all_pool_keys_with_config_store(config_store, block_number)
+    ) -> eyre::Result<PoolKeyWithAngstromFee> {
+        self.all_pool_keys_with_config_store(config_store, block_number)
             .await?
             .into_iter()
-            .find(|pool_key| pool_id == PoolId::from(pool_key)))
+            .find(|pool_key| pool_id == PoolId::from(pool_key))
+            .ok_or_else(|| eyre::eyre!("no pool key for pool_id: {pool_id:?}"))
     }
 
     async fn tokens_by_partial_pool_key(
@@ -227,10 +227,7 @@ pub trait AngstromDataApi: Send + Sized {
         pool_id: PoolId,
         block_number: Option<u64>
     ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
-        let pool_key = self
-            .pool_key_by_pool_id(pool_id, block_number)
-            .await?
-            .ok_or_else(|| eyre::eyre!("pool key does not exist for these tokens"))?;
+        let pool_key = self.pool_key_by_pool_id(pool_id, block_number).await?;
         self.pool_data_by_tokens(
             pool_key.pool_key.currency0,
             pool_key.pool_key.currency1,
@@ -702,7 +699,6 @@ mod tests {
         let pool_key = provider
             .pool_key_by_pool_id(state.pool_key.clone().into(), Some(state.block_number))
             .await
-            .unwrap()
             .unwrap();
 
         assert_eq!(
@@ -741,7 +737,6 @@ mod tests {
                 Some(state.block_number)
             )
             .await
-            .unwrap()
             .unwrap();
 
         assert_eq!(
