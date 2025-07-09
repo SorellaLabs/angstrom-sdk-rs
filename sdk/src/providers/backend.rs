@@ -247,6 +247,7 @@ where
         owner: Address,
         start_token_id: U256,
         last_token_id: U256,
+        pool_id: Option<PoolId>,
         max_results: Option<usize>,
         block_number: Option<u64>
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {

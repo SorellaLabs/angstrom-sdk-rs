@@ -2,7 +2,7 @@ use alloy_primitives::{Address, U256};
 use alloy_provider::Provider;
 use angstrom_types::{
     contract_bindings::pool_manager::PoolManager::PoolKey,
-    primitive::{ANGSTROM_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS}
+    primitive::{ANGSTROM_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS, PoolId}
 };
 
 use super::data_api::AngstromDataApi;
@@ -33,6 +33,7 @@ pub trait AngstromUserApi: AngstromDataApi {
         owner: Address,
         start_token_id: U256,
         last_token_id: U256,
+        pool_id: Option<PoolId>,
         max_results: Option<usize>,
         block_number: Option<u64>
     ) -> eyre::Result<Vec<UserLiquidityPosition>>;
@@ -94,6 +95,7 @@ impl<P: Provider> AngstromUserApi for P {
         owner: Address,
         mut start_token_id: U256,
         mut end_token_id: U256,
+        pool_id: Option<PoolId>,
         max_results: Option<usize>,
         block_number: Option<u64>
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
@@ -136,7 +138,11 @@ impl<P: Provider> AngstromUserApi for P {
             )
             .await?;
 
-            if pool_key.hooks != angstrom_address {
+            if pool_key.hooks != angstrom_address
+                || pool_id
+                    .map(|id| id != PoolId::from(pool_key.clone()))
+                    .unwrap_or_default()
+            {
                 start_token_id += U256::from(1u8);
                 continue;
             }

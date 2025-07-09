@@ -460,6 +460,7 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
         owner: Address,
         mut start_token_id: U256,
         mut end_token_id: U256,
+        pool_id: Option<PoolId>,
         max_results: Option<usize>,
         block_number: Option<u64>
     ) -> eyre::Result<Vec<UserLiquidityPosition>> {
