@@ -51,7 +51,7 @@ async fn spawn_angstrom_provider()
         .with_recommended_fillers()
         .connect_ws(WsConnect::new(eth_ws_url()))
         .await?;
-    Ok(AngstromProvider::new_angstrom_http(eth_provider, &angstrom_http_url())?)
+    AngstromProvider::new_angstrom_http(eth_provider, &angstrom_http_url())
 }
 
 pub async fn spawn_angstrom_api()

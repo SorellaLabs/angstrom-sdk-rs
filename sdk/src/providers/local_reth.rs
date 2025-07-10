@@ -176,7 +176,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         let blocks_with_bundles = logs.into_iter().flat_map(|log| {
             let swap_log = PoolManager::Swap::decode_log(&log.inner).ok()?;
             (swap_log.fee == U24::ZERO)
-                .then(|| log.block_number)
+                .then_some(log.block_number)
                 .flatten()
         });
 
@@ -381,8 +381,8 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             return Ok(None)
         };
 
-        if verify_successful_tx {
-            if !self
+        if verify_successful_tx
+            && !self
                 .db_client
                 .eth_api()
                 .transaction_receipt(tx_hash)
@@ -392,12 +392,11 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             {
                 return Ok(None);
             }
-        }
 
         let input: &[u8] = transaction.input();
         Ok(Angstrom::executeCall::abi_decode(input)
             .ok()
-            .map(|decoded| {
+            .and_then(|decoded| {
                 let mut input = decoded.encoded.as_ref();
                 Some(WithEthMeta::new(
                     transaction.block_number,
@@ -405,8 +404,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
                     transaction.transaction_index,
                     AngstromBundle::pade_decode(&mut input, None).ok()?
                 ))
-            })
-            .flatten())
+            }))
     }
 }
 
@@ -592,5 +590,5 @@ where
 
     let data = evm.transact(tx)?;
 
-    Ok(IC::abi_decode_returns(&*data.result.output().unwrap_or_default()))
+    Ok(IC::abi_decode_returns(data.result.output().unwrap_or_default()))
 }

@@ -156,27 +156,27 @@ mod tests {
                 let domain = ANGSTROM_DOMAIN.get().expect("ANGSTROM_DOMAIN not set");
                 match &mut order {
                     AllOrders::ExactStanding(inner_order) => {
-                        let hash = inner_order.no_meta_eip712_signing_hash(&domain);
+                        let hash = inner_order.no_meta_eip712_signing_hash(domain);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
                     AllOrders::PartialStanding(inner_order) => {
-                        let hash = inner_order.no_meta_eip712_signing_hash(&domain);
+                        let hash = inner_order.no_meta_eip712_signing_hash(domain);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
                     AllOrders::ExactFlash(inner_order) => {
-                        let hash = inner_order.no_meta_eip712_signing_hash(&domain);
+                        let hash = inner_order.no_meta_eip712_signing_hash(domain);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
                     AllOrders::PartialFlash(inner_order) => {
-                        let hash = inner_order.no_meta_eip712_signing_hash(&domain);
+                        let hash = inner_order.no_meta_eip712_signing_hash(domain);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }
                     AllOrders::TOB(inner_order) => {
-                        let hash = inner_order.no_meta_eip712_signing_hash(&domain);
+                        let hash = inner_order.no_meta_eip712_signing_hash(domain);
                         inner_order.meta = sig_f(hash);
                         inner_order.recipient = signer.address();
                     }

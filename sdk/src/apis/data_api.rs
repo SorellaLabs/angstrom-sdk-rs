@@ -347,7 +347,7 @@ impl<P: Provider> AngstromDataApi for P {
         let blocks_with_bundles = logs.into_iter().flat_map(|log| {
             let swap_log = PoolManager::Swap::decode_log(&log.inner).ok()?;
             (swap_log.fee == U24::ZERO)
-                .then(|| log.block_number)
+                .then_some(log.block_number)
                 .flatten()
         });
 
@@ -383,7 +383,7 @@ impl<P: Provider> AngstromDataApi for P {
             .flat_map(|log| {
                 PoolManager::ModifyLiquidity::decode_log(&log.inner)
                     .ok()
-                    .map(|inner_log| {
+                    .and_then(|inner_log| {
                         all_pool_ids.contains(&inner_log.id).then(|| {
                             WithEthMeta::new(
                                 log.block_number,
@@ -393,7 +393,6 @@ impl<P: Provider> AngstromDataApi for P {
                             )
                         })
                     })
-                    .flatten()
             })
             .collect())
     }
@@ -418,7 +417,7 @@ impl<P: Provider> AngstromDataApi for P {
             .flat_map(|log| {
                 PoolManager::Swap::decode_log(&log.inner)
                     .ok()
-                    .map(|inner_log| {
+                    .and_then(|inner_log| {
                         (all_pool_ids.contains(&inner_log.id) && !inner_log.fee.is_zero()).then(
                             || {
                                 WithEthMeta::new(
@@ -430,7 +429,6 @@ impl<P: Provider> AngstromDataApi for P {
                             }
                         )
                     })
-                    .flatten()
             })
             .collect())
     }
@@ -558,8 +556,8 @@ impl<P: Provider> AngstromDataApi for P {
             return Ok(None)
         };
 
-        if verify_successful_tx {
-            if !self
+        if verify_successful_tx
+            && !self
                 .get_transaction_receipt(tx_hash)
                 .await?
                 .ok_or_else(|| eyre::eyre!("reciepts not enabled on node - tx hash: {tx_hash:?}"))?
@@ -567,12 +565,11 @@ impl<P: Provider> AngstromDataApi for P {
             {
                 return Ok(None);
             }
-        }
 
         let input: &[u8] = transaction.input();
         Ok(Angstrom::executeCall::abi_decode(input)
             .ok()
-            .map(|decoded| {
+            .and_then(|decoded| {
                 let mut input = decoded.encoded.as_ref();
                 Some(WithEthMeta::new(
                     transaction.block_number,
@@ -580,8 +577,7 @@ impl<P: Provider> AngstromDataApi for P {
                     transaction.transaction_index,
                     AngstromBundle::pade_decode(&mut input, None).ok()?
                 ))
-            })
-            .flatten())
+            }))
     }
 }
 

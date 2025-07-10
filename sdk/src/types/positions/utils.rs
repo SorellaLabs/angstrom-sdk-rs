@@ -242,9 +242,9 @@ mod packed_slot0 {
             let mut slot0 = U256::ZERO;
 
             // Set tick = 100 at offset 160
-            slot0 = slot0 | (U256::from(100u32) << 160);
+            slot0 |= U256::from(100u32) << 160;
 
-            println!("slot0 after setting tick: {:?}", slot0);
+            println!("slot0 after setting tick: {slot0:?}");
             println!("Extracted tick raw: {:?}", (slot0 >> 160) & MASK_24_BITS);
             println!("Extracted tick value: {:?}", slot0.tick());
 
@@ -272,8 +272,7 @@ mod packed_slot0 {
             let mut slot0 = U256::ZERO;
 
             // Set sqrtPriceX96 (lowest 160 bits)
-            slot0 = slot0
-                | U256::from_limbs([
+            slot0 |= U256::from_limbs([
                     sqrt_price.as_limbs()[0],
                     sqrt_price.as_limbs()[1],
                     sqrt_price.as_limbs()[2],
@@ -281,13 +280,13 @@ mod packed_slot0 {
                 ]);
 
             // Set tick (24 bits at offset 160)
-            slot0 = slot0 | (U256::from(tick.bits() as u32) << 160);
+            slot0 |= U256::from(tick.bits()) << 160;
 
             // Set protocolFee (24 bits at offset 184)
-            slot0 = slot0 | (U256::from(protocol_fee.to::<u32>()) << 184);
+            slot0 |= U256::from(protocol_fee.to::<u32>()) << 184;
 
             // Set lpFee (24 bits at offset 208)
-            slot0 = slot0 | (U256::from(lp_fee.to::<u32>()) << 208);
+            slot0 |= U256::from(lp_fee.to::<u32>()) << 208;
 
             // Test unpacking
             let unpacked = slot0.unpack_slot0();
@@ -314,8 +313,7 @@ mod packed_slot0 {
 
             // Construct the packed slot0
             let mut slot0 = U256::ZERO;
-            slot0 = slot0
-                | U256::from_limbs([
+            slot0 |= U256::from_limbs([
                     sqrt_price.as_limbs()[0],
                     sqrt_price.as_limbs()[1],
                     sqrt_price.as_limbs()[2],
@@ -323,10 +321,10 @@ mod packed_slot0 {
                 ]);
 
             // For negative tick, we need to handle two's complement for 24 bits
-            let tick_bits = (tick.bits() as u32) & 0xFFFFFF;
-            slot0 = slot0 | (U256::from(tick_bits) << 160);
-            slot0 = slot0 | (U256::from(protocol_fee.to::<u32>()) << 184);
-            slot0 = slot0 | (U256::from(lp_fee.to::<u32>()) << 208);
+            let tick_bits = tick.bits() & 0xFFFFFF;
+            slot0 |= U256::from(tick_bits) << 160;
+            slot0 |= U256::from(protocol_fee.to::<u32>()) << 184;
+            slot0 |= U256::from(lp_fee.to::<u32>()) << 208;
 
             // Test unpacking
             assert_eq!(slot0.tick(), tick);

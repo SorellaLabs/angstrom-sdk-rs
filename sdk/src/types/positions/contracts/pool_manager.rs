@@ -137,7 +137,7 @@ pub async fn pool_manager_pool_slot0<F: StorageSlotFetcher>(
     let pool_state_slot = pool_manager_pool_state_slot(pool_id.into());
 
     let packed_slot0 = slot_fetcher
-        .storage_at(pool_manager_address, pool_state_slot.into(), block_number)
+        .storage_at(pool_manager_address, pool_state_slot, block_number)
         .await?;
 
     Ok(packed_slot0.unpack_slot0())
@@ -296,7 +296,7 @@ mod tests {
         .await
         .unwrap();
 
-        println!("{:?}", results);
+        println!("{results:?}");
 
         // assert_eq!(results, pos_info.position_liquidity);
     }
@@ -316,7 +316,7 @@ mod tests {
         .await
         .unwrap();
 
-        println!("{:?}", results);
+        println!("{results:?}");
 
         // assert_eq!(results, pos_info.position_liquidity);
     }
@@ -338,7 +338,7 @@ mod tests {
         .await
         .unwrap();
 
-        println!("{:?}", results);
+        println!("{results:?}");
 
         // assert_eq!(results, pos_info.position_liquidity);
     }
