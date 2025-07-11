@@ -100,13 +100,13 @@ impl PoolKeyWithAngstromFee {
         this.pool_key.into()
     }
 
-    pub fn as_angstrom_pool_key_type(
+    pub(crate) fn as_angstrom_pool_key_type(
         &self
     ) -> angstrom_types::contract_bindings::angstrom::Angstrom::PoolKey {
         angstrom_types::contract_bindings::angstrom::Angstrom::PoolKey {
             currency0:   self.pool_key.currency0,
             currency1:   self.pool_key.currency1,
-            fee:         self.pool_key.fee,
+            fee:         self.pool_fee_in_e6,
             tickSpacing: self.pool_key.tickSpacing,
             hooks:       self.pool_key.hooks
         }
