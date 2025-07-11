@@ -254,7 +254,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             .pool_key_by_tokens(token0, token1, block_number)
             .await?;
 
-        let public_pool_id = pool_key.clone().into();
+        let public_pool_id = pool_key.as_angstrom_pool_id();
         let private_pool_id: PoolId = pool_key.clone().into();
         let registry = vec![pool_key.as_angstrom_pool_key_type()].into();
 
@@ -389,9 +389,9 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
                 .await?
                 .ok_or_else(|| eyre::eyre!("reciepts not enabled on node - tx hash: {tx_hash:?}"))?
                 .status()
-            {
-                return Ok(None);
-            }
+        {
+            return Ok(None);
+        }
 
         let input: &[u8] = transaction.input();
         Ok(Angstrom::executeCall::abi_decode(input)
