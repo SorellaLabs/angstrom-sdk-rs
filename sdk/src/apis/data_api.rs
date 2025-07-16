@@ -697,6 +697,8 @@ mod tests {
             .await
             .unwrap();
 
+        println!("{:?}", pool_key);
+
         assert_eq!(
             pool_key,
             PoolKeyWithAngstromFee {

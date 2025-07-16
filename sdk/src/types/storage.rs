@@ -70,7 +70,11 @@ impl<S: StorageSlotFetcher + DatabaseRef> StorageSlotFetcher for CacheDB<S> {
 
 #[cfg(feature = "local-reth")]
 mod reth_db_impls {
-    use lib_reth::{EthApiServer, reth_libmdbx::RethLibmdbxClient, traits::EthRevm};
+    use lib_reth::{
+        EthApiServer,
+        reth_libmdbx::RethLibmdbxClient,
+        traits::{EthRevm, reth_revm_utils::RethLibmdbxDatabaseRef}
+    };
     use revm::DatabaseRef;
 
     use super::*;
@@ -109,6 +113,18 @@ mod reth_db_impls {
 
             let db = db_client.make_inner_db(block_number)?;
             Ok(db.storage_ref(address, key.into())?)
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl StorageSlotFetcher for RethLibmdbxDatabaseRef {
+        async fn storage_at(
+            &self,
+            address: Address,
+            key: StorageKey,
+            _: Option<u64>
+        ) -> eyre::Result<StorageValue> {
+            Ok(self.storage_ref(address, key.into())?)
         }
     }
 }
