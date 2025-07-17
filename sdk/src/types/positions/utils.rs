@@ -85,11 +85,8 @@ fn try_tick_position_from_compressed(compressed: I24) -> Option<(i16, u8)> {
     let wp = word_pos.as_i32();
     let bp = bit_pos.as_i32() as u32;
 
-    if bp > u8::MAX as u32 || wp > i16::MAX as i32 || wp < i16::MIN as i32 {
-        None
-    } else {
-        Some((wp as i16, bp as u8))
-    }
+    (bp <= u8::MAX as u32 && wp <= i16::MAX as i32 && wp >= i16::MIN as i32)
+        .then(|| (wp as i16, bp as u8))
 }
 
 #[cfg(test)]
