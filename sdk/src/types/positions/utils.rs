@@ -55,6 +55,46 @@ pub fn mul_div(a: U256, b: U256, denominator: U256) -> U256 {
     U256::from(quotient)
 }
 
+pub fn compress_tick(tick: I24, tick_spacing: I24) -> I24 {
+    tick / tick_spacing - if tick % tick_spacing < I24::ZERO { I24::ONE } else { I24::ZERO }
+}
+
+pub fn tick_position_from_compressed(tick: I24, tick_spacing: I24) -> (i16, u8) {
+    let compressed = compress_tick(tick, tick_spacing);
+
+    if let Some((wp, bp)) = try_tick_position_from_compressed(compressed) {
+        (wp, bp)
+    } else {
+        tick_position_from_normalized_compressed(tick, tick_spacing)
+    }
+}
+
+pub fn tick_position_from_normalized_compressed(tick: I24, tick_spacing: I24) -> (i16, u8) {
+    let compressed = normalize_tick(tick, tick_spacing);
+    try_tick_position_from_compressed(compressed).unwrap()
+}
+
+pub fn normalize_tick(tick: I24, tick_spacing: I24) -> I24 {
+    compress_tick(tick, tick_spacing) * tick_spacing
+}
+
+fn try_tick_position_from_compressed(compressed: I24) -> Option<(i16, u8)> {
+    println!("compressed: {compressed:#x}");
+    let word_pos: I24 = compressed >> 8;
+    println!("word_pos: {word_pos:#x}");
+    let bit_pos = compressed & I24::unchecked_from(0xff);
+    println!("bit_pos: {bit_pos:#x}");
+
+    let wp = word_pos.as_i32();
+    let bp = bit_pos.as_i32() as u32;
+
+    if bp > u8::MAX as u32 || wp > i16::MAX as i32 || wp < i16::MIN as i32 {
+        None
+    } else {
+        Some((wp as i16, bp as u8))
+    }
+}
+
 #[cfg(test)]
 mod math_tests {
     use super::*;
@@ -273,11 +313,11 @@ mod packed_slot0 {
 
             // Set sqrtPriceX96 (lowest 160 bits)
             slot0 |= U256::from_limbs([
-                    sqrt_price.as_limbs()[0],
-                    sqrt_price.as_limbs()[1],
-                    sqrt_price.as_limbs()[2],
-                    0
-                ]);
+                sqrt_price.as_limbs()[0],
+                sqrt_price.as_limbs()[1],
+                sqrt_price.as_limbs()[2],
+                0
+            ]);
 
             // Set tick (24 bits at offset 160)
             slot0 |= U256::from(tick.bits()) << 160;
@@ -314,11 +354,11 @@ mod packed_slot0 {
             // Construct the packed slot0
             let mut slot0 = U256::ZERO;
             slot0 |= U256::from_limbs([
-                    sqrt_price.as_limbs()[0],
-                    sqrt_price.as_limbs()[1],
-                    sqrt_price.as_limbs()[2],
-                    0
-                ]);
+                sqrt_price.as_limbs()[0],
+                sqrt_price.as_limbs()[1],
+                sqrt_price.as_limbs()[2],
+                0
+            ]);
 
             // For negative tick, we need to handle two's complement for 24 bits
             let tick_bits = tick.bits() & 0xFFFFFF;
