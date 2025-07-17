@@ -24,9 +24,7 @@ use crate::{
     },
     types::{
         positions::{
-            UserLiquidityPosition,
-            fees::LiquidityPositionFees,
-            utils::{UnpackedPositionInfo, UnpackedSlot0}
+            UnpackedPositionInfo, UnpackedSlot0, UserLiquidityPosition, fees::LiquidityPositionFees
         },
         *
     }

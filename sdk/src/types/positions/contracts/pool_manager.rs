@@ -8,11 +8,8 @@ use futures::StreamExt;
 use crate::types::{
     StorageSlotFetcher,
     positions::{
-        TickData,
-        utils::{
-            UnpackSlot0, UnpackedSlot0, encode_position_key, normalize_tick,
-            tick_position_from_compressed
-        }
+        TickData, UnpackSlot0, UnpackedSlot0,
+        utils::{encode_position_key, normalize_tick, tick_position_from_compressed}
     }
 };
 

@@ -48,9 +48,8 @@ use crate::{
     },
     types::{
         positions::{
-            UserLiquidityPosition,
+            UnpackedPositionInfo, UnpackedSlot0, UserLiquidityPosition,
             fees::{LiquidityPositionFees, position_fees},
-            utils::{UnpackedPositionInfo, UnpackedSlot0},
             *
         },
         *
