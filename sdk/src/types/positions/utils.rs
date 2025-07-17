@@ -79,11 +79,8 @@ pub fn normalize_tick(tick: I24, tick_spacing: I24) -> I24 {
 }
 
 fn try_tick_position_from_compressed(compressed: I24) -> Option<(i16, u8)> {
-    println!("compressed: {compressed:#x}");
     let word_pos: I24 = compressed >> 8;
-    println!("word_pos: {word_pos:#x}");
     let bit_pos = compressed & I24::unchecked_from(0xff);
-    println!("bit_pos: {bit_pos:#x}");
 
     let wp = word_pos.as_i32();
     let bp = bit_pos.as_i32() as u32;
