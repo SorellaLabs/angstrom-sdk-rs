@@ -271,7 +271,8 @@ pub async fn pool_manager_load_tick_map<F: StorageSlotFetcher>(
     tick_spacing: I24,
     start_tick: Option<I24>,
     end_tick: Option<I24>,
-    load_buffer: Option<usize>
+    load_buffer: Option<usize>,
+    skip_uninitialized: bool
 ) -> eyre::Result<HashMap<I24, TickData>> {
     let start_tick = start_tick
         .map(|t| normalize_tick(t, tick_spacing))
@@ -280,28 +281,31 @@ pub async fn pool_manager_load_tick_map<F: StorageSlotFetcher>(
         .map(|t| normalize_tick(t, tick_spacing))
         .unwrap_or(I24::unchecked_from(887272));
 
-    let mut tick_data_loading_stream =
-        futures::stream::iter(start_tick.as_i32()..=end_tick.as_i32())
-            .map(async |tick| {
-                let tick = I24::unchecked_from(tick);
+    let mut tick_data_loading_stream = futures::stream::iter(
+        (start_tick.as_i32()..=end_tick.as_i32()).step_by(tick_spacing.as_i32().abs() as usize)
+    )
+    .map(async |tick| {
+        let tick = I24::unchecked_from(tick);
 
-                pool_manager_load_tick_data(
-                    slot_fetcher,
-                    pool_manager_address,
-                    block_number,
-                    tick_spacing,
-                    pool_id,
-                    tick
-                )
-                .await
-                .map(|d| (tick, d))
-            })
-            .buffer_unordered(load_buffer.unwrap_or(100));
+        pool_manager_load_tick_data(
+            slot_fetcher,
+            pool_manager_address,
+            block_number,
+            tick_spacing,
+            pool_id,
+            tick
+        )
+        .await
+        .map(|d| (tick, d))
+    })
+    .buffer_unordered(load_buffer.unwrap_or(100));
 
     let mut loaded_tick_data = HashMap::new();
     while let Some(val) = tick_data_loading_stream.next().await {
         let (k, v) = val?;
-        loaded_tick_data.insert(k, v);
+        if !skip_uninitialized || v.is_initialized {
+            loaded_tick_data.insert(k, v);
+        }
     }
 
     Ok(loaded_tick_data)
