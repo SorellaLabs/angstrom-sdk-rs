@@ -62,11 +62,8 @@ pub fn compress_tick(tick: I24, tick_spacing: I24) -> I24 {
 pub fn tick_position_from_compressed(tick: I24, tick_spacing: I24) -> (i16, u8) {
     let compressed = compress_tick(tick, tick_spacing);
 
-    if let Some((wp, bp)) = try_tick_position_from_compressed(compressed) {
-        (wp, bp)
-    } else {
-        tick_position_from_normalized_compressed(tick, tick_spacing)
-    }
+    try_tick_position_from_compressed(compressed)
+        .unwrap_or_else(|| tick_position_from_normalized_compressed(tick, tick_spacing))
 }
 
 pub fn tick_position_from_normalized_compressed(tick: I24, tick_spacing: I24) -> (i16, u8) {
