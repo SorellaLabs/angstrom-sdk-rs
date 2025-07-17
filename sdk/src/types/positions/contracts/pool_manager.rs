@@ -11,6 +11,7 @@ use crate::types::{
 pub const POOL_MANAGER_POOL_STATE_MAP_SLOT: u8 = 6;
 pub const POOL_MANAGER_POOL_FEE_GROWTH_GLOBAL0_X128_SLOT_OFFSET: u8 = 1;
 pub const POOL_MANAGER_POOL_FEE_GROWTH_GLOBAL1_X128_SLOT_OFFSET: u8 = 2;
+pub const POOL_MANAGER_POOL_LIQUIDITY_SLOT_OFFSET: u8 = 3;
 
 // tick state
 pub const POOL_MANAGER_POOL_TICK_OFFSET_SLOT: u8 = 4;
@@ -231,6 +232,24 @@ pub async fn pool_manager_pool_tick_fee_growth_outside<F: StorageSlotFetcher>(
     Ok((fee_growth_outside0_x128, fee_growth_outside1_x128))
 }
 
+pub async fn pool_manager_pool_liquidity<F: StorageSlotFetcher>(
+    slot_fetcher: &F,
+    pool_manager_address: Address,
+    block_number: Option<u64>,
+    pool_id: PoolId
+) -> eyre::Result<U256> {
+    let pool_state_slot = pool_manager_pool_state_slot(pool_id.into());
+    let pool_state_slot_base = U256::from_be_slice(pool_state_slot.as_slice());
+
+    let liquidity_slot = pool_state_slot_base + U256::from(POOL_MANAGER_POOL_LIQUIDITY_SLOT_OFFSET);
+
+    let liquidity = slot_fetcher
+        .storage_at(pool_manager_address, liquidity_slot.into(), block_number)
+        .await?;
+
+    Ok(liquidity)
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -365,5 +384,22 @@ mod tests {
         };
 
         assert_eq!(results, expected);
+    }
+
+    #[tokio::test]
+    async fn test_pool_manager_pool_liquidity() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.valid_block_after_swaps;
+
+        let results = pool_manager_pool_liquidity(
+            &provider,
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            Some(block_number),
+            pos_info.pool_key.into()
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(results, U256::from(435906614777942732_u128));
     }
 }
