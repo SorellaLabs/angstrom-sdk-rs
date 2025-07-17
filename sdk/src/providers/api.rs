@@ -31,7 +31,7 @@ use crate::{
         positions::{
             UserLiquidityPosition,
             fees::LiquidityPositionFees,
-            utils::{UnpackedPositionInfo, UnpackedSlot0}
+            {UnpackedPositionInfo, UnpackedSlot0}
         }
     }
 };

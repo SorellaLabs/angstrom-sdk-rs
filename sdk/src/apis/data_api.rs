@@ -31,7 +31,7 @@ use uniswap_v4::uniswap::{
 
 use super::utils::*;
 use crate::types::{
-    positions::{pool_manager_pool_slot0, utils::UnpackedSlot0},
+    positions::{UnpackedSlot0, pool_manager_pool_slot0},
     *
 };
 

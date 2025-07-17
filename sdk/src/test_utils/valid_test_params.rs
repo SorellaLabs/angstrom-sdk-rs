@@ -12,7 +12,7 @@ use angstrom_types::{
     }
 };
 
-use crate::{test_utils::spawn_angstrom_api, types::positions::utils::UnpackedPositionInfo};
+use crate::{test_utils::spawn_angstrom_api, types::positions::UnpackedPositionInfo};
 
 pub struct ValidPositionTestParameters {
     pub angstrom_address: Address,
