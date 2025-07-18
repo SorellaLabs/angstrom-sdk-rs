@@ -297,18 +297,11 @@ pub async fn pool_manager_load_tick_map<F: StorageSlotFetcher>(
     })
     .buffer_unordered(load_buffer.unwrap_or(1000));
 
-    let num_to_load = ((end_tick - start_tick) / tick_spacing).as_i32();
-    let mut i = 0;
     let mut loaded_tick_data = HashMap::new();
-    println!("starting tick loading");
     while let Some(val) = tick_data_loading_stream.next().await {
         let (k, v) = val?;
         if !skip_uninitialized || v.is_initialized {
             loaded_tick_data.insert(k, v);
-        }
-        i += 1;
-        if i % 100 == 0 || i - 1 == num_to_load {
-            println!("LOADED: {i}/{num_to_load}");
         }
     }
 
