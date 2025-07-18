@@ -107,6 +107,13 @@ pub fn min_valid_tick(tick_spacing: I24) -> I24 {
     I24::unchecked_from(MIN_TICK) / tick_spacing * tick_spacing
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum TickRoundingMode {
+    Nearest,
+    Upper,
+    Lower
+}
+
 #[cfg(test)]
 mod math_tests {
     use super::*;

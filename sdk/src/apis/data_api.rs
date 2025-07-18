@@ -446,7 +446,7 @@ impl<P: Provider> AngstromDataApi for P {
             .await?;
 
         let public_pool_id = pool_key.as_angstrom_pool_id();
-        let private_pool_id: PoolId = pool_key.pool_key.clone().into();
+        let private_pool_id: PoolId = pool_key.pool_key.into();
         let registry = vec![pool_key.as_angstrom_pool_key_type()].into();
 
         let data_loader = DataLoader::new_with_registry(
@@ -693,7 +693,7 @@ mod tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let pool_key = provider
-            .pool_key_by_pool_id(state.pool_key.clone().into(), Some(state.block_number))
+            .pool_key_by_pool_id(state.pool_key.into(), Some(state.block_number))
             .await
             .unwrap();
 
@@ -730,7 +730,7 @@ mod tests {
 
         let pool_key = provider
             .pool_key_by_pool_id_with_config_store(
-                state.pool_key.clone().into(),
+                state.pool_key.into(),
                 config_store,
                 Some(state.block_number)
             )
@@ -813,7 +813,7 @@ mod tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let (_, pool_data) = provider
-            .pool_data_by_pool_id(PoolId::from(state.pool_key.clone()), Some(state.block_number))
+            .pool_data_by_pool_id(PoolId::from(state.pool_key), Some(state.block_number))
             .await
             .unwrap();
 
@@ -851,7 +851,7 @@ mod tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let slot0 = provider
-            .slot0_by_pool_id(PoolId::from(state.pool_key.clone()), Some(state.block_number))
+            .slot0_by_pool_id(PoolId::from(state.pool_key), Some(state.block_number))
             .await
             .unwrap();
 

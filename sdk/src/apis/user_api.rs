@@ -139,7 +139,7 @@ impl<P: Provider> AngstromUserApi for P {
 
             if pool_key.hooks != angstrom_address
                 || pool_id
-                    .map(|id| id != PoolId::from(pool_key.clone()))
+                    .map(|id| id != PoolId::from(pool_key))
                     .unwrap_or_default()
             {
                 start_token_id += U256::from(1u8);
@@ -150,7 +150,7 @@ impl<P: Provider> AngstromUserApi for P {
                 root,
                 pool_manager_address,
                 block_number,
-                pool_key.clone().into(),
+                pool_key.into(),
                 start_token_id,
                 position_info.tick_lower,
                 position_info.tick_upper
@@ -187,7 +187,7 @@ impl<P: Provider> AngstromUserApi for P {
             self.position_liquidity(position_token_id, block_number),
         )?;
 
-        let pool_id = pool_key.clone().into();
+        let pool_id = pool_key.into();
         let slot0 = self.slot0_by_pool_id(pool_id, block_number).await?;
 
         Ok(position_fees(

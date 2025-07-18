@@ -303,6 +303,8 @@ pub mod _liquidity_calls {
         }
     }
 
+    impl Copy for PoolKey {}
+
     sol! {
 
         #[derive(Debug, Default)]
@@ -650,7 +652,7 @@ mod tests {
 
         let pool_key = create_test_pool_key();
         let mint_params = _liquidity_calls::mintPositionCall {
-            poolKey:    pool_key.clone(),
+            poolKey:    pool_key,
             tickLower:  I24::try_from(-1000).unwrap(),
             tickUpper:  I24::try_from(1000).unwrap(),
             liquidity:  U256::from(100000),
@@ -737,7 +739,7 @@ mod tests {
             hooks:       address!("8888888888888888888888888888888888888888")
         };
 
-        let converted_key: _liquidity_calls::PoolKey = pm_key.clone().into();
+        let converted_key: _liquidity_calls::PoolKey = pm_key.into();
 
         assert_eq!(converted_key.currency0, pm_key.currency0);
         assert_eq!(converted_key.currency1, pm_key.currency1);
@@ -758,7 +760,7 @@ mod tests {
             hooks:       Address::ZERO
         };
 
-        let converted_key: _liquidity_calls::PoolKey = pm_key.clone().into();
+        let converted_key: _liquidity_calls::PoolKey = pm_key.into();
 
         assert_eq!(converted_key.currency0, pm_key.currency0);
         assert_eq!(converted_key.currency1, pm_key.currency1);

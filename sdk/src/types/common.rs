@@ -23,7 +23,7 @@ pub struct TokenInfoWithMeta {
     pub symbol:  String
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub struct PoolMetadata {
     pub pool_key:     PoolKey,
     pub pool_id:      PoolId,
@@ -47,8 +47,8 @@ impl PoolMetadata {
         Self {
             token0,
             token1,
-            pool_id: pool_key.clone().into(),
             pool_key,
+            pool_id: pool_key.into(),
             fee: config_store.fee_in_e6,
             tick_spacing: config_store.tick_spacing,
             storage_idx: config_store.store_index as u64
@@ -87,7 +87,7 @@ pub struct BinanceTokenPrice {
     pub error_msg: Option<String>
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Hash)]
 pub struct PoolKeyWithAngstromFee {
     pub pool_key:       PoolKey,
     pub pool_fee_in_e6: U24

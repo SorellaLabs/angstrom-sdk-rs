@@ -96,7 +96,7 @@ impl HistoricalOrdersFilter {
             OrderFilter::PoolKey(pool_key) => pool_stores
                 .0
                 .get(&order_pair_index)
-                .map(|pool| pool.pool_key.clone() == pool_key.clone())
+                .map(|pool| pool.pool_key == *pool_key)
                 .unwrap_or_default(),
             OrderFilter::Tokens(token0, token1) => pool_stores
                 .0
