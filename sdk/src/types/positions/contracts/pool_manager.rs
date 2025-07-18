@@ -7,10 +7,7 @@ use futures::StreamExt;
 
 use crate::types::{
     StorageSlotFetcher,
-    positions::{
-        TickData, UnpackSlot0, UnpackedSlot0,
-        utils::{encode_position_key, normalize_tick, tick_position_from_compressed}
-    }
+    positions::{TickData, UnpackSlot0, UnpackedSlot0, utils::*}
 };
 
 // pool state
@@ -276,10 +273,10 @@ pub async fn pool_manager_load_tick_map<F: StorageSlotFetcher>(
 ) -> eyre::Result<HashMap<I24, TickData>> {
     let start_tick = start_tick
         .map(|t| normalize_tick(t, tick_spacing))
-        .unwrap_or(I24::unchecked_from(-887272));
+        .unwrap_or(min_valid_tick(tick_spacing));
     let end_tick = end_tick
         .map(|t| normalize_tick(t, tick_spacing))
-        .unwrap_or(I24::unchecked_from(887272));
+        .unwrap_or(max_valid_tick(tick_spacing));
 
     let mut tick_data_loading_stream = futures::stream::iter(
         (start_tick.as_i32()..=end_tick.as_i32()).step_by(tick_spacing.as_i32().abs() as usize)
@@ -298,13 +295,20 @@ pub async fn pool_manager_load_tick_map<F: StorageSlotFetcher>(
         .await
         .map(|d| (tick, d))
     })
-    .buffer_unordered(load_buffer.unwrap_or(100));
+    .buffer_unordered(load_buffer.unwrap_or(1000));
 
+    let num_to_load = ((end_tick - start_tick) / tick_spacing).as_i32();
+    let mut i = 0;
     let mut loaded_tick_data = HashMap::new();
+    println!("starting tick loading");
     while let Some(val) = tick_data_loading_stream.next().await {
         let (k, v) = val?;
         if !skip_uninitialized || v.is_initialized {
             loaded_tick_data.insert(k, v);
+        }
+        i += 1;
+        if i % 100 == 0 || i - 1 == num_to_load {
+            println!("LOADED: {i}/{num_to_load}");
         }
     }
 
@@ -564,5 +568,30 @@ mod tests {
             assert_eq!(results.liquidity_gross, tick_actual_data.liquidity_gross);
             assert_eq!(results.liquidity_net, tick_actual_data.liquidity_net);
         }
+    }
+
+    #[tokio::test]
+    async fn test_pool_manager_load_tick_map() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.valid_block_after_swaps;
+
+        let tick_spacing = pos_info.pool_key.tickSpacing;
+        let pool_id = pos_info.pool_key.into();
+
+        let results = pool_manager_load_tick_map(
+            &provider,
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            Some(block_number),
+            pool_id,
+            tick_spacing,
+            None,
+            None,
+            None,
+            true
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(results.len(), 8);
     }
 }

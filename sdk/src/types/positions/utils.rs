@@ -1,8 +1,11 @@
-use alloy_primitives::{B256, U256, U512, aliases::I24, b256, keccak256};
+use alloy_primitives::{B256, I64, U256, U512, aliases::I24, b256, keccak256};
 use angstrom_types::primitive::POSITION_MANAGER_ADDRESS;
 
 pub const FIXED_POINT_128: B256 =
     b256!("0x0000000000000000000000000000000100000000000000000000000000000000");
+
+pub const MIN_TICK: i32 = -887272;
+pub const MAX_TICK: i32 = 887272;
 
 pub fn encode_position_key(position_token_id: U256, tick_lower: I24, tick_upper: I24) -> B256 {
     let mut bytes = [0u8; 70];
@@ -56,34 +59,52 @@ pub fn mul_div(a: U256, b: U256, denominator: U256) -> U256 {
 }
 
 pub fn compress_tick(tick: I24, tick_spacing: I24) -> I24 {
-    tick / tick_spacing - if tick % tick_spacing < I24::ZERO { I24::ONE } else { I24::ZERO }
+    tick.saturating_div(tick_spacing)
+        - if tick % tick_spacing < I24::ZERO { I24::ONE } else { I24::ZERO }
 }
 
-pub fn tick_position_from_compressed(tick: I24, tick_spacing: I24) -> (i16, u8) {
+pub fn tick_position_from_compressed(mut tick: I24, tick_spacing: I24) -> (i16, u8) {
+    if tick % tick_spacing != I24::ZERO {
+        tick = normalize_tick(tick, tick_spacing);
+    }
+
     let compressed = compress_tick(tick, tick_spacing);
 
-    try_tick_position_from_compressed(compressed)
-        .unwrap_or_else(|| tick_position_from_normalized_compressed(tick, tick_spacing))
-}
-
-pub fn tick_position_from_normalized_compressed(tick: I24, tick_spacing: I24) -> (i16, u8) {
-    let compressed = normalize_tick(tick, tick_spacing);
     try_tick_position_from_compressed(compressed).unwrap()
 }
 
 pub fn normalize_tick(tick: I24, tick_spacing: I24) -> I24 {
-    compress_tick(tick, tick_spacing) * tick_spacing
+    let norm = compress_tick(tick, tick_spacing) * tick_spacing;
+
+    if I64::from(tick) > I64::from(norm) + I64::from(tick_spacing)
+        || I64::from(tick) < I64::from(norm) - I64::from(tick_spacing)
+        || norm.as_i32() < MIN_TICK
+        || norm.as_i32() > MAX_TICK
+    {
+        if tick.is_negative() {
+            return normalize_tick(tick + tick_spacing.abs(), tick_spacing);
+        } else {
+            return normalize_tick(tick - tick_spacing.abs(), tick_spacing);
+        }
+    }
+
+    norm
 }
 
 fn try_tick_position_from_compressed(compressed: I24) -> Option<(i16, u8)> {
-    let word_pos: I24 = compressed >> 8;
-    let bit_pos = compressed & I24::unchecked_from(0xff);
+    let compressed_i32 = compressed.as_i32();
+    let word_pos = (compressed_i32 >> 8) as i16;
+    let bit_pos = (compressed_i32 & 0xff) as u8;
 
-    let wp = word_pos.as_i32();
-    let bp = bit_pos.as_i32() as u32;
+    Some((word_pos, bit_pos))
+}
 
-    (bp <= u8::MAX as u32 && wp <= i16::MAX as i32 && wp >= i16::MIN as i32)
-        .then(|| (wp as i16, bp as u8))
+pub fn max_valid_tick(tick_spacing: I24) -> I24 {
+    I24::unchecked_from(MAX_TICK) / tick_spacing * tick_spacing
+}
+
+pub fn min_valid_tick(tick_spacing: I24) -> I24 {
+    I24::unchecked_from(MIN_TICK) / tick_spacing * tick_spacing
 }
 
 #[cfg(test)]
