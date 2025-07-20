@@ -11,7 +11,7 @@ use crate::types::{
         TickData,
         pool_manager::{
             pool_state::pool_manager_pool_state_slot,
-            tick_bitmap::{normalize_tick, tick_initialized}
+            tick_bitmap::{next_tick_ge, normalize_tick, tick_initialized}
         },
         utils::{max_valid_tick, min_valid_tick}
     }
@@ -74,8 +74,90 @@ pub async fn pool_manager_load_tick_map<F: StorageSlotFetcher>(
     tick_spacing: I24,
     start_tick: Option<I24>,
     end_tick: Option<I24>,
-    load_buffer: Option<usize>,
     skip_uninitialized: bool
+) -> eyre::Result<HashMap<I24, TickData>> {
+    if skip_uninitialized {
+        load_tick_map_initialized(
+            slot_fetcher,
+            pool_manager_address,
+            block_number,
+            pool_id,
+            tick_spacing,
+            start_tick,
+            end_tick
+        )
+        .await
+    } else {
+        load_tick_map_include_uninitialized(
+            slot_fetcher,
+            pool_manager_address,
+            block_number,
+            pool_id,
+            tick_spacing,
+            start_tick,
+            end_tick
+        )
+        .await
+    }
+}
+
+async fn load_tick_map_initialized<F: StorageSlotFetcher>(
+    slot_fetcher: &F,
+    pool_manager_address: Address,
+    block_number: Option<u64>,
+    pool_id: PoolId,
+    tick_spacing: I24,
+    start_tick: Option<I24>,
+    end_tick: Option<I24>
+) -> eyre::Result<HashMap<I24, TickData>> {
+    let mut start_tick = start_tick
+        .map(|t| normalize_tick(t, tick_spacing))
+        .unwrap_or(min_valid_tick(tick_spacing));
+    let end_tick = end_tick
+        .map(|t| normalize_tick(t, tick_spacing))
+        .unwrap_or(max_valid_tick(tick_spacing));
+
+    let mut initialized_ticks = Vec::new();
+    while start_tick <= end_tick {
+        let (_, tick) = next_tick_ge(
+            slot_fetcher,
+            pool_manager_address,
+            block_number,
+            tick_spacing,
+            pool_id,
+            start_tick,
+            true
+        )
+        .await?;
+        initialized_ticks.push(tick);
+        start_tick = tick;
+    }
+
+    Ok(futures::future::try_join_all(initialized_ticks.into_iter().map(async |tick| {
+        pool_manager_load_tick_data(
+            slot_fetcher,
+            pool_manager_address,
+            block_number,
+            tick_spacing,
+            pool_id,
+            tick
+        )
+        .await
+        .map(|d| (tick, d))
+    }))
+    .await?
+    .into_iter()
+    .collect())
+}
+
+async fn load_tick_map_include_uninitialized<F: StorageSlotFetcher>(
+    slot_fetcher: &F,
+    pool_manager_address: Address,
+    block_number: Option<u64>,
+    pool_id: PoolId,
+    tick_spacing: I24,
+    start_tick: Option<I24>,
+    end_tick: Option<I24>
 ) -> eyre::Result<HashMap<I24, TickData>> {
     let start_tick = start_tick
         .map(|t| normalize_tick(t, tick_spacing))
@@ -101,14 +183,12 @@ pub async fn pool_manager_load_tick_map<F: StorageSlotFetcher>(
         .await
         .map(|d| (tick, d))
     })
-    .buffer_unordered(load_buffer.unwrap_or(1000));
+    .buffer_unordered(1000);
 
     let mut loaded_tick_data = HashMap::new();
     while let Some(val) = tick_data_loading_stream.next().await {
         let (k, v) = val?;
-        if !skip_uninitialized || v.is_initialized {
-            loaded_tick_data.insert(k, v);
-        }
+        loaded_tick_data.insert(k, v);
     }
 
     Ok(loaded_tick_data)
@@ -211,13 +291,10 @@ mod tests {
             tick_spacing,
             None,
             None,
-            None,
             true
         )
         .await
         .unwrap();
-
-        println!("{results:?}");
 
         assert_eq!(results.len(), 8);
     }
