@@ -288,6 +288,7 @@ mod tests {
         )
         .await
         .unwrap();
+
         assert_eq!(results, I24::unchecked_from(191120));
     }
 
@@ -310,6 +311,7 @@ mod tests {
         )
         .await
         .unwrap();
+
         assert_eq!(results, I24::unchecked_from(189130));
     }
 }
