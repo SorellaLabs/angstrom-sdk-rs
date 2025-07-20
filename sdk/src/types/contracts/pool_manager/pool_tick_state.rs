@@ -73,90 +73,6 @@ pub async fn pool_manager_load_tick_map<F: StorageSlotFetcher>(
     pool_id: PoolId,
     tick_spacing: I24,
     start_tick: Option<I24>,
-    end_tick: Option<I24>,
-    skip_uninitialized: bool
-) -> eyre::Result<HashMap<I24, TickData>> {
-    if skip_uninitialized {
-        load_tick_map_initialized(
-            slot_fetcher,
-            pool_manager_address,
-            block_number,
-            pool_id,
-            tick_spacing,
-            start_tick,
-            end_tick
-        )
-        .await
-    } else {
-        load_tick_map_include_uninitialized(
-            slot_fetcher,
-            pool_manager_address,
-            block_number,
-            pool_id,
-            tick_spacing,
-            start_tick,
-            end_tick
-        )
-        .await
-    }
-}
-
-async fn load_tick_map_initialized<F: StorageSlotFetcher>(
-    slot_fetcher: &F,
-    pool_manager_address: Address,
-    block_number: Option<u64>,
-    pool_id: PoolId,
-    tick_spacing: I24,
-    start_tick: Option<I24>,
-    end_tick: Option<I24>
-) -> eyre::Result<HashMap<I24, TickData>> {
-    let mut start_tick = start_tick
-        .map(|t| normalize_tick(t, tick_spacing))
-        .unwrap_or(min_valid_tick(tick_spacing));
-    let end_tick = end_tick
-        .map(|t| normalize_tick(t, tick_spacing))
-        .unwrap_or(max_valid_tick(tick_spacing));
-
-    let mut initialized_ticks = Vec::new();
-    while start_tick <= end_tick {
-        let (_, tick) = next_tick_ge(
-            slot_fetcher,
-            pool_manager_address,
-            block_number,
-            tick_spacing,
-            pool_id,
-            start_tick,
-            true
-        )
-        .await?;
-        initialized_ticks.push(tick);
-        start_tick = tick;
-    }
-
-    Ok(futures::future::try_join_all(initialized_ticks.into_iter().map(async |tick| {
-        pool_manager_load_tick_data(
-            slot_fetcher,
-            pool_manager_address,
-            block_number,
-            tick_spacing,
-            pool_id,
-            tick
-        )
-        .await
-        .map(|d| (tick, d))
-    }))
-    .await?
-    .into_iter()
-    .collect())
-}
-
-async fn load_tick_map_include_uninitialized<F: StorageSlotFetcher>(
-    slot_fetcher: &F,
-    pool_manager_address: Address,
-    block_number: Option<u64>,
-    pool_id: PoolId,
-    tick_spacing: I24,
-    start_tick: Option<I24>,
     end_tick: Option<I24>
 ) -> eyre::Result<HashMap<I24, TickData>> {
     let start_tick = start_tick
@@ -166,24 +82,41 @@ async fn load_tick_map_include_uninitialized<F: StorageSlotFetcher>(
         .map(|t| normalize_tick(t, tick_spacing))
         .unwrap_or(max_valid_tick(tick_spacing));
 
-    let mut tick_data_loading_stream = futures::stream::iter(
-        (start_tick.as_i32()..=end_tick.as_i32()).step_by(tick_spacing.as_i32().abs() as usize)
-    )
-    .map(async |tick| {
-        let tick = I24::unchecked_from(tick);
-
-        pool_manager_load_tick_data(
+    println!("range: {start_tick:?} - {end_tick:?}");
+    let mut ct = start_tick;
+    let mut initialized_ticks = Vec::new();
+    while ct <= end_tick {
+        let (_, tick) = next_tick_ge(
             slot_fetcher,
             pool_manager_address,
             block_number,
             tick_spacing,
             pool_id,
-            tick
+            ct,
+            true
         )
-        .await
-        .map(|d| (tick, d))
-    })
-    .buffer_unordered(1000);
+        .await?;
+        initialized_ticks.push(tick);
+        println!("current tick: {ct:?}\nrange: {start_tick:?} - {end_tick:?}");
+        ct = tick;
+    }
+
+    let mut tick_data_loading_stream = futures::stream::iter(initialized_ticks)
+        .map(async |tick| {
+            let tick = I24::unchecked_from(tick);
+
+            pool_manager_load_tick_data(
+                slot_fetcher,
+                pool_manager_address,
+                block_number,
+                tick_spacing,
+                pool_id,
+                tick
+            )
+            .await
+            .map(|d| (tick, d))
+        })
+        .buffer_unordered(1000);
 
     let mut loaded_tick_data = HashMap::new();
     while let Some(val) = tick_data_loading_stream.next().await {
@@ -290,8 +223,7 @@ mod tests {
             pool_id,
             tick_spacing,
             None,
-            None,
-            true
+            None
         )
         .await
         .unwrap();

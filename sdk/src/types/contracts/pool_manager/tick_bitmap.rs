@@ -180,7 +180,7 @@ pub async fn next_tick_ge<F: StorageSlotFetcher>(
             block_number,
             tick_spacing,
             pool_id,
-            tick,
+            next_tick,
             initialized_only
         ))
         .await
