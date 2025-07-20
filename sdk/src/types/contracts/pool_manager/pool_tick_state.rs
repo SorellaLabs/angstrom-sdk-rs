@@ -82,7 +82,6 @@ pub async fn pool_manager_load_tick_map<F: StorageSlotFetcher>(
         .map(|t| normalize_tick(t, tick_spacing))
         .unwrap_or(max_valid_tick(tick_spacing));
 
-    println!("range: {start_tick:?} - {end_tick:?}");
     let mut ct = start_tick;
     let mut initialized_ticks = Vec::new();
     while ct <= end_tick {
@@ -97,7 +96,6 @@ pub async fn pool_manager_load_tick_map<F: StorageSlotFetcher>(
         )
         .await?;
         initialized_ticks.push(tick);
-        println!("current tick: {ct:?}\nrange: {start_tick:?} - {end_tick:?}");
         ct = tick;
     }
 
