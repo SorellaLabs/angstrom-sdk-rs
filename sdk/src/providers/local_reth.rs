@@ -176,10 +176,15 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         end_block: Option<u64>,
         block_stream_buffer: Option<usize>
     ) -> eyre::Result<Vec<WithEthMeta<AngstromBundle>>> {
-        let filter = historical_pool_manager_swap_filter(start_block, end_block);
-        let logs = self.get_logs(&filter).await?;
+        let filters = historical_pool_manager_swap_filter(start_block, end_block);
+        let logs = futures::future::try_join_all(
+            filters
+                .into_iter()
+                .map(async move |filter| self.get_logs(&filter).await)
+        )
+        .await?;
 
-        let blocks_with_bundles = logs.into_iter().flat_map(|log| {
+        let blocks_with_bundles = logs.into_iter().flatten().flat_map(|log| {
             let swap_log = PoolManager::Swap::decode_log(&log.inner).ok()?;
             (swap_log.fee == U24::ZERO)
                 .then_some(log.block_number)
@@ -203,11 +208,17 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         start_block: Option<u64>,
         end_block: Option<u64>
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
-        let filter = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
-        let logs = self.get_logs(&filter).await?;
+        let filters = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
+        let logs = futures::future::try_join_all(
+            filters
+                .into_iter()
+                .map(async move |filter| self.get_logs(&filter).await)
+        )
+        .await?;
 
         Ok(logs
             .into_iter()
+            .flatten()
             .flat_map(|log| {
                 PoolManager::ModifyLiquidity::decode_log(&log.inner)
                     .ok()
@@ -228,11 +239,17 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         start_block: Option<u64>,
         end_block: Option<u64>
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::Swap>>> {
-        let filter = historical_pool_manager_swap_filter(start_block, end_block);
-        let logs = self.get_logs(&filter).await?;
+        let filters = historical_pool_manager_swap_filter(start_block, end_block);
+        let logs = futures::future::try_join_all(
+            filters
+                .into_iter()
+                .map(async move |filter| self.get_logs(&filter).await)
+        )
+        .await?;
 
         Ok(logs
             .into_iter()
+            .flatten()
             .flat_map(|log| {
                 PoolManager::Swap::decode_log(&log.inner)
                     .ok()
