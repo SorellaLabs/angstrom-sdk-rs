@@ -217,6 +217,8 @@ mod tests {
         .await
         .unwrap();
 
+        println!("{results:?}");
+
         assert_eq!(results.len(), 8);
     }
 
