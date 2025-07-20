@@ -9,7 +9,7 @@ use itertools::concat;
 
 use crate::types::{
     StorageSlotFetcher,
-    positions::{UnpackPositionInfo, UnpackedPositionInfo}
+    contracts::{UnpackPositionInfo, UnpackedPositionInfo}
 };
 
 pub const POSITION_MANAGER_OWNER_OF_SLOT: u8 = 2;

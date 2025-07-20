@@ -47,11 +47,18 @@ use crate::{
         }
     },
     types::{
-        positions::{
+        contracts::{
             UnpackedPositionInfo, UnpackedSlot0, UserLiquidityPosition,
-            fees::{LiquidityPositionFees, position_fees},
-            *
+            pool_manager::{
+                pool_state::pool_manager_pool_slot0,
+                position_state::pool_manager_position_state_liquidity
+            },
+            position_manager::{
+                position_manager_next_token_id, position_manager_owner_of,
+                position_manager_pool_key_and_info
+            }
         },
+        fees::{LiquidityPositionFees, position_fees},
         *
     }
 };

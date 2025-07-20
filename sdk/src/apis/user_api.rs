@@ -6,11 +6,16 @@ use angstrom_types::{
 };
 
 use super::data_api::AngstromDataApi;
-use crate::types::positions::{
-    UnpackedPositionInfo, UserLiquidityPosition,
-    fees::{LiquidityPositionFees, position_fees},
-    pool_manager_position_state_liquidity, position_manager_next_token_id,
-    position_manager_owner_of, position_manager_pool_key_and_info
+use crate::types::{
+    contracts::{
+        UnpackedPositionInfo, UserLiquidityPosition,
+        pool_manager::position_state::pool_manager_position_state_liquidity,
+        position_manager::{
+            position_manager_next_token_id, position_manager_owner_of,
+            position_manager_pool_key_and_info
+        }
+    },
+    fees::{LiquidityPositionFees, position_fees}
 };
 
 #[async_trait::async_trait]

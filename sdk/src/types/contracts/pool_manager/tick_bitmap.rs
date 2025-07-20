@@ -1,0 +1,112 @@
+use alloy_primitives::{Address, I64, U256, aliases::I24};
+use angstrom_types::primitive::PoolId;
+
+use crate::types::{
+    StorageSlotFetcher,
+    contracts::{
+        pool_manager::pool_tick_state::pool_manager_pool_tick_bitmap_slot,
+        utils::{MAX_TICK, MIN_TICK}
+    }
+};
+
+pub fn compress_tick(tick: I24, tick_spacing: I24) -> I24 {
+    tick.saturating_div(tick_spacing)
+        - if tick % tick_spacing < I24::ZERO { I24::ONE } else { I24::ZERO }
+}
+
+pub fn tick_position_from_compressed(mut tick: I24, tick_spacing: I24) -> (i16, u8) {
+    if tick % tick_spacing != I24::ZERO {
+        tick = normalize_tick(tick, tick_spacing);
+    }
+
+    let compressed = compress_tick(tick, tick_spacing);
+
+    try_tick_position_from_compressed(compressed).unwrap()
+}
+
+pub fn tick_position_from_compressed_inequality(
+    mut tick: I24,
+    tick_spacing: I24,
+    add_sub: I24
+) -> (i16, u8) {
+    if tick % tick_spacing != I24::ZERO {
+        tick = normalize_tick(tick, tick_spacing);
+    }
+
+    let compressed = compress_tick(tick, tick_spacing) + add_sub;
+
+    try_tick_position_from_compressed(compressed).unwrap()
+}
+
+pub fn normalize_tick(tick: I24, tick_spacing: I24) -> I24 {
+    let norm = compress_tick(tick, tick_spacing) * tick_spacing;
+
+    if I64::from(tick) > I64::from(norm) + I64::from(tick_spacing)
+        || I64::from(tick) < I64::from(norm) - I64::from(tick_spacing)
+        || norm.as_i32() < MIN_TICK
+        || norm.as_i32() > MAX_TICK
+    {
+        if tick.is_negative() {
+            return normalize_tick(tick + tick_spacing.abs(), tick_spacing);
+        } else {
+            return normalize_tick(tick - tick_spacing.abs(), tick_spacing);
+        }
+    }
+
+    norm
+}
+
+fn try_tick_position_from_compressed(compressed: I24) -> Option<(i16, u8)> {
+    let compressed_i32 = compressed.as_i32();
+    let word_pos = (compressed_i32 >> 8) as i16;
+    let bit_pos = (compressed_i32 & 0xff) as u8;
+
+    Some((word_pos, bit_pos))
+}
+
+pub async fn tick_bitmap<F: StorageSlotFetcher>(
+    slot_fetcher: &F,
+    pool_manager_address: Address,
+    block_number: Option<u64>,
+    pool_id: PoolId,
+    word_pos: i16
+) -> eyre::Result<U256> {
+    let pool_tick_bitmap_slot = pool_manager_pool_tick_bitmap_slot(pool_id.into(), word_pos);
+
+    let tick_bitmap = slot_fetcher
+        .storage_at(pool_manager_address, pool_tick_bitmap_slot.into(), block_number)
+        .await?;
+
+    Ok(tick_bitmap)
+}
+
+pub async fn tick_initialized<F: StorageSlotFetcher>(
+    slot_fetcher: &F,
+    pool_manager_address: Address,
+    block_number: Option<u64>,
+    tick_spacing: I24,
+    pool_id: PoolId,
+    tick: I24
+) -> eyre::Result<bool> {
+    let (word_pos, bit_pos) = tick_position_from_compressed(tick, tick_spacing);
+    let tick_bitmap =
+        tick_bitmap(slot_fetcher, pool_manager_address, block_number, pool_id, word_pos).await?;
+
+    Ok(tick_bitmap & (U256::ONE << U256::from(bit_pos)) != U256::ZERO)
+}
+
+pub async fn next_tick_ge<F: StorageSlotFetcher>(
+    slot_fetcher: &F,
+    pool_manager_address: Address,
+    block_number: Option<u64>,
+    tick_spacing: I24,
+    pool_id: PoolId,
+    tick: I24
+) -> eyre::Result<bool> {
+    let (word_pos, bit_pos) =
+        tick_position_from_compressed_inequality(tick, tick_spacing, I24::unchecked_from(1));
+    let tick_bitmap =
+        tick_bitmap(slot_fetcher, pool_manager_address, block_number, pool_id, word_pos).await?;
+
+    Ok(tick_bitmap & (U256::ONE << U256::from(bit_pos)) != U256::ZERO)
+}

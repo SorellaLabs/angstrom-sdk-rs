@@ -2,7 +2,17 @@ use alloy_primitives::{
     U160, U256,
     aliases::{I24, U24}
 };
+use angstrom_types::contract_bindings::pool_manager::PoolManager::PoolKey;
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UserLiquidityPosition {
+    pub token_id:   U256,
+    pub tick_lower: I24,
+    pub tick_upper: I24,
+    pub liquidity:  u128,
+    pub pool_key:   PoolKey
+}
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TickData {

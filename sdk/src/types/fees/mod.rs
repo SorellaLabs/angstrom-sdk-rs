@@ -7,7 +7,7 @@ pub use uniswap::*;
 
 use crate::types::{
     StorageSlotFetcher,
-    positions::utils::{FIXED_POINT_128, full_mul_x128, mul_div}
+    contracts::utils::{FIXED_POINT_128, full_mul_x128, mul_div}
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

@@ -23,15 +23,12 @@ use crate::{
     providers::backend::{AlloyWalletRpcProvider, AngstromProvider},
     types::{
         HistoricalOrders, HistoricalOrdersFilter, PoolKeyWithAngstromFee, TokenPair, WithEthMeta,
+        contracts::{UnpackedPositionInfo, UnpackedSlot0, UserLiquidityPosition},
         errors::AngstromSdkError,
+        fees::LiquidityPositionFees,
         fillers::{
             AngstromFillProvider, AngstromFiller, AngstromSignerFiller, FillWrapper,
             NonceGeneratorFiller, TokenBalanceCheckFiller
-        },
-        positions::{
-            UserLiquidityPosition,
-            fees::LiquidityPositionFees,
-            {UnpackedPositionInfo, UnpackedSlot0}
         }
     }
 };

@@ -2,7 +2,7 @@ use alloy_primitives::{Address, B256, U256, aliases::I24, keccak256};
 use alloy_sol_types::SolValue;
 use angstrom_types::primitive::PoolId;
 
-use crate::types::{StorageSlotFetcher, positions::utils::encode_position_key};
+use crate::types::{StorageSlotFetcher, contracts::utils::encode_position_key};
 
 pub const ANGSTROM_POOL_REWARDS_GROWTH_ARRAY_SIZE: u64 = 16777216;
 pub const BLOCKS_24HR: u64 = 7200;

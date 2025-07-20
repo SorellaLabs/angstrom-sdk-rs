@@ -23,9 +23,8 @@ use crate::{
         node_api::{AngstromNodeApi, AngstromOrderApiClient}
     },
     types::{
-        positions::{
-            UnpackedPositionInfo, UnpackedSlot0, UserLiquidityPosition, fees::LiquidityPositionFees
-        },
+        contracts::{UnpackedPositionInfo, UnpackedSlot0, UserLiquidityPosition},
+        fees::LiquidityPositionFees,
         *
     }
 };

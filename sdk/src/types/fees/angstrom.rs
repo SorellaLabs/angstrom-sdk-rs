@@ -3,7 +3,7 @@ use angstrom_types::primitive::PoolId;
 
 use crate::types::{
     StorageSlotFetcher,
-    positions::{angstrom_growth_inside, angstrom_last_growth_inside}
+    contracts::angstrom::{angstrom_growth_inside, angstrom_last_growth_inside}
 };
 
 pub async fn angstrom_fee_delta_x128<F: StorageSlotFetcher>(

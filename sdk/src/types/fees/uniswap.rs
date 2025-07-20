@@ -3,7 +3,7 @@ use angstrom_types::primitive::PoolId;
 
 use crate::types::{
     StorageSlotFetcher,
-    positions::{
+    contracts::pool_manager::position_state::{
         pool_manager_position_fee_growth_inside, pool_manager_position_state_last_fee_growth_inside
     }
 };
