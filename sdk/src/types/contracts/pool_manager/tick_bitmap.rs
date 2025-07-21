@@ -229,7 +229,7 @@ pub async fn next_tick_le<F: StorageSlotFetcher>(
     if !initialized_only || is_initialized {
         Ok((is_initialized, next_tick))
     } else {
-        Box::pin(next_tick_lt(
+        Box::pin(next_tick_le(
             slot_fetcher,
             pool_manager_address,
             block_number,
