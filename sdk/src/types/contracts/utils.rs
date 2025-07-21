@@ -16,6 +16,20 @@ pub fn encode_position_key(position_token_id: U256, tick_lower: I24, tick_upper:
     keccak256(&bytes[12..])
 }
 
+pub fn flat_div_x128(numerator: U256, denominator: U256) -> U256 {
+    if denominator.is_zero() {
+        return U256::ZERO;
+    }
+
+    // Promote everything to 512 bits.
+    let num_u512: U512 = U512::from(numerator) << 128; // numerator * 2**128
+    let den_u512: U512 = U512::from(denominator);
+
+    // Full‑precision division, then cast back to 256 bits (guaranteed to fit).
+    let result_u512: U512 = num_u512 / den_u512;
+    U256::from(result_u512)
+}
+
 pub fn full_mul_x128(x: U256, y: U256) -> U256 {
     if x.is_zero() || y.is_zero() {
         return U256::ZERO;
