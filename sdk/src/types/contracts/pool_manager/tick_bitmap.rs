@@ -15,28 +15,18 @@ pub fn compress_tick(tick: I24, tick_spacing: I24) -> I24 {
         - if tick % tick_spacing < I24::ZERO { I24::ONE } else { I24::ZERO }
 }
 
-pub fn tick_position_from_compressed(mut tick: I24, tick_spacing: I24) -> (i16, u8) {
-    if tick % tick_spacing != I24::ZERO {
-        tick = normalize_tick(tick, tick_spacing);
-    }
-
+pub fn tick_position_from_compressed(tick: I24, tick_spacing: I24) -> (i16, u8) {
     let compressed = compress_tick(tick, tick_spacing);
-
-    try_tick_position_from_compressed(compressed).unwrap()
+    _tick_position_from_compressed(compressed)
 }
 
 pub fn tick_position_from_compressed_inequality(
-    mut tick: I24,
+    tick: I24,
     tick_spacing: I24,
     add_sub: I24
 ) -> (i16, u8) {
-    if tick % tick_spacing != I24::ZERO {
-        tick = normalize_tick(tick, tick_spacing);
-    }
-
     let compressed = compress_tick(tick, tick_spacing) + add_sub;
-
-    try_tick_position_from_compressed(compressed).unwrap()
+    _tick_position_from_compressed(compressed)
 }
 
 pub fn normalize_tick(tick: I24, tick_spacing: I24) -> I24 {
@@ -57,12 +47,12 @@ pub fn normalize_tick(tick: I24, tick_spacing: I24) -> I24 {
     norm
 }
 
-fn try_tick_position_from_compressed(compressed: I24) -> Option<(i16, u8)> {
+fn _tick_position_from_compressed(compressed: I24) -> (i16, u8) {
     let compressed_i32 = compressed.as_i32();
     let word_pos = (compressed_i32 >> 8) as i16;
     let bit_pos = (compressed_i32 & 0xff) as u8;
 
-    Some((word_pos, bit_pos))
+    (word_pos, bit_pos)
 }
 
 pub fn tick_from_word_and_bit_pos(word_pos: i16, bit_pos: u8, tick_spacing: I24) -> I24 {
@@ -328,7 +318,7 @@ mod tests {
     async fn test_next_tick_lt() {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
         let block_number = pos_info.valid_block_after_swaps;
-        let tick = I24::unchecked_from(190990);
+        let tick = I24::unchecked_from(192311);
         let tick_spacing = pos_info.pool_key.tickSpacing;
         let pool_id = pos_info.pool_key.into();
 
@@ -344,6 +334,29 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(results, I24::unchecked_from(189130));
+        assert_eq!(results, I24::unchecked_from(191130));
+    }
+
+    #[tokio::test]
+    async fn test_next_tick_le() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.valid_block_after_swaps;
+        let tick = I24::unchecked_from(192311);
+        let tick_spacing = pos_info.pool_key.tickSpacing;
+        let pool_id = pos_info.pool_key.into();
+
+        let (_, results) = next_tick_le(
+            &provider,
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            Some(block_number),
+            tick_spacing,
+            pool_id,
+            tick,
+            true
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(results, I24::unchecked_from(192310));
     }
 }
