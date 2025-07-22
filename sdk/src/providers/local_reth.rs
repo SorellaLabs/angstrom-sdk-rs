@@ -82,6 +82,10 @@ impl<P: Provider + Clone> RethDbProviderWrapper<P> {
         Self { db_client, provider }
     }
 
+    pub fn replace_provider(&mut self, provider: P) {
+        self.provider = provider;
+    }
+
     pub fn as_provider_with_db_layer(&self) -> RethLayerProviderWrapperType<P> {
         ProviderBuilder::<_, _, Ethereum>::default()
             .with_recommended_fillers()

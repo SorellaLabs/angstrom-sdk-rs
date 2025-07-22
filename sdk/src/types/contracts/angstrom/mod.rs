@@ -83,7 +83,7 @@ pub async fn angstrom_tick_growth_outside<F: StorageSlotFetcher>(
     tick: I24
 ) -> eyre::Result<U256> {
     let pool_rewards_slot_base = U256::from_be_bytes(angstrom_pool_rewards_slot(pool_id).0);
-    let global_growth = slot_fetcher
+    let growth_outside = slot_fetcher
         .storage_at(
             angstrom_address,
             (pool_rewards_slot_base + U256::from_be_slice(&tick.to_be_bytes::<3>())).into(),
@@ -91,7 +91,7 @@ pub async fn angstrom_tick_growth_outside<F: StorageSlotFetcher>(
         )
         .await?;
 
-    Ok(global_growth)
+    Ok(growth_outside)
 }
 
 pub async fn angstrom_last_growth_inside<F: StorageSlotFetcher>(
