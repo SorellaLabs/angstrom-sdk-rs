@@ -64,13 +64,13 @@ reth-db = { git = "https://github.com/paradigmxyz/reth", version = "1.6.0", tag 
 reth-node-ethereum = { git = "https://github.com/paradigmxyz/reth", version = "1.6.0", tag = "v1.6.0" }
 reth-node-types = { git = "https://github.com/paradigmxyz/reth", version = "1.6.0", tag = "v1.6.0" }
 reth-provider = { git = "https://github.com/paradigmxyz/reth", version = "1.6.0", tag = "v1.6.0" }
-revm = { version = "26.0.1", features = [
+revm = { version = "27.0.3", features = [
   "std",
   "secp256k1",
   "optional_balance_check",
   "optional_block_gas_limit",
 ], default-features = false }
-revm-database = { version = "6.0.0", default-features = false }
+revm-database = { version = "7.0.1", default-features = false }
 rust-utils = { git = "https://github.com/jnoorchashm37/rust-utils.git" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
