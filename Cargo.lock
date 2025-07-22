@@ -1194,7 +1194,7 @@ dependencies = [
  "reth-tasks",
  "serde",
  "serde_json",
- "strum 0.27.1",
+ "strum 0.26.3",
  "thiserror 1.0.69",
  "tokio-stream",
  "tracing",
@@ -5854,7 +5854,7 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 [[package]]
 name = "lib-reth"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-reth#e0a2487421731711ca72ce6f49ad7ed7f3f2a66f"
+source = "git+https://github.com/jnoorchashm37/lib-reth#3a5de8190895824752a3a12c4f4887d04f9e442d"
 dependencies = [
  "alloy-consensus",
  "alloy-network",
