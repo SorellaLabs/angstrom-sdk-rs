@@ -5826,7 +5826,7 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 [[package]]
 name = "lib-reth"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-reth#f7181257f3426909f9f022ac00480b026da2e4eb"
+source = "git+https://github.com/jnoorchashm37/lib-reth#09b9cc67e0dbb391af568e4fd65ba42271fd5b49"
 dependencies = [
  "alloy-consensus",
  "alloy-network",
