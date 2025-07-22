@@ -161,7 +161,7 @@ pub async fn next_tick_gt<F: StorageSlotFetcher>(
 
     let (is_initialized, next_bit_pos) = tick_bitmap.next_bit_pos_gte(bit_pos);
     let next_tick = tick_from_word_and_bit_pos(word_pos, next_bit_pos, tick_spacing);
-    if !initialized_only || is_initialized {
+    if !initialized_only || is_initialized || MAX_TICK - next_tick <= tick_spacing {
         Ok((is_initialized, next_tick))
     } else {
         Box::pin(next_tick_gt(
@@ -194,7 +194,7 @@ pub async fn next_tick_lt<F: StorageSlotFetcher>(
 
     let (is_initialized, next_bit_pos) = tick_bitmap.next_bit_pos_lte(bit_pos);
     let next_tick = tick_from_word_and_bit_pos(word_pos, next_bit_pos, tick_spacing);
-    if !initialized_only || is_initialized {
+    if !initialized_only || is_initialized || MIN_TICK - next_tick <= tick_spacing {
         Ok((is_initialized, next_tick))
     } else {
         Box::pin(next_tick_lt(
@@ -226,7 +226,7 @@ pub async fn next_tick_le<F: StorageSlotFetcher>(
 
     let (is_initialized, next_bit_pos) = tick_bitmap.next_bit_pos_lte(bit_pos);
     let next_tick = tick_from_word_and_bit_pos(word_pos, next_bit_pos, tick_spacing);
-    if !initialized_only || is_initialized {
+    if !initialized_only || is_initialized || MIN_TICK - next_tick <= tick_spacing {
         Ok((is_initialized, next_tick))
     } else {
         Box::pin(next_tick_le(
