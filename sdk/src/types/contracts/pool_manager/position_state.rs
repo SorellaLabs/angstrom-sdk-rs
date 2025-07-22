@@ -6,7 +6,7 @@ use crate::types::{
     StorageSlotFetcher,
     contracts::{
         pool_manager::{
-            pool_state::{pool_manager_pool_last_fee_growth_global, pool_manager_pool_state_slot},
+            pool_state::{pool_manager_pool_fee_growth_global, pool_manager_pool_state_slot},
             pool_tick_state::pool_manager_pool_tick_fee_growth_outside
         },
         utils::encode_position_key
@@ -38,7 +38,7 @@ pub async fn pool_manager_position_fee_growth_inside<F: StorageSlotFetcher>(
         (tick_lower_fee_growth_outside0_x128, tick_lower_fee_growth_outside1_x128),
         (tick_upper_fee_growth_outside0_x128, tick_upper_fee_growth_outside1_x128)
     ) = tokio::try_join!(
-        pool_manager_pool_last_fee_growth_global(
+        pool_manager_pool_fee_growth_global(
             slot_fetcher,
             pool_manager_address,
             block_number,

@@ -17,7 +17,7 @@ pub fn pool_manager_pool_state_slot(pool_id: U256) -> B256 {
     keccak256((pool_id, U256::from(POOL_MANAGER_POOL_STATE_MAP_SLOT)).abi_encode())
 }
 
-pub async fn pool_manager_pool_last_fee_growth_global<F: StorageSlotFetcher>(
+pub async fn pool_manager_pool_fee_growth_global<F: StorageSlotFetcher>(
     slot_fetcher: &F,
     pool_manager_address: Address,
     block_number: Option<u64>,
@@ -96,11 +96,11 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn test_pool_manager_pool_last_fee_growth_global() {
+    async fn test_pool_manager_pool_fee_growth_global() {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
         let block_number = pos_info.block_number;
 
-        let results = pool_manager_pool_last_fee_growth_global(
+        let results = pool_manager_pool_fee_growth_global(
             &provider,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             Some(block_number),
