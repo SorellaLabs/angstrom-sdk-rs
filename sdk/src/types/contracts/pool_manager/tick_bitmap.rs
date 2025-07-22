@@ -177,38 +177,6 @@ pub async fn next_tick_gt<F: StorageSlotFetcher>(
     }
 }
 
-pub async fn next_tick_ge<F: StorageSlotFetcher>(
-    slot_fetcher: &F,
-    pool_manager_address: Address,
-    block_number: Option<u64>,
-    tick_spacing: I24,
-    pool_id: PoolId,
-    tick: I24,
-    initialized_only: bool
-) -> eyre::Result<(bool, I24)> {
-    let (word_pos, bit_pos) = tick_position_from_compressed(tick, tick_spacing);
-    let tick_bitmap =
-        tick_bitmap_from_word(slot_fetcher, pool_manager_address, block_number, pool_id, word_pos)
-            .await?;
-
-    let (is_initialized, next_bit_pos) = tick_bitmap.next_bit_pos_gte(bit_pos);
-    let next_tick = tick_from_word_and_bit_pos(word_pos, next_bit_pos, tick_spacing);
-    if !initialized_only || is_initialized {
-        Ok((is_initialized, next_tick))
-    } else {
-        Box::pin(next_tick_ge(
-            slot_fetcher,
-            pool_manager_address,
-            block_number,
-            tick_spacing,
-            pool_id,
-            next_tick,
-            initialized_only
-        ))
-        .await
-    }
-}
-
 pub async fn next_tick_lt<F: StorageSlotFetcher>(
     slot_fetcher: &F,
     pool_manager_address: Address,
