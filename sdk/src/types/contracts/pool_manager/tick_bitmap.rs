@@ -292,14 +292,14 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_next_tick_ge() {
+    async fn test_next_tick_gt() {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
         let block_number = pos_info.valid_block_after_swaps;
         let tick = I24::unchecked_from(190990);
         let tick_spacing = pos_info.pool_key.tickSpacing;
         let pool_id = pos_info.pool_key.into();
 
-        let (_, results) = next_tick_ge(
+        let (_, results) = next_tick_gt(
             &provider,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             Some(block_number),

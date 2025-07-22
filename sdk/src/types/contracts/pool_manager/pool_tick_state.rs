@@ -11,7 +11,7 @@ use crate::types::{
         TickData,
         pool_manager::{
             pool_state::pool_manager_pool_state_slot,
-            tick_bitmap::{next_tick_ge, normalize_tick, tick_initialized}
+            tick_bitmap::{next_tick_gt, normalize_tick, tick_initialized}
         },
         utils::{max_valid_tick, min_valid_tick}
     }
@@ -85,7 +85,7 @@ pub async fn pool_manager_load_tick_map<F: StorageSlotFetcher>(
     let mut ct = start_tick;
     let mut initialized_ticks = Vec::new();
     while ct <= end_tick {
-        let (_, tick) = next_tick_ge(
+        let (_, tick) = next_tick_gt(
             slot_fetcher,
             pool_manager_address,
             block_number,
