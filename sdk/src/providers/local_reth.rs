@@ -26,14 +26,12 @@ use angstrom_types::{
     reth_db_provider::{RethDbLayer, RethDbProvider}
 };
 use futures::StreamExt;
-use lib_reth::{
-    EthApiServer, EthFilterApiServer, reth_libmdbx::RethLibmdbxClient, traits::EthRevm
-};
+use lib_reth::{EthApiServer, reth_libmdbx::RethLibmdbxClient, traits::EthRevm};
 use pade::PadeDecode;
 use reth_db::DatabaseEnv;
 use reth_node_ethereum::EthereumNode;
 use reth_node_types::NodeTypesWithDBAdapter;
-use reth_provider::{StaticFileProviderFactory, providers::BlockchainProvider};
+use reth_provider::providers::BlockchainProvider;
 use revm::{ExecuteEvm, context::TxEnv};
 use uniswap_v4::uniswap::{
     pool::EnhancedUniswapPool, pool_data_loader::DataLoader, pool_factory::INITIAL_TICKS_PER_SIDE
@@ -98,19 +96,20 @@ impl<P: Provider + Clone> RethDbProviderWrapper<P> {
     }
 
     async fn get_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
-        let logs_res = self.db_client.eth_filter().logs(filter.clone()).await;
-        match logs_res {
-            Ok(vals) => Ok(vals),
-            Err(_) => {
-                self.db_client()
-                    .eth_db_provider()
-                    .consistent_provider()?
-                    .static_file_provider()
-                    .initialize_index()?;
-                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                Ok(self.db_client.eth_filter().logs(filter.clone()).await?)
-            }
-        }
+        // let logs_res = self.db_client.eth_filter().logs(filter.clone()).await;
+        // match logs_res {
+        //     Ok(vals) => Ok(vals),
+        //     Err(_) => {
+        //         self.db_client()
+        //             .eth_db_provider()
+        //             .consistent_provider()?
+        //             .static_file_provider()
+        //             .initialize_index()?;
+        //         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        //         Ok(self.db_client.eth_filter().logs(filter.clone()).await?)
+        //     }
+        // }
+        Ok(self.provider.get_logs(filter).await?)
     }
 }
 
