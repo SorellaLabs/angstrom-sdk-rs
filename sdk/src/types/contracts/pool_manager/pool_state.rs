@@ -92,7 +92,7 @@ mod tests {
     use super::*;
     use crate::{
         test_utils::valid_test_params::init_valid_position_params_with_provider,
-        types::contracts::{UnpackPositionInfo, UnpackedSlot0}
+        types::contracts::UnpackedSlot0
     };
 
     #[tokio::test]
