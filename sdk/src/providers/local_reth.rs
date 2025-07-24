@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashSet, sync::Arc};
 
 use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
@@ -211,6 +211,13 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         start_block: Option<u64>,
         end_block: Option<u64>
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
+        let all_pool_ids = self
+            .all_pool_keys(end_block)
+            .await?
+            .into_iter()
+            .map(|val| PoolId::from(val.pool_key))
+            .collect::<HashSet<_>>();
+
         let filters = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
         let logs = futures::future::try_join_all(
             filters
@@ -225,13 +232,15 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             .flat_map(|log| {
                 PoolManager::ModifyLiquidity::decode_log(&log.inner)
                     .ok()
-                    .map(|inner_log| {
-                        WithEthMeta::new(
-                            log.block_number,
-                            log.transaction_hash,
-                            log.transaction_index,
-                            inner_log.data
-                        )
+                    .and_then(|inner_log| {
+                        all_pool_ids.contains(&inner_log.id).then(|| {
+                            WithEthMeta::new(
+                                log.block_number,
+                                log.transaction_hash,
+                                log.transaction_index,
+                                inner_log.data
+                            )
+                        })
                     })
             })
             .collect())
@@ -242,6 +251,13 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         start_block: Option<u64>,
         end_block: Option<u64>
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::Swap>>> {
+        let all_pool_ids = self
+            .all_pool_keys(end_block)
+            .await?
+            .into_iter()
+            .map(|val| PoolId::from(val.pool_key))
+            .collect::<HashSet<_>>();
+
         let filters = historical_pool_manager_swap_filter(start_block, end_block);
         let logs = futures::future::try_join_all(
             filters
@@ -256,12 +272,16 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             .flat_map(|log| {
                 PoolManager::Swap::decode_log(&log.inner)
                     .ok()
-                    .map(|inner_log| {
-                        WithEthMeta::new(
-                            log.block_number,
-                            log.transaction_hash,
-                            log.transaction_index,
-                            inner_log.data
+                    .and_then(|inner_log| {
+                        (all_pool_ids.contains(&inner_log.id) && !inner_log.fee.is_zero()).then(
+                            || {
+                                WithEthMeta::new(
+                                    log.block_number,
+                                    log.transaction_hash,
+                                    log.transaction_index,
+                                    inner_log.data
+                                )
+                            }
                         )
                     })
             })
