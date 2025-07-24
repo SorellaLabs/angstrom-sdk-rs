@@ -153,6 +153,10 @@ pub async fn next_tick_gt<F: StorageSlotFetcher>(
     tick: I24,
     initialized_only: bool
 ) -> eyre::Result<(bool, I24)> {
+    if is_tick_at_bounds(tick, tick_spacing, false) {
+        return Ok((false, tick));
+    }
+
     let (word_pos, bit_pos) =
         tick_position_from_compressed_inequality(tick, tick_spacing, I24::unchecked_from(1));
     let tick_bitmap =
@@ -189,6 +193,10 @@ pub async fn next_tick_lt<F: StorageSlotFetcher>(
     tick: I24,
     initialized_only: bool
 ) -> eyre::Result<(bool, I24)> {
+    if is_tick_at_bounds(tick, tick_spacing, true) {
+        return Ok((false, tick));
+    }
+
     let (word_pos, bit_pos) =
         tick_position_from_compressed_inequality(tick, tick_spacing, I24::unchecked_from(-1));
     let tick_bitmap =
@@ -225,6 +233,10 @@ pub async fn next_tick_le<F: StorageSlotFetcher>(
     tick: I24,
     initialized_only: bool
 ) -> eyre::Result<(bool, I24)> {
+    if is_tick_at_bounds(tick, tick_spacing, true) {
+        return Ok((false, tick));
+    }
+
     let (word_pos, bit_pos) = tick_position_from_compressed(tick, tick_spacing);
     let tick_bitmap =
         tick_bitmap_from_word(slot_fetcher, pool_manager_address, block_number, pool_id, word_pos)
@@ -249,6 +261,15 @@ pub async fn next_tick_le<F: StorageSlotFetcher>(
         ))
         .await
     }
+}
+
+fn is_tick_at_bounds(tick: I24, tick_spacing: I24, is_decreasing: bool) -> bool {
+    let tick = I64::from(tick);
+    let tick_spacing = I64::from(tick_spacing);
+    let min = I64::unchecked_from(MIN_TICK);
+    let max = I64::unchecked_from(MAX_TICK);
+
+    if is_decreasing { tick - tick_spacing.abs() <= min } else { tick + tick_spacing.abs() >= max }
 }
 
 #[cfg(test)]
