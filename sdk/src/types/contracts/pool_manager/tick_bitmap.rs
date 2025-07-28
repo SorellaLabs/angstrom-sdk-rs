@@ -109,7 +109,7 @@ pub async fn tick_bitmap_from_word<F: StorageSlotFetcher>(
     let pool_tick_bitmap_slot = pool_manager_pool_tick_bitmap_slot(pool_id.into(), word_pos);
 
     let tick_bitmap = slot_fetcher
-        .storage_at(pool_manager_address, pool_tick_bitmap_slot.into(), block_number)
+        .storage_at(pool_manager_address, pool_tick_bitmap_slot, block_number)
         .await?;
 
     Ok(TickBitmap(tick_bitmap))

@@ -95,7 +95,7 @@ pub struct PoolKeyWithAngstromFee {
 
 impl PoolKeyWithAngstromFee {
     pub fn as_angstrom_pool_id(&self) -> PoolId {
-        let mut this = self.clone();
+        let mut this = *self;
         this.pool_key.fee = this.pool_fee_in_e6;
         this.pool_key.into()
     }
