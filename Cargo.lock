@@ -1039,19 +1039,19 @@ dependencies = [
  "alloy",
  "alloy-chains",
  "alloy-primitives",
- "angstrom-amm-quoter",
- "angstrom-eth",
- "angstrom-metrics",
- "angstrom-network",
- "angstrom-rpc",
- "angstrom-types",
+ "angstrom-amm-quoter 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-network 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-rpc 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "clap",
- "consensus",
+ "consensus 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "eyre",
  "futures",
  "hsm-signer",
- "matching-engine",
- "order-pool",
+ "matching-engine 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "parking_lot",
  "rayon",
  "reth",
@@ -1067,9 +1067,27 @@ dependencies = [
  "tokio",
  "toml 0.9.2",
  "tracing",
- "uniswap-v4",
+ "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "url",
- "validation",
+ "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+]
+
+[[package]]
+name = "angstrom-amm-quoter"
+version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit#c130baae3e9ac8101da20de4f3bb9be3f1b1d670"
+dependencies = [
+ "alloy",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "eyre",
+ "futures",
+ "matching-engine 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "rayon",
+ "serde",
+ "tokio",
+ "tokio-stream",
+ "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
 ]
 
 [[package]]
@@ -1078,16 +1096,43 @@ version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
 dependencies = [
  "alloy",
- "angstrom-types",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "eyre",
  "futures",
- "matching-engine",
- "order-pool",
+ "matching-engine 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "rayon",
  "serde",
  "tokio",
  "tokio-stream",
- "uniswap-v4",
+ "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+]
+
+[[package]]
+name = "angstrom-eth"
+version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit#c130baae3e9ac8101da20de4f3bb9be3f1b1d670"
+dependencies = [
+ "alloy",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "anyhow",
+ "chrono",
+ "futures",
+ "futures-util",
+ "itertools 0.10.5",
+ "pade",
+ "reth-ethereum-primitives",
+ "reth-execution-types",
+ "reth-primitives",
+ "reth-provider",
+ "reth-tasks",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "tokio",
+ "tokio-stream",
+ "tracing",
 ]
 
 [[package]]
@@ -1096,7 +1141,7 @@ version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
 dependencies = [
  "alloy",
- "angstrom-types",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "anyhow",
  "chrono",
  "futures",
@@ -1111,7 +1156,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with",
- "telemetry-recorder",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "tokio",
  "tokio-stream",
  "tracing",
@@ -1120,9 +1165,29 @@ dependencies = [
 [[package]]
 name = "angstrom-metrics"
 version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit#c130baae3e9ac8101da20de4f3bb9be3f1b1d670"
+dependencies = [
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "eyre",
+ "hyper 1.6.0",
+ "jsonrpsee-server",
+ "metrics 0.21.1",
+ "metrics-exporter-prometheus",
+ "metrics-process 1.2.1",
+ "metrics-util 0.20.0",
+ "procfs 0.16.0",
+ "prometheus",
+ "tokio",
+ "tower",
+ "tracing",
+]
+
+[[package]]
+name = "angstrom-metrics"
+version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
 dependencies = [
- "angstrom-types",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "eyre",
  "hyper 1.6.0",
  "jsonrpsee-server",
@@ -1140,20 +1205,20 @@ dependencies = [
 [[package]]
 name = "angstrom-network"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit#c130baae3e9ac8101da20de4f3bb9be3f1b1d670"
 dependencies = [
  "alloy",
  "alloy-chains",
- "angstrom-eth",
- "angstrom-types",
+ "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
  "bincode",
  "eyre",
  "futures",
  "homedir",
- "itertools 0.14.0",
+ "itertools 0.10.5",
  "linked_hash_set",
  "once_cell",
- "order-pool",
+ "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
  "parking_lot",
  "reth",
  "reth-eth-wire",
@@ -1168,14 +1233,79 @@ dependencies = [
  "reth-transaction-pool",
  "secp256k1 0.30.0",
  "serde",
- "telemetry-recorder",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tokio-util",
+ "toml 0.8.23",
+ "tracing",
+ "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+]
+
+[[package]]
+name = "angstrom-network"
+version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
+dependencies = [
+ "alloy",
+ "alloy-chains",
+ "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "bincode",
+ "eyre",
+ "futures",
+ "homedir",
+ "itertools 0.14.0",
+ "linked_hash_set",
+ "once_cell",
+ "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "parking_lot",
+ "reth",
+ "reth-eth-wire",
+ "reth-metrics",
+ "reth-net-banlist",
+ "reth-network",
+ "reth-network-p2p",
+ "reth-network-peers",
+ "reth-node-builder",
+ "reth-primitives",
+ "reth-tasks",
+ "reth-transaction-pool",
+ "secp256k1 0.30.0",
+ "serde",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
  "tokio-util",
  "toml 0.9.2",
  "tracing",
- "validation",
+ "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+]
+
+[[package]]
+name = "angstrom-rpc"
+version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit#c130baae3e9ac8101da20de4f3bb9be3f1b1d670"
+dependencies = [
+ "alloy-primitives",
+ "angstrom-amm-quoter 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "angstrom-network 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "async-trait",
+ "consensus 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "futures",
+ "jsonrpsee",
+ "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "reth-tasks",
+ "serde",
+ "serde_json",
+ "strum 0.27.2",
+ "thiserror 1.0.69",
+ "tokio-stream",
+ "tracing",
+ "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
 ]
 
 [[package]]
@@ -1184,14 +1314,14 @@ version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
 dependencies = [
  "alloy-primitives",
- "angstrom-amm-quoter",
- "angstrom-network",
- "angstrom-types",
+ "angstrom-amm-quoter 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-network 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "async-trait",
- "consensus",
+ "consensus 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "futures",
  "jsonrpsee",
- "order-pool",
+ "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "reth-tasks",
  "serde",
  "serde_json",
@@ -1199,7 +1329,7 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio-stream",
  "tracing",
- "validation",
+ "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
 ]
 
 [[package]]
@@ -1219,8 +1349,8 @@ dependencies = [
  "alloy-signer",
  "alloy-signer-local",
  "alloy-sol-types",
- "angstrom-rpc",
- "angstrom-types",
+ "angstrom-rpc 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
  "async-trait",
  "auto_impl",
  "dotenv",
@@ -1247,8 +1377,57 @@ dependencies = [
  "testing-tools",
  "thiserror 1.0.69",
  "tokio",
- "uniswap-v4",
- "validation",
+ "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+]
+
+[[package]]
+name = "angstrom-types"
+version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit#c130baae3e9ac8101da20de4f3bb9be3f1b1d670"
+dependencies = [
+ "alloy",
+ "alloy-primitives",
+ "auto_impl",
+ "base64 0.22.1",
+ "bincode",
+ "bytes",
+ "convert_case 0.7.1",
+ "dashmap 6.1.0",
+ "eyre",
+ "futures",
+ "hsm-signer",
+ "itertools 0.10.5",
+ "k256",
+ "malachite",
+ "pade",
+ "pade-macro",
+ "rand 0.9.2",
+ "reqwest",
+ "reth",
+ "reth-chainspec",
+ "reth-ethereum-primitives",
+ "reth-execution-types",
+ "reth-network-peers",
+ "reth-primitives",
+ "reth-primitives-traits",
+ "reth-provider",
+ "reth-storage-api",
+ "reth-trie",
+ "revm",
+ "revm-bytecode",
+ "revm-database",
+ "revm-primitives",
+ "secp256k1 0.30.0",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "thiserror 1.0.69",
+ "tokio",
+ "tower",
+ "tracing",
+ "tracing-subscriber 0.3.19",
+ "uniswap_v3_math",
 ]
 
 [[package]]
@@ -1298,6 +1477,15 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.19",
  "uniswap_v3_math",
+]
+
+[[package]]
+name = "angstrom-utils"
+version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit#c130baae3e9ac8101da20de4f3bb9be3f1b1d670"
+dependencies = [
+ "futures",
+ "tokio",
 ]
 
 [[package]]
@@ -3104,27 +3292,53 @@ dependencies = [
 [[package]]
 name = "consensus"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit#c130baae3e9ac8101da20de4f3bb9be3f1b1d670"
 dependencies = [
  "alloy",
- "angstrom-metrics",
- "angstrom-network",
- "angstrom-types",
+ "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "angstrom-network 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
  "eyre",
  "futures",
- "itertools 0.14.0",
- "matching-engine",
- "order-pool",
+ "itertools 0.10.5",
+ "matching-engine 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
  "rand 0.9.2",
  "reth-metrics",
  "reth-provider",
  "reth-tasks",
  "serde",
- "telemetry-recorder",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
  "tokio",
  "tokio-stream",
  "tracing",
- "uniswap-v4",
+ "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+]
+
+[[package]]
+name = "consensus"
+version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
+dependencies = [
+ "alloy",
+ "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-network 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "eyre",
+ "futures",
+ "itertools 0.14.0",
+ "matching-engine 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "rand 0.9.2",
+ "reth-metrics",
+ "reth-provider",
+ "reth-tasks",
+ "serde",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
 ]
 
 [[package]]
@@ -6227,11 +6441,38 @@ dependencies = [
 [[package]]
 name = "matching-engine"
 version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit#c130baae3e9ac8101da20de4f3bb9be3f1b1d670"
+dependencies = [
+ "alloy",
+ "alloy-primitives",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "base64 0.22.1",
+ "criterion",
+ "eyre",
+ "futures",
+ "futures-util",
+ "itertools 0.10.5",
+ "rand 0.9.2",
+ "rand_distr",
+ "reth-tasks",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.19",
+ "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "uniswap_v3_math",
+ "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+]
+
+[[package]]
+name = "matching-engine"
+version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
 dependencies = [
  "alloy",
  "alloy-primitives",
- "angstrom-types",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "base64 0.22.1",
  "criterion",
  "eyre",
@@ -6246,9 +6487,9 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.19",
- "uniswap-v4",
+ "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "uniswap_v3_math",
- "validation",
+ "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
 ]
 
 [[package]]
@@ -6960,23 +7201,45 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "order-pool"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit#c130baae3e9ac8101da20de4f3bb9be3f1b1d670"
 dependencies = [
  "alloy",
- "angstrom-metrics",
- "angstrom-types",
- "angstrom-utils",
+ "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
  "eyre",
  "futures-util",
  "serde",
  "serde_json",
  "serde_with",
- "telemetry-recorder",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
  "thiserror 1.0.69",
  "tokio",
  "tokio-stream",
  "tracing",
- "validation",
+ "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+]
+
+[[package]]
+name = "order-pool"
+version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
+dependencies = [
+ "alloy",
+ "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "eyre",
+ "futures-util",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "thiserror 1.0.69",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
 ]
 
 [[package]]
@@ -12022,8 +12285,8 @@ version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
 dependencies = [
  "alloy-primitives",
- "angstrom-eth",
- "angstrom-types",
+ "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "aws-config",
  "aws-sdk-s3",
  "base64 0.22.1",
@@ -12033,15 +12296,29 @@ dependencies = [
  "eyre",
  "flate2",
  "futures",
- "order-pool",
+ "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "reth-provider",
  "reth-tasks",
  "serde",
  "serde_json",
- "telemetry-recorder",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "tokio",
  "tracing",
- "validation",
+ "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+]
+
+[[package]]
+name = "telemetry-recorder"
+version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit#c130baae3e9ac8101da20de4f3bb9be3f1b1d670"
+dependencies = [
+ "alloy-primitives",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "chrono",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -12050,7 +12327,7 @@ version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
 dependencies = [
  "alloy-primitives",
- "angstrom-types",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "chrono",
  "serde",
  "serde_json",
@@ -12082,20 +12359,20 @@ dependencies = [
  "alloy-rpc-types",
  "alloy-sol-types",
  "angstrom",
- "angstrom-amm-quoter",
- "angstrom-eth",
- "angstrom-network",
- "angstrom-rpc",
- "angstrom-types",
- "consensus",
+ "angstrom-amm-quoter 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-network 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-rpc 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "consensus 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "dashmap 6.1.0",
  "enr",
  "eyre",
  "futures",
  "itertools 0.14.0",
  "jsonrpsee",
- "matching-engine",
- "order-pool",
+ "matching-engine 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "order-pool 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "pade",
  "parking_lot",
  "rand 0.9.2",
@@ -12120,15 +12397,15 @@ dependencies = [
  "revm",
  "secp256k1 0.30.0",
  "telemetry",
- "telemetry-recorder",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "tokio",
  "tokio-stream",
  "tokio-util",
  "tracing",
  "tracing-subscriber 0.3.19",
- "uniswap-v4",
+ "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "uniswap_v3_math",
- "validation",
+ "validation 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
 ]
 
 [[package]]
@@ -12864,12 +13141,42 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "uniswap-v4"
 version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit#c130baae3e9ac8101da20de4f3bb9be3f1b1d670"
+dependencies = [
+ "alloy",
+ "alloy-primitives",
+ "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "arraydeque",
+ "convert_case 0.7.1",
+ "dashmap 6.1.0",
+ "eyre",
+ "futures",
+ "futures-util",
+ "hex",
+ "itertools 0.10.5",
+ "malachite",
+ "rand 0.9.2",
+ "rayon",
+ "reth-provider",
+ "serde",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.19",
+ "uniswap_v3_math",
+]
+
+[[package]]
+name = "uniswap-v4"
+version = "0.1.0"
 source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
 dependencies = [
  "alloy",
  "alloy-primitives",
- "angstrom-eth",
- "angstrom-types",
+ "angstrom-eth 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "arraydeque",
  "convert_case 0.8.0",
  "dashmap 6.1.0",
@@ -12883,7 +13190,7 @@ dependencies = [
  "rayon",
  "reth-provider",
  "serde",
- "telemetry-recorder",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
  "thiserror 1.0.69",
  "tokio",
  "tracing",
@@ -12990,12 +13297,12 @@ dependencies = [
 [[package]]
 name = "validation"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
+source = "git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit#c130baae3e9ac8101da20de4f3bb9be3f1b1d670"
 dependencies = [
  "alloy",
- "angstrom-metrics",
- "angstrom-types",
- "angstrom-utils",
+ "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+ "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
  "dashmap 6.1.0",
  "eyre",
  "futures",
@@ -13009,10 +13316,38 @@ dependencies = [
  "revm",
  "serde",
  "serde_json",
- "telemetry-recorder",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
  "tokio",
  "tracing",
- "uniswap-v4",
+ "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git?branch=will%2Fback-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit)",
+]
+
+[[package]]
+name = "validation"
+version = "0.1.0"
+source = "git+https://github.com/SorellaLabs/angstrom.git#4dfc06b9874d48861ba6026419c19b1774813726"
+dependencies = [
+ "alloy",
+ "angstrom-metrics 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-types 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "angstrom-utils 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "dashmap 6.1.0",
+ "eyre",
+ "futures",
+ "futures-util",
+ "pade",
+ "parking_lot",
+ "rand 0.9.2",
+ "reth-primitives",
+ "reth-provider",
+ "reth-revm",
+ "revm",
+ "serde",
+ "serde_json",
+ "telemetry-recorder 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
+ "tokio",
+ "tracing",
+ "uniswap-v4 0.1.0 (git+https://github.com/SorellaLabs/angstrom.git)",
 ]
 
 [[package]]

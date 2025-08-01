@@ -42,8 +42,8 @@ alloy-rpc-types = { version = "1.0.23", default-features = false, features = ["e
 alloy-signer = { version = "1.0.23", default-features = false }
 alloy-signer-local = { version = "1.0.23", default-features = false }
 alloy-sol-types = "1.3.0"
-angstrom-rpc = { git = "https://github.com/SorellaLabs/angstrom.git" }
-angstrom-types = { git = "https://github.com/SorellaLabs/angstrom.git" }
+angstrom-rpc = { git = "https://github.com/SorellaLabs/angstrom.git", branch = "will/back-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit" }
+angstrom-types = { git = "https://github.com/SorellaLabs/angstrom.git", branch = "will/back-493-update-backend-to-ensure-that-post-gas-ucp-wont-breach-limit" }
 async-trait = "0"
 auto_impl = "1.3"
 dotenv = "0.15"
