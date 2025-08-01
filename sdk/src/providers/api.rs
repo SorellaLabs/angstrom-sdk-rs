@@ -55,6 +55,10 @@ where
     pub fn new_with_provider(provider: AngstromProvider<P, T>) -> Self {
         Self { provider, filler: () }
     }
+
+    pub fn new_with_providers(eth: P, ang: T) -> Self {
+        Self { provider: AngstromProvider::new_with_providers(eth, ang), filler: () }
+    }
 }
 
 impl<P, T, F> AngstromApi<P, T, F>
