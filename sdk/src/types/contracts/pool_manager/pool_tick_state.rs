@@ -235,7 +235,7 @@ mod tests {
         let block_number = pos_info.valid_block_after_swaps;
 
         let (_, pool_info) = provider
-            .pool_data_by_pool_id(pos_info.pool_key.clone().into(), Some(block_number))
+            .pool_data_by_pool_id(pos_info.pool_key.into(), Some(block_number))
             .await
             .unwrap();
 

@@ -52,7 +52,7 @@ pub trait AngstromNodeApi<T: AngstromOrderApiClient>: Send + Sync {
         Ok(provider.cancel_order(request).await?)
     }
 
-    async fn estimate_gas(
+    async fn estimate_angstrom_gas(
         &self,
         is_book: bool,
         is_internal: bool,

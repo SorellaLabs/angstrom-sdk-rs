@@ -715,7 +715,7 @@ mod tests {
             .await
             .unwrap();
 
-        println!("{:?}", pool_key);
+        println!("{pool_key:?}");
 
         assert_eq!(
             pool_key,
