@@ -88,7 +88,7 @@ impl TickBitmap {
         let relative_pos = if word_shifted == U256::ZERO {
             256u16
         } else {
-            256u16 - word_shifted.leading_zeros() as u16
+            255u16 - word_shifted.leading_zeros() as u16
         };
 
         let initialized = relative_pos != 256;
