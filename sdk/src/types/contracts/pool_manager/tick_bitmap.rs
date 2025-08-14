@@ -1,4 +1,4 @@
-use alloy_primitives::{Address, I64, U256, aliases::I24};
+use alloy_primitives::{Address, I64, U256, aliases::I24, b256};
 use angstrom_types::primitive::PoolId;
 use serde::{Deserialize, Serialize};
 
@@ -88,7 +88,7 @@ impl TickBitmap {
         let relative_pos = if word_shifted == U256::ZERO {
             256u16
         } else {
-            256u16 - word_shifted.leading_zeros() as u16
+            255u16 - word_shifted.leading_zeros() as u16
         };
 
         let initialized = relative_pos != 256;
@@ -109,7 +109,7 @@ pub async fn tick_bitmap_from_word<F: StorageSlotFetcher>(
     let pool_tick_bitmap_slot = pool_manager_pool_tick_bitmap_slot(pool_id.into(), word_pos);
 
     let tick_bitmap = slot_fetcher
-        .storage_at(pool_manager_address, pool_tick_bitmap_slot.into(), block_number)
+        .storage_at(pool_manager_address, pool_tick_bitmap_slot, block_number)
         .await?;
 
     Ok(TickBitmap(tick_bitmap))
@@ -199,11 +199,13 @@ pub async fn next_tick_lt<F: StorageSlotFetcher>(
 
     let (word_pos, bit_pos) =
         tick_position_from_compressed_inequality(tick, tick_spacing, I24::unchecked_from(-1));
+    println!("{:?}", (word_pos, bit_pos));
     let tick_bitmap =
         tick_bitmap_from_word(slot_fetcher, pool_manager_address, block_number, pool_id, word_pos)
             .await?;
 
     let (is_initialized, next_bit_pos) = tick_bitmap.next_bit_pos_lte(bit_pos);
+    println!("{:?}", (is_initialized, next_bit_pos));
     let next_tick = tick_from_word_and_bit_pos(word_pos, next_bit_pos, tick_spacing);
     if !initialized_only
         || is_initialized

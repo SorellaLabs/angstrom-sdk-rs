@@ -1235,7 +1235,10 @@ dependencies = [
  "malachite-q",
  "pade",
  "rand 0.9.1",
+ "reth-chainspec",
  "reth-db",
+ "reth-ethereum",
+ "reth-node-builder",
  "reth-node-ethereum",
  "reth-node-types",
  "reth-provider",
@@ -8829,6 +8832,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "reth-ethereum"
+version = "1.6.0"
+source = "git+https://github.com/paradigmxyz/reth?tag=v1.6.0#d8451e54e7267f9f1634118d6d279b2216f7e2bb"
+dependencies = [
+ "alloy-rpc-types-engine",
+ "alloy-rpc-types-eth",
+ "reth-chainspec",
+ "reth-consensus",
+ "reth-consensus-common",
+ "reth-ethereum-consensus",
+ "reth-ethereum-primitives",
+ "reth-evm",
+ "reth-evm-ethereum",
+ "reth-primitives-traits",
+ "reth-revm",
+ "reth-storage-api",
+]
+
+[[package]]
 name = "reth-ethereum-cli"
 version = "1.6.0"
 source = "git+https://github.com/paradigmxyz/reth?tag=v1.6.0#d8451e54e7267f9f1634118d6d279b2216f7e2bb"
@@ -8985,6 +9007,7 @@ dependencies = [
  "alloy-eips",
  "alloy-evm",
  "alloy-primitives",
+ "derive_more",
  "reth-chainspec",
  "reth-ethereum-forks",
  "reth-ethereum-primitives",

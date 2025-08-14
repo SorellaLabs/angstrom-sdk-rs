@@ -70,3 +70,26 @@ impl<P: Provider, T: AngstromOrderApiClient> Provider for AngstromProvider<P, T>
         self.eth_provider.root()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use alloy_primitives::b256;
+
+    use super::*;
+    use crate::{apis::AngstromDataApi, test_utils::spawn_angstrom_api};
+
+    #[tokio::test]
+    async fn test_thing() {
+        let provider = spawn_angstrom_api().await.unwrap();
+
+        let bundle = provider
+            .get_bundle_by_tx_hash(
+                b256!("0x32716081b3461e4f4770e14d97565c003aecf647837d151a8380f6b9722e7faf"),
+                true
+            )
+            .await
+            .unwrap();
+
+        println!("{bundle:?}");
+    }
+}

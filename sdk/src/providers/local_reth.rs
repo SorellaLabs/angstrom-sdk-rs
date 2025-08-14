@@ -20,18 +20,20 @@ use angstrom_types::{
         AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
     },
     primitive::{
-        ANGSTROM_ADDRESS, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS,
-        PoolId
+        ANGSTROM_ADDRESS, CHAIN_ID, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS,
+        POSITION_MANAGER_ADDRESS, PoolId
     },
     reth_db_provider::{RethDbLayer, RethDbProvider}
 };
 use futures::StreamExt;
-use lib_reth::{EthApiServer, reth_libmdbx::RethLibmdbxClient, traits::EthRevm};
+use lib_reth::{Chain, EthApiServer, reth_libmdbx::RethLibmdbxClient, traits::EthRevm};
 use pade::PadeDecode;
+use reth_chainspec::ChainSpec;
 use reth_db::DatabaseEnv;
+use reth_node_builder::{NodeBuilder, NodeConfig};
 use reth_node_ethereum::EthereumNode;
 use reth_node_types::NodeTypesWithDBAdapter;
-use reth_provider::providers::BlockchainProvider;
+use reth_provider::providers::{BlockchainProvider, ReadOnlyConfig};
 use revm::{ExecuteEvm, context::TxEnv};
 use uniswap_v4::uniswap::{
     pool::EnhancedUniswapPool, pool_data_loader::DataLoader, pool_factory::INITIAL_TICKS_PER_SIDE
@@ -84,6 +86,22 @@ impl<P: Provider + Clone> RethDbProviderWrapper<P> {
         self.provider = provider;
     }
 
+    // pub async fn play(datadir: &str) -> eyre::Result<()> {
+    //     let chain_spec = ChainSpec::builder()
+    //         .chain(Chain::from_id(chain_id()))
+    //         .build();
+    //     let factory = EthereumNode::provider_factory_builder()
+    //         .open_read_only(chain_spec.into(),
+    // ReadOnlyConfig::from_datadir(datadir))?;
+
+    //     let node = NodeBuilder::new(NodeConfig::new(Arc::new(chain_spec)))
+    //         .with_database(factory)
+    //         .with_types::<EthereumNode>();
+
+    //     Ok(())
+    // }
+
+    //*CHAIN_ID.get().unwrap()
     pub fn as_provider_with_db_layer(&self) -> RethLayerProviderWrapperType<P> {
         ProviderBuilder::<_, _, Ethereum>::default()
             .with_recommended_fillers()

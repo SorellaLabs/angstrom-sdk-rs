@@ -7,9 +7,35 @@ use alloy_sol_types::SolValue;
 use angstrom_types::{
     contract_bindings::pool_manager::PoolManager::PoolKey,
     contract_payloads::angstrom::AngPoolConfigEntry,
-    primitive::{ANGSTROM_ADDRESS, PoolId}
+    primitive::{
+        ANGSTROM_ADDRESS, CHAIN_ID, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS,
+        POSITION_MANAGER_ADDRESS, PoolId
+    }
 };
 use serde::{Deserialize, Serialize};
+
+const CONST_ERR_MSG_NOT_SET: &str =
+    "Angstrom constants not set yet - run `init_with_chain_id(..)` at the start of your program";
+
+pub fn pool_manager() -> Address {
+    *POOL_MANAGER_ADDRESS.get().expect(CONST_ERR_MSG_NOT_SET)
+}
+
+pub fn position_manager() -> Address {
+    *POSITION_MANAGER_ADDRESS.get().expect(CONST_ERR_MSG_NOT_SET)
+}
+
+pub fn angstrom() -> Address {
+    *ANGSTROM_ADDRESS.get().expect(CONST_ERR_MSG_NOT_SET)
+}
+
+pub fn controller_v1() -> Address {
+    *CONTROLLER_V1_ADDRESS.get().expect(CONST_ERR_MSG_NOT_SET)
+}
+
+pub fn chain_id() -> u64 {
+    *CHAIN_ID.get().expect(CONST_ERR_MSG_NOT_SET)
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TokenPair {

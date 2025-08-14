@@ -48,7 +48,10 @@ uniswap-v4.workspace = true
 validation.workspace = true
 
 lib-reth = { workspace = true, optional = true }
+reth-chainspec = { workspace = true, optional = true }
 reth-db = { workspace = true, optional = true }
+reth-ethereum = { workspace = true, optional = true }
+reth-node-builder = { workspace = true, optional = true }
 reth-node-ethereum = { workspace = true, optional = true }
 reth-node-types = { workspace = true, optional = true }
 reth-provider = { workspace = true, optional = true }
@@ -62,16 +65,19 @@ revm-database.workspace = true
 [features]
 default = ["ipc", "ws", "local-reth"]
 full = ["ipc", "ws", "local-reth"]
+
+ipc = []
+ws = []
 local-reth = [
     "dep:lib-reth",
     "dep:revm",
     "dep:reth-db",
+    "dep:reth-node-builder",
     "dep:reth-node-ethereum",
+    "dep:reth-ethereum",
     "dep:reth-node-types",
     "dep:reth-provider",
+    "dep:reth-chainspec",
 ]
-
-ipc = []
-ws = []
 
 example-utils = ["revm/alloydb"]
