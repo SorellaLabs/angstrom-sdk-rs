@@ -3,8 +3,7 @@ use alloy_network::Ethereum;
 use alloy_primitives::{Address, StorageKey, StorageValue};
 use alloy_provider::{Provider, RootProvider};
 use auto_impl::auto_impl;
-use revm::DatabaseRef;
-use revm_database::{AlloyDB, CacheDB, WrapDatabaseAsync, async_db::DatabaseAsyncRef};
+use revm_database::{AlloyDB, CacheDB, DatabaseRef, WrapDatabaseAsync, async_db::DatabaseAsyncRef};
 
 #[async_trait::async_trait]
 #[auto_impl(&, Box, Arc)]
