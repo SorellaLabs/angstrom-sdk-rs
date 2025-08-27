@@ -1,4 +1,4 @@
-use alloy_primitives::{Address, I64, U256, aliases::I24, b256};
+use alloy_primitives::{Address, I64, U256, aliases::I24};
 use angstrom_types::primitive::PoolId;
 use serde::{Deserialize, Serialize};
 
