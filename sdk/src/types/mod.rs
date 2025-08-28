@@ -12,3 +12,7 @@ mod storage;
 
 pub use storage::*;
 pub mod fees;
+
+pub fn set_angstrom_constants_with_chain_id(chain_id: u64) -> eyre::Result<()> {
+    angstrom_types::primitive::try_init_with_chain_id(chain_id)
+}
