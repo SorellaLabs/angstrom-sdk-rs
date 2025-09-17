@@ -1274,12 +1274,7 @@ dependencies = [
  "jsonrpsee-ws-client 0.26.0",
  "lib-reth",
  "pade",
-<<<<<<< HEAD
- "rand 0.9.2",
- "reth-chainspec 1.7.0",
-=======
  "rand 0.9.1",
->>>>>>> main
  "reth-db 1.7.0",
  "reth-ethereum",
  "reth-node-builder 1.7.0",
@@ -6487,13 +6482,8 @@ dependencies = [
  "eyre",
  "futures",
  "futures-util",
-<<<<<<< HEAD
- "itertools 0.11.0",
- "rand 0.9.2",
-=======
  "itertools 0.14.0",
  "rand 0.9.1",
->>>>>>> main
  "rand_distr",
  "reth-tasks 1.7.0",
  "serde",
