@@ -12,7 +12,6 @@ name = "angstrom_sdk_rs"
 [dependencies]
 alloy.workspace = true
 alloy-consensus.workspace = true
-alloy-contract.workspace = true
 alloy-eips.workspace = true
 alloy-json-rpc.workspace = true
 alloy-network.workspace = true
@@ -34,8 +33,6 @@ itertools.workspace = true
 jsonrpsee-core.workspace = true
 jsonrpsee-http-client.workspace = true
 jsonrpsee-ws-client.workspace = true
-malachite.workspace = true
-malachite-q.workspace = true
 pade.workspace = true
 rand.workspace = true
 rust-utils.workspace = true
@@ -63,7 +60,7 @@ revm = { workspace = true, features = ["alloydb"], default-features = false }
 revm-database.workspace = true
 
 [features]
-default = ["ipc", "ws", "local-reth"]
+default = ["ipc", "ws"]
 full = ["ipc", "ws", "local-reth"]
 
 ipc = []
