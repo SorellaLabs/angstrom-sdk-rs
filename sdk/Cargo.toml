@@ -57,7 +57,7 @@ revm = { workspace = true, features = ["alloydb"], default-features = false }
 revm-database.workspace = true
 
 [features]
-default = ["ipc", "ws"]
+default = ["ipc", "ws", "full"]
 full = ["ipc", "ws", "local-reth"]
 local-reth = [
     "dep:lib-reth",
