@@ -1,7 +1,7 @@
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashSet, path::Path, sync::Arc};
 
 use alloy_consensus::Transaction;
-use alloy_eips::BlockId;
+use alloy_eips::{BlockId, BlockNumberOrTag};
 use alloy_network::Ethereum;
 use alloy_primitives::{
     Address, FixedBytes, TxHash, TxKind, U256,
@@ -26,15 +26,45 @@ use angstrom_types::{
     reth_db_provider::{RethDbLayer, RethDbProvider}
 };
 use futures::StreamExt;
-use lib_reth::{Chain, EthApiServer, reth_libmdbx::RethLibmdbxClient, traits::EthRevm};
+// use lib_reth::{Chain, EthApiServer, reth_libmdbx::RethLibmdbxClient, traits::EthRevm};
 use pade::PadeDecode;
-use reth_chainspec::ChainSpec;
+use reth_chainspec::{Chain, ChainSpec, EthChainSpec};
 use reth_db::DatabaseEnv;
-use reth_node_builder::{NodeBuilder, NodeConfig};
-use reth_node_ethereum::EthereumNode;
-use reth_node_types::NodeTypesWithDBAdapter;
-use reth_provider::providers::{BlockchainProvider, ReadOnlyConfig};
-use revm::{ExecuteEvm, context::TxEnv};
+use reth_ethereum::{
+    chainspec::ChainSpecBuilder,
+    consensus::EthBeaconConsensus,
+    evm::{
+        primitives::{
+            EthEvmFactory, Evm, EvmEnv, EvmFactory, block::BlockExecutorFactory, eth::EthEvmBuilder
+        },
+        revm::{
+            context::{BlockEnv, CfgEnv},
+            database::StateProviderDatabase
+        }
+    },
+    network::api::noop::NoopNetwork,
+    node::{EthEvmConfig, EthereumNode, api::NodeTypesWithDBAdapter},
+    pool::noop::NoopTransactionPool,
+    provider::{
+        ProviderFactory,
+        db::{ClientVersion, mdbx::DatabaseArguments, open_db_read_only},
+        providers::{BlockchainProvider, StaticFileProvider}
+    },
+    rpc::{
+        EthApi, EthApiBuilder, EthFilter,
+        api::{EthFilterApiServer, eth::RpcConvert},
+        builder::{RethRpcModule, RpcModuleBuilder, RpcServerConfig, TransportRpcModuleConfig},
+        eth::RpcNodeCore
+    },
+    tasks::TokioTaskExecutor
+};
+use reth_node_builder::{ConfigureEvm, NodeBuilder, NodeConfig};
+use reth_node_types::NodeTypesWithDB;
+use reth_provider::{
+    ChainSpecProvider, DatabaseProviderFactory, StateProvider, StateProviderFactory,
+    providers::ReadOnlyConfig
+};
+use revm::{ExecuteEvm, context::TxEnv, primitives::hardfork::SpecId};
 use uniswap_v4::uniswap::{
     pool::EnhancedUniswapPool, pool_data_loader::DataLoader, pool_factory::INITIAL_TICKS_PER_SIDE
 };
@@ -72,74 +102,170 @@ pub type RethLayerProviderWrapperType<P> = FillProvider<
 >;
 
 #[derive(Clone)]
-pub struct RethDbProviderWrapper<P: Provider + Clone> {
-    db_client: Arc<RethLibmdbxClient>,
-    provider:  P
+pub struct RethDbProviderWrapper<N, Rpc>
+where
+    N: RpcNodeCore,
+    Rpc: RpcConvert,
+    N: NodeTypesWithDB
+{
+    eth_api:             Arc<EthApi<N, Rpc>>,
+    blockchain_provider: BlockchainProvider<N>
 }
 
-impl<P: Provider + Clone> RethDbProviderWrapper<P> {
-    pub fn new(db_client: Arc<RethLibmdbxClient>, provider: P) -> Self {
-        Self { db_client, provider }
+// /// The node's primitive types, defining basic operations and structures.
+// type Primitives: NodePrimitives;
+// /// The type used for configuration of the EVM.
+// type ChainSpec: EthChainSpec<Header = <Self::Primitives as
+// NodePrimitives>::BlockHeader>; /// The type responsible for writing chain
+// primitives to storage. type Storage: Default + Send + Sync + Unpin + Debug +
+// 'static; /// The node's engine types, defining the interaction with the
+// consensus engine. type Payload: PayloadTypes<BuiltPayload:
+// BuiltPayload<Primitives = Self::Primitives>>;
+
+impl<N, Rpc> RethDbProviderWrapper<N, Rpc>
+where
+    N: RpcNodeCore,
+    Rpc: RpcConvert,
+    N: NodeTypesWithDB
+{
+    pub fn new(blockchain_provider: BlockchainProvider<N>, eth_api: Arc<EthApi<N, Rpc>>) -> Self {
+        Self { blockchain_provider, eth_api }
     }
 
-    pub fn replace_provider(&mut self, provider: P) {
-        self.provider = provider;
+    pub async fn play(datadir: &str) -> eyre::Result<()> {
+        let db_path = Path::new(&datadir);
+        let db = Arc::new(open_db_read_only(
+            db_path.join("db").as_path(),
+            DatabaseArguments::new(ClientVersion::default())
+        )?);
+        let spec = Arc::new(ChainSpecBuilder::mainnet().build());
+        let factory =
+            ProviderFactory::<NodeTypesWithDBAdapter<EthereumNode, Arc<DatabaseEnv>>>::new(
+                db.clone(),
+                spec.clone(),
+                StaticFileProvider::read_only(db_path.join("static_files"), true)?
+            );
+
+        // let t: EvmFactory = ();
+        // 2. Setup the blockchain provider using only the database provider and a noop
+        //    for the tree to satisfy trait bounds. Tree is not used in this example
+        //    since we are only operating on the disk and don't handle new blocks/live
+        //    sync etc, which is done by the blockchain tree.
+        let provider: BlockchainProvider<NodeTypesWithDBAdapter<EthereumNode, Arc<DatabaseEnv>>> =
+            BlockchainProvider::new(factory)?;
+
+        // let rpc_builder = RpcModuleBuilder::default()
+        //     .with_provider(provider.clone())
+        //     // Rest is just noops that do nothing
+        //     .with_noop_pool()
+        //     .with_noop_network()
+        //     .with_executor(Box::new(TokioTaskExecutor::default()))
+        //     .with_evm_config(EthEvmConfig::new(spec.clone()))
+        //     .with_consensus(EthBeaconConsensus::new(spec.clone()));
+
+        // let t = EthereumNode::provider_factory_builder()
+        //     .db(db)
+        //     .chainspec(ChainSpecBuilder::mainnet().build().into())
+        //     .static_file(StaticFileProvider::read_only("db/static_files",
+        // false).unwrap())     .build_provider_factory();
+
+        let eth_api = EthApiBuilder::new(
+            provider.clone(),
+            NoopTransactionPool::default(),
+            NoopNetwork::default(),
+            EthEvmConfig::mainnet()
+        )
+        .build();
+
+        // eth_api.provider().latest()
+
+        let eth_filter = EthFilter::new(
+            eth_api.clone(),
+            Default::default(),
+            Box::new(TokioTaskExecutor::default())
+        );
+
+        // let mut server = rpc_builder.build(config, eth_api);
+
+        Ok(())
     }
 
-    // pub async fn play(datadir: &str) -> eyre::Result<()> {
-    //     let chain_spec = ChainSpec::builder()
-    //         .chain(Chain::from_id(chain_id()))
-    //         .build();
-    //     let factory = EthereumNode::provider_factory_builder()
-    //         .open_read_only(chain_spec.into(),
-    // ReadOnlyConfig::from_datadir(datadir))?;
+    // pub fn as_provider_with_db_layer(&self) ->
+    // RethLayerProviderWrapperType<BlockchainProvider<N>> {     let db_layer =
+    // RethDbLayer::new(self.blockchain_provider.clone());
+    //     ProviderBuilder::<_, _, Ethereum>::default()
+    //         .with_recommended_fillers()
+    //         .on_provider(RethDbProvider::new(db_layer,
+    // self.blockchain_provider.clone())) }
 
-    //     let node = NodeBuilder::new(NodeConfig::new(Arc::new(chain_spec)))
-    //         .with_database(factory)
-    //         .with_types::<EthereumNode>();
-
-    //     Ok(())
-    // }
-
-    //*CHAIN_ID.get().unwrap()
-    pub fn as_provider_with_db_layer(&self) -> RethLayerProviderWrapperType<P> {
-        ProviderBuilder::<_, _, Ethereum>::default()
-            .with_recommended_fillers()
-            .layer(RethDbLayer::new(self.db_client.eth_db_provider().clone()))
-            .connect_provider(self.provider.clone())
+    pub fn state_at(&self, block_number: Option<u64>) -> eyre::Result<Box<dyn StateProvider>> {
+        let block = block_number
+            .map(|b| BlockNumberOrTag::Number(b))
+            .unwrap_or_else(|| BlockNumberOrTag::Latest);
+        Ok(self
+            .eth_api()
+            .provider()
+            .state_by_block_number_or_tag(block)?)
     }
 
-    pub fn db_client(&self) -> Arc<RethLibmdbxClient> {
-        self.db_client.clone()
+    pub fn eth_api(&self) -> Arc<EthApi<N, Rpc>> {
+        self.eth_api.clone()
     }
 
-    async fn get_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
-        // let logs_res = self.db_client.eth_filter().logs(filter.clone()).await;
-        // match logs_res {
-        //     Ok(vals) => Ok(vals),
-        //     Err(_) => {
-        //         self.db_client()
-        //             .eth_db_provider()
-        //             .consistent_provider()?
-        //             .static_file_provider()
-        //             .initialize_index()?;
-        //         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-        //         Ok(self.db_client.eth_filter().logs(filter.clone()).await?)
-        //     }
-        // }
-        Ok(self.provider.get_logs(filter).await?)
+    pub fn eth_filter(&self) -> EthFilter<EthApi<N, Rpc>> {
+        EthFilter::new(
+            self.eth_api.as_ref().clone(),
+            Default::default(),
+            Box::new(TokioTaskExecutor::default())
+        )
+    }
+
+    pub(crate) fn reth_db_view_call<IC>(
+        &self,
+        block_number: Option<u64>,
+        contract: Address,
+        call: IC
+    ) -> eyre::Result<Result<IC::Return, alloy_sol_types::Error>>
+    where
+        IC: SolCall + Send
+    {
+        let tx = TxEnv {
+            kind: TxKind::Call(contract),
+            data: call.abi_encode().into(),
+            ..Default::default()
+        };
+
+        let mut block_env = BlockEnv::default();
+        if let Some(bn) = block_number {
+            block_env.number = U256::from(bn);
+        }
+
+        let mut evm = EthEvmBuilder::new(
+            StateProviderDatabase::new(self.state_at(block_number)?),
+            EvmEnv::new(Default::default(), block_env)
+        )
+        .build();
+
+        // <N::Evm>
+        let data = evm.transact(tx)?;
+
+        Ok(IC::abi_decode_returns(data.result.output().unwrap_or_default()))
     }
 }
 
 #[async_trait::async_trait]
-impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
+impl<N, Rpc> AngstromDataApi for RethDbProviderWrapper<N, Rpc>
+where
+    N: RpcNodeCore,
+    Rpc: RpcConvert,
+    N: NodeTypesWithDB
+{
     async fn tokens_by_partial_pool_key(
         &self,
         pool_partial_key: AngstromPoolPartialKey,
         block_number: Option<u64>
     ) -> eyre::Result<TokenPair> {
-        let out = reth_db_view_call(
-            &self.db_client,
+        let out = self.reth_db_view_call(
             block_number,
             *CONTROLLER_V1_ADDRESS.get().unwrap(),
             ControllerV1::getPoolByKeyCall { key: FixedBytes::from(*pool_partial_key) }
@@ -201,7 +327,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         let logs = futures::future::try_join_all(
             filters
                 .into_iter()
-                .map(async move |filter| self.get_logs(&filter).await)
+                .map(async move |filter| self.eth_filter().get_logs(filter).await?)
         )
         .await?;
 
@@ -331,11 +457,8 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
 
         let mut enhanced_uni_pool = EnhancedUniswapPool::new(data_loader, INITIAL_TICKS_PER_SIDE);
 
-        let block_number = if let Some(bn) = block_number {
-            bn
-        } else {
-            self.db_client.eth_api().block_number()?.to()
-        };
+        let block_number =
+            if let Some(bn) = block_number { bn } else { self.eth_api.block_number()?.to() };
 
         enhanced_uni_pool
             .initialize(Some(block_number), Arc::new(self.as_provider_with_db_layer()))
@@ -377,8 +500,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         verify_successful_tx: bool
     ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
         let Some(block) = self
-            .db_client
-            .eth_api()
+            .eth_api
             .block_by_number(block_number.into(), true)
             .await?
         else {
@@ -410,8 +532,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             let bundles =
                 futures::future::try_join_all(angstrom_bundles.map(async |(tx_hash, bundle)| {
                     if self
-                        .db_client
-                        .eth_api()
+                        .eth_api
                         .transaction_receipt(tx_hash)
                         .await?
                         .ok_or_else(|| {
@@ -436,19 +557,13 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         tx_hash: TxHash,
         verify_successful_tx: bool
     ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
-        let Some(transaction) = self
-            .db_client
-            .eth_api()
-            .transaction_by_hash(tx_hash)
-            .await?
-        else {
+        let Some(transaction) = self.eth_api.transaction_by_hash(tx_hash).await? else {
             return Ok(None)
         };
 
         if verify_successful_tx
             && !self
-                .db_client
-                .eth_api()
+                .eth_api
                 .transaction_receipt(tx_hash)
                 .await?
                 .ok_or_else(|| eyre::eyre!("reciepts not enabled on node - tx hash: {tx_hash:?}"))?
@@ -473,7 +588,12 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
 }
 
 #[async_trait::async_trait]
-impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
+impl<N, Rpc> AngstromUserApi for RethDbProviderWrapper<N, Rpc>
+where
+    N: RpcNodeCore,
+    Rpc: RpcConvert,
+    N: NodeTypesWithDB
+{
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,
@@ -630,29 +750,4 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
         )
         .await?)
     }
-}
-
-pub(crate) fn reth_db_view_call<IC>(
-    provider: &RethLibmdbxClient,
-    block_number: Option<u64>,
-    contract: Address,
-    call: IC
-) -> eyre::Result<Result<IC::Return, alloy_sol_types::Error>>
-where
-    IC: SolCall + Send
-{
-    let tx = TxEnv {
-        kind: TxKind::Call(contract),
-        data: call.abi_encode().into(),
-        ..Default::default()
-    };
-
-    let block_number =
-        if let Some(bn) = block_number { bn } else { provider.eth_api().block_number()?.to() };
-
-    let mut evm = provider.make_empty_evm(block_number)?;
-
-    let data = evm.transact(tx)?;
-
-    Ok(IC::abi_decode_returns(data.result.output().unwrap_or_default()))
 }

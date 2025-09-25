@@ -71,61 +71,57 @@ impl<S: StorageSlotFetcher + DatabaseRef> StorageSlotFetcher for CacheDB<S> {
 
 #[cfg(feature = "local-reth")]
 mod reth_db_impls {
-    use lib_reth::{
-        EthApiServer,
-        reth_libmdbx::RethLibmdbxClient,
-        traits::{EthRevm, reth_revm_utils::RethLibmdbxDatabaseRef}
-    };
-    use revm::DatabaseRef;
+    use alloy_eips::BlockNumberOrTag;
+    use reth_ethereum::rpc::{api::eth::RpcConvert, eth::RpcNodeCore};
+    use reth_provider::{StateProvider, StateProviderFactory};
 
     use super::*;
     use crate::providers::local_reth::RethDbProviderWrapper;
 
     #[async_trait::async_trait]
-    impl StorageSlotFetcher for RethLibmdbxClient {
+    impl StorageSlotFetcher for dyn StateProvider {
         async fn storage_at(
             &self,
             address: Address,
             key: StorageKey,
             block_number: Option<u64>
         ) -> eyre::Result<StorageValue> {
-            let block_number =
-                if let Some(bn) = block_number { bn } else { self.eth_api().block_number()?.to() };
-
-            let db = self.make_inner_db(block_number)?;
-            Ok(db.storage_ref(address, key.into())?)
+            Ok(self.storage(address, key.into())?.ok_or_else(|| {
+                eyre::eyre!(
+                    "no storage found for block {block_number:?} at address {address:?} for key \
+                     {key:?}"
+                )
+            })?)
         }
     }
 
     #[async_trait::async_trait]
-    impl<P: Provider + Clone> StorageSlotFetcher for RethDbProviderWrapper<P> {
+    impl<N, Rpc> StorageSlotFetcher for RethDbProviderWrapper<N, Rpc>
+    where
+        N: RpcNodeCore,
+        Rpc: RpcConvert
+    {
         async fn storage_at(
             &self,
             address: Address,
             key: StorageKey,
             block_number: Option<u64>
         ) -> eyre::Result<StorageValue> {
-            let db_client = self.db_client();
-            let block_number = if let Some(bn) = block_number {
-                bn
-            } else {
-                db_client.eth_api().block_number()?.to()
-            };
-
-            let db = db_client.make_inner_db(block_number)?;
-            Ok(db.storage_ref(address, key.into())?)
+            self.state_at(block_number)?
+                .storage_at(address, key, block_number)
+                .await
         }
     }
 
-    #[async_trait::async_trait]
-    impl StorageSlotFetcher for RethLibmdbxDatabaseRef {
-        async fn storage_at(
-            &self,
-            address: Address,
-            key: StorageKey,
-            _: Option<u64>
-        ) -> eyre::Result<StorageValue> {
-            Ok(self.storage_ref(address, key.into())?)
-        }
-    }
+    // #[async_trait::async_trait]
+    // impl StorageSlotFetcher for RethLibmdbxDatabaseRef {
+    //     async fn storage_at(
+    //         &self,
+    //         address: Address,
+    //         key: StorageKey,
+    //         _: Option<u64>
+    //     ) -> eyre::Result<StorageValue> {
+    //         Ok(self.storage_ref(address, key.into())?)
+    //     }
+    // }
 }

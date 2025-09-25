@@ -53,7 +53,7 @@ itertools = "0.14"
 jsonrpsee-core = "0.26.0"
 jsonrpsee-http-client = "0.26.0"
 jsonrpsee-ws-client = "0.26.0"
-lib-reth = { git = "https://github.com/jnoorchashm37/lib-reth", features = ["rayon"] }
+# lib-reth = { git = "https://github.com/jnoorchashm37/lib-reth", features = ["rayon"] }
 malachite = "0.4"
 malachite-q = "0.4"
 pade = { git = "https://github.com/SorellaLabs/pade", version = "0.1.0" }
@@ -62,7 +62,15 @@ reth-chainspec = { git = "https://github.com/paradigmxyz/reth", version = "1.7.0
 reth-db = { git = "https://github.com/paradigmxyz/reth", version = "1.7.0", tag = "v1.7.0", default-features = false, features = [
   "mdbx",
 ] }
-reth-ethereum = { git = "https://github.com/paradigmxyz/reth", version = "1.7.0", tag = "v1.7.0" }
+reth-ethereum = { git = "https://github.com/paradigmxyz/reth", version = "1.7.0", tag = "v1.7.0", features = [
+  "test-utils",
+  "node",
+  "provider",
+  "pool",
+  "network",
+  "rpc",
+] }
+
 reth-node-builder = { git = "https://github.com/paradigmxyz/reth", version = "1.7.0", tag = "v1.7.0" }
 reth-node-ethereum = { git = "https://github.com/paradigmxyz/reth", version = "1.7.0", tag = "v1.7.0" }
 reth-node-types = { git = "https://github.com/paradigmxyz/reth", version = "1.7.0", tag = "v1.7.0" }

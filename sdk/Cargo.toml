@@ -44,7 +44,7 @@ tokio.workspace = true
 uniswap-v4.workspace = true
 validation.workspace = true
 
-lib-reth = { workspace = true, optional = true }
+# lib-reth = { workspace = true, optional = true }
 reth-chainspec = { workspace = true, optional = true }
 reth-db = { workspace = true, optional = true }
 reth-ethereum = { workspace = true, optional = true }
@@ -60,13 +60,13 @@ revm = { workspace = true, features = ["alloydb"], default-features = false }
 revm-database.workspace = true
 
 [features]
-default = ["ipc", "ws"]
+default = ["ipc", "ws", "full"]
 full = ["ipc", "ws", "local-reth"]
 
 ipc = []
 ws = []
 local-reth = [
-    "dep:lib-reth",
+    # "dep:lib-reth",
     "dep:revm",
     "dep:reth-db",
     "dep:reth-node-builder",
