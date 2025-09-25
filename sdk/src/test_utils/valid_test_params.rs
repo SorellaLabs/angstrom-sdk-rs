@@ -49,7 +49,7 @@ pub async fn init_valid_position_params_with_provider()
 }
 
 pub fn init_valid_position_params() -> ValidPositionTestParameters {
-    let _ = try_init_with_chain_id(11155111);
+    let _ = try_init_with_chain_id(1);
 
     let owner = address!("0x247bcb856d028d66bd865480604f45797446d179");
     let pool_id = b256!("0x51416fa593479e6932829c5baea2984cb14a28ce753789e361ef3799a8ee7e5c");

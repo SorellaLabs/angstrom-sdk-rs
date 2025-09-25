@@ -1,7 +1,4 @@
-use alloy_primitives::{
-    Address, I64, U256,
-    aliases::{I24, U24}
-};
+use alloy_primitives::{Address, I64, U256, aliases::I24, b256};
 use angstrom_types::primitive::PoolId;
 use serde::{Deserialize, Serialize};
 
@@ -102,6 +99,14 @@ impl TickBitmap {
     }
 }
 
+/// https://github.com/Uniswap/v4-core/blob/main/src/libraries/TickBitmap.sol
+///
+/// function nextInitializedTickWithinOneWord(
+///     mapping(int16 => uint256) storage self,
+///     int24 tick,
+///     int24 tickSpacing,
+///     bool lte
+/// ) internal view returns (int24 next, bool initialized)
 pub async fn next_initialized_tick_within_one_word<F: StorageSlotFetcher>(
     slot_fetcher: &F,
     pool_manager_address: Address,
@@ -111,39 +116,7 @@ pub async fn next_initialized_tick_within_one_word<F: StorageSlotFetcher>(
     tick_spacing: I24,
     lte: bool
 ) -> eyre::Result<(I24, bool)> {
-    /*
-
-           int24 compressed = compress(tick, tickSpacing);
-           if (lte) {
-               (int16 wordPos, uint8 bitPos) = position(compressed);
-               // all the 1s at or to the right of the current bitPos
-               uint256 mask = type(uint256).max >> (uint256(type(uint8).max) - bitPos);
-               uint256 masked = self[wordPos] & mask;
-
-               // if there are no initialized ticks to the right of or at the current tick, return rightmost in the word
-               initialized = masked != 0;
-               // overflow/underflow is possible, but prevented externally by limiting both tickSpacing and tick
-               next = initialized
-                   ? (compressed - int24(uint24(bitPos - BitMath.mostSignificantBit(masked)))) * tickSpacing
-                   : (compressed - int24(uint24(bitPos))) * tickSpacing;
-           } else {
-               // start from the word of the next tick, since the current tick state doesn't matter
-               (int16 wordPos, uint8 bitPos) = position(++compressed);
-               // all the 1s at or to the left of the bitPos
-               uint256 mask = ~((1 << bitPos) - 1);
-               uint256 masked = self[wordPos] & mask;
-
-               // if there are no initialized ticks to the left of the current tick, return leftmost in the word
-               initialized = masked != 0;
-               // overflow/underflow is possible, but prevented externally by limiting both tickSpacing and tick
-               next = initialized
-                   ? (compressed + int24(uint24(BitMath.leastSignificantBit(masked) - bitPos))) * tickSpacing
-                   : (compressed + int24(uint24(type(uint8).max - bitPos))) * tickSpacing;
-           }
-
-    */
-
-    let compressed = compress_tick(tick, tick_spacing);
+    let mut compressed = compress_tick(tick, tick_spacing);
     if lte {
         let (word_pos, bit_pos) = _tick_position_from_compressed(compressed);
         let mask = U256::MAX >> (U256::from(u8::MAX) - U256::from(bit_pos));
@@ -166,8 +139,9 @@ pub async fn next_initialized_tick_within_one_word<F: StorageSlotFetcher>(
         };
         Ok((next, initialized))
     } else {
-        let (word_pos, bit_pos) = _tick_position_from_compressed(compressed + I24::ONE);
-        let mask = U256::from(!((1 << bit_pos) - 1));
+        compressed += I24::ONE;
+        let (word_pos, bit_pos) = _tick_position_from_compressed(compressed);
+        let mask = !((U256::ONE << bit_pos) - U256::ONE);
         let masked = tick_bitmap_from_word(
             slot_fetcher,
             pool_manager_address,
@@ -180,65 +154,36 @@ pub async fn next_initialized_tick_within_one_word<F: StorageSlotFetcher>(
 
         let initialized = masked != U256::ZERO;
         let next = if initialized {
-            (compressed + I24::unchecked_from(least_significant_bit(masked) - bit_pos))
-                * tick_spacing
+            let lsb = least_significant_bit(masked);
+            let diff = (lsb as i32).wrapping_sub(bit_pos as i32);
+            (compressed + I24::unchecked_from(diff)) * tick_spacing
         } else {
-            (compressed + I24::unchecked_from(U24::from(u8::MAX - bit_pos))) * tick_spacing
+            (compressed + I24::unchecked_from(u8::MAX - bit_pos)) * tick_spacing
         };
         Ok((next, initialized))
     }
 }
 
+/// https://github.com/Uniswap/v4-core/blob/main/src/libraries/BitMath.sol
+///
+/// function mostSignificantBit(uint256 x) internal pure returns (uint8 r)
 fn most_significant_bit(x: U256) -> u8 {
-    /*
+    assert!(x > U256::ZERO, "x must be greater than 0");
 
-        /// @notice Returns the index of the most significant bit of the number,
-        ///     where the least significant bit is at index 0 and the most significant bit is at index 255
-        /// @param x the value for which to compute the most significant bit, must be greater than 0
-        /// @return r the index of the most significant bit
-        function mostSignificantBit(uint256 x) internal pure returns (uint8 r) {
-            require(x > 0);
-
-            assembly ("memory-safe") {
-                r := shl(7, lt(0xffffffffffffffffffffffffffffffff, x))
-                r := or(r, shl(6, lt(0xffffffffffffffff, shr(r, x))))
-                r := or(r, shl(5, lt(0xffffffff, shr(r, x))))
-                r := or(r, shl(4, lt(0xffff, shr(r, x))))
-                r := or(r, shl(3, lt(0xff, shr(r, x))))
-                // forgefmt: disable-next-item
-                r := or(r, byte(and(0x1f, shr(shr(r, x), 0x8421084210842108cc6318c6db6d54be)),
-                    0x0706060506020500060203020504000106050205030304010505030400000000))
-            }
-        }
-    */
+    // Use U256's leading_zeros method and convert to most significant bit position
+    // U256 has 256 bits, so MSB position = 255 - leading_zeros
+    255 - (x.leading_zeros() as u8)
 }
 
+/// https://github.com/Uniswap/v4-core/blob/main/src/libraries/BitMath.sol
+///
+/// function leastSignificantBit(uint256 x) internal pure returns (uint8 r)
 fn least_significant_bit(x: U256) -> u8 {
-    /*
+    assert!(x > U256::ZERO, "x must be greater than 0");
 
-        /// @notice Returns the index of the least significant bit of the number,
-        ///     where the least significant bit is at index 0 and the most significant bit is at index 255
-        /// @param x the value for which to compute the least significant bit, must be greater than 0
-        /// @return r the index of the least significant bit
-        function leastSignificantBit(uint256 x) internal pure returns (uint8 r) {
-            require(x > 0);
-
-            assembly ("memory-safe") {
-                // Isolate the least significant bit.
-                x := and(x, sub(0, x))
-                // For the upper 3 bits of the result, use a De Bruijn-like lookup.
-                // Credit to adhusson: https://blog.adhusson.com/cheap-find-first-set-evm/
-                // forgefmt: disable-next-item
-                r := shl(5, shr(252, shl(shl(2, shr(250, mul(x,
-                    0xb6db6db6ddddddddd34d34d349249249210842108c6318c639ce739cffffffff))),
-                    0x8040405543005266443200005020610674053026020000107506200176117077)))
-                // For the lower 5 bits of the result, use a De Bruijn lookup.
-                // forgefmt: disable-next-item
-                r := or(r, byte(and(div(0xd76453e0, shr(r, x)), 0x1f),
-                    0x001f0d1e100c1d070f090b19131c1706010e11080a1a141802121b1503160405))
-            }
-        }
-    */
+    // Use U256's trailing_zeros method which efficiently counts zeros from the
+    // right
+    x.trailing_zeros() as u8
 }
 
 pub async fn tick_bitmap_from_word<F: StorageSlotFetcher>(
@@ -421,6 +366,55 @@ mod tests {
     use super::*;
     use crate::test_utils::valid_test_params::init_valid_position_params_with_provider;
 
+    #[test]
+    fn test_most_significant_bit() {
+        // Test basic cases
+        assert_eq!(most_significant_bit(U256::from(1)), 0);
+        assert_eq!(most_significant_bit(U256::from(2)), 1);
+
+        // Test powers of two
+        for i in 0..255 {
+            let x = U256::ONE << i;
+            assert_eq!(most_significant_bit(x), i as u8);
+        }
+
+        // Test max uint256
+        assert_eq!(most_significant_bit(U256::MAX), 255);
+    }
+
+    #[test]
+    #[should_panic(expected = "x must be greater than 0")]
+    fn test_most_significant_bit_zero_panics() {
+        most_significant_bit(U256::ZERO);
+    }
+
+    #[test]
+    fn test_least_significant_bit() {
+        // Test basic cases
+        assert_eq!(least_significant_bit(U256::from(1)), 0);
+        assert_eq!(least_significant_bit(U256::from(2)), 1);
+        assert_eq!(least_significant_bit(U256::from(3)), 0);
+        assert_eq!(least_significant_bit(U256::from(4)), 2);
+        assert_eq!(least_significant_bit(U256::from(8)), 3);
+        assert_eq!(least_significant_bit(U256::from(0x80)), 7);
+        assert_eq!(least_significant_bit(U256::from(0x100)), 8);
+
+        // Test powers of two
+        for i in 0..255 {
+            let x = U256::ONE << i;
+            assert_eq!(least_significant_bit(x), i as u8);
+        }
+
+        // Test max uint256 (all bits set)
+        assert_eq!(least_significant_bit(U256::MAX), 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "x must be greater than 0")]
+    fn test_least_significant_bit_zero_panics() {
+        least_significant_bit(U256::ZERO);
+    }
+
     #[tokio::test]
     async fn test_tick_bitmap() {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
@@ -530,5 +524,53 @@ mod tests {
         .unwrap();
 
         assert_eq!(results, I24::unchecked_from(192310));
+    }
+
+    #[tokio::test]
+    async fn test_next_initialized_tick_within_one_word_non_lte() {
+        let (provider, _) = init_valid_position_params_with_provider().await;
+        let block_number = 23440790;
+        let tick = I24::unchecked_from(-193345);
+        let tick_spacing = I24::unchecked_from(10);
+        let pool_id = b256!("0x21c67e77068de97969ba93d4aab21826d33ca12bb9f565d8496e8fda8a82ca27");
+
+        let (result_tick, initialized) = next_initialized_tick_within_one_word(
+            &provider,
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            Some(block_number),
+            pool_id,
+            tick,
+            tick_spacing,
+            false
+        )
+        .await
+        .unwrap();
+
+        assert!(initialized);
+        assert_eq!(result_tick, I24::unchecked_from(-193330));
+    }
+
+    #[tokio::test]
+    async fn test_next_initialized_tick_within_one_word_lte() {
+        let (provider, _) = init_valid_position_params_with_provider().await;
+        let block_number = 23441855;
+        let tick = I24::unchecked_from(-193678);
+        let tick_spacing = I24::unchecked_from(10);
+        let pool_id = b256!("0x21c67e77068de97969ba93d4aab21826d33ca12bb9f565d8496e8fda8a82ca27");
+
+        let (result_tick, initialized) = next_initialized_tick_within_one_word(
+            &provider,
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            Some(block_number),
+            pool_id,
+            tick,
+            tick_spacing,
+            true
+        )
+        .await
+        .unwrap();
+
+        assert!(initialized);
+        assert_eq!(result_tick, I24::unchecked_from(-193690));
     }
 }
