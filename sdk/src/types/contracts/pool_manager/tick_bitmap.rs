@@ -1,4 +1,4 @@
-use alloy_primitives::{Address, I64, U256, aliases::I24, b256};
+use alloy_primitives::{Address, I64, U256, aliases::I24};
 use angstrom_types::primitive::PoolId;
 use serde::{Deserialize, Serialize};
 
@@ -361,6 +361,7 @@ fn is_tick_at_bounds(tick: I24, tick_spacing: I24, is_decreasing: bool) -> bool 
 
 #[cfg(test)]
 mod tests {
+    use alloy_primitives::b256;
     use angstrom_types::{self, primitive::POOL_MANAGER_ADDRESS};
 
     use super::*;
