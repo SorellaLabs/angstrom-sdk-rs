@@ -7,10 +7,8 @@ pub use historical_order_filters::*;
 pub mod errors;
 pub mod fillers;
 
-pub mod contracts;
 mod storage;
 
-pub use storage::*;
 pub mod fees;
 
 pub fn set_angstrom_constants_with_chain_id(chain_id: u64) -> eyre::Result<()> {

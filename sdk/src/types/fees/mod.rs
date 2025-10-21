@@ -4,10 +4,9 @@ pub use angstrom::*;
 mod uniswap;
 use angstrom_types::primitive::PoolId;
 pub use uniswap::*;
-
-use crate::types::{
+use uniswap_storage::{
     StorageSlotFetcher,
-    contracts::utils::{FIXED_POINT_128, full_mul_x128, mul_div}
+    v4::utils::{FIXED_POINT_128, full_mul_x128, mul_div}
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -39,6 +38,7 @@ pub async fn position_fees<F: StorageSlotFetcher>(
     slot_fetcher: &F,
     pool_manager_address: Address,
     angstrom_address: Address,
+    position_manager_address: Address,
     block_number: Option<u64>,
     pool_id: PoolId,
     current_pool_tick: I24,
@@ -51,6 +51,7 @@ pub async fn position_fees<F: StorageSlotFetcher>(
         angstrom_fee_delta_x128(
             slot_fetcher,
             angstrom_address,
+            position_manager_address,
             block_number,
             pool_id,
             current_pool_tick,
@@ -61,6 +62,7 @@ pub async fn position_fees<F: StorageSlotFetcher>(
         uniswap_fee_deltas(
             slot_fetcher,
             pool_manager_address,
+            position_manager_address,
             block_number,
             pool_id,
             current_pool_tick,
@@ -80,7 +82,9 @@ pub async fn position_fees<F: StorageSlotFetcher>(
 
 #[cfg(test)]
 mod tests {
-    use angstrom_types::primitive::{ANGSTROM_ADDRESS, POOL_MANAGER_ADDRESS};
+    use angstrom_types::primitive::{
+        ANGSTROM_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS
+    };
 
     use super::*;
     use crate::test_utils::valid_test_params::init_valid_position_params_with_provider;
@@ -94,6 +98,7 @@ mod tests {
             &provider,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *ANGSTROM_ADDRESS.get().unwrap(),
+            *POSITION_MANAGER_ADDRESS.get().unwrap(),
             Some(block_number),
             pos_info.pool_id,
             pos_info.current_pool_tick,

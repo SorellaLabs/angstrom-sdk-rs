@@ -33,6 +33,16 @@ use reth_node_ethereum::EthereumNode;
 use reth_node_types::NodeTypesWithDBAdapter;
 use reth_provider::providers::BlockchainProvider;
 use revm::{ExecuteEvm, context::TxEnv};
+use uniswap_storage::v4::{
+    UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
+    pool_manager::{
+        pool_state::pool_manager_pool_slot0, position_state::pool_manager_position_state_liquidity
+    },
+    position_manager::{
+        position_manager_next_token_id, position_manager_owner_of,
+        position_manager_pool_key_and_info
+    }
+};
 use uniswap_v4::uniswap::{
     pool::EnhancedUniswapPool, pool_data_loader::DataLoader, pool_factory::INITIAL_TICKS_PER_SIDE
 };
@@ -45,17 +55,6 @@ use crate::{
         }
     },
     types::{
-        contracts::{
-            UnpackedPositionInfo, UnpackedSlot0, UserLiquidityPosition,
-            pool_manager::{
-                pool_state::pool_manager_pool_slot0,
-                position_state::pool_manager_position_state_liquidity
-            },
-            position_manager::{
-                position_manager_next_token_id, position_manager_owner_of,
-                position_manager_pool_key_and_info
-            }
-        },
         fees::{LiquidityPositionFees, position_fees},
         *
     }
@@ -347,8 +346,8 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         Ok(pool_manager_pool_slot0(
             self,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
-            block_number,
-            pool_id
+            pool_id,
+            block_number
         )
         .await?)
     }
@@ -469,7 +468,16 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
         )
         .await?;
 
-        Ok((pool_key, position_info))
+        Ok((
+            PoolKey {
+                currency0:   pool_key.currency0,
+                currency1:   pool_key.currency1,
+                fee:         pool_key.fee,
+                tickSpacing: pool_key.tickSpacing,
+                hooks:       pool_key.hooks
+            },
+            position_info
+        ))
     }
 
     async fn position_liquidity(
@@ -488,11 +496,12 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
         let liquidity = pool_manager_position_state_liquidity(
             self,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
-            block_number,
+            *POSITION_MANAGER_ADDRESS.get().unwrap(),
             pool_key.into(),
             position_token_id,
             position_info.tick_lower,
-            position_info.tick_upper
+            position_info.tick_upper,
+            block_number
         )
         .await?;
 
@@ -507,7 +516,7 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
         pool_id: Option<PoolId>,
         max_results: Option<usize>,
         block_number: Option<u64>
-    ) -> eyre::Result<Vec<UserLiquidityPosition>> {
+    ) -> eyre::Result<Vec<V4UserLiquidityPosition>> {
         let position_manager_address = *POSITION_MANAGER_ADDRESS.get().unwrap();
         let pool_manager_address = *POOL_MANAGER_ADDRESS.get().unwrap();
         let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
@@ -557,15 +566,16 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
             let liquidity = pool_manager_position_state_liquidity(
                 self,
                 pool_manager_address,
-                block_number,
+                position_manager_address,
                 pool_key.into(),
                 start_token_id,
                 position_info.tick_lower,
-                position_info.tick_upper
+                position_info.tick_upper,
+                block_number
             )
             .await?;
 
-            all_positions.push(UserLiquidityPosition {
+            all_positions.push(V4UserLiquidityPosition {
                 token_id: start_token_id,
                 tick_lower: position_info.tick_lower,
                 tick_upper: position_info.tick_upper,
@@ -602,6 +612,7 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
             self,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *ANGSTROM_ADDRESS.get().unwrap(),
+            *POSITION_MANAGER_ADDRESS.get().unwrap(),
             block_number,
             pool_id,
             slot0.tick,

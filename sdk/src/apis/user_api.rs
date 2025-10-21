@@ -1,22 +1,20 @@
-use alloy_primitives::{Address, U256};
+use alloy_primitives::{Address, B256, U256};
 use alloy_provider::Provider;
 use angstrom_types::{
     contract_bindings::pool_manager::PoolManager::PoolKey,
     primitive::{ANGSTROM_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS, PoolId}
 };
+use uniswap_storage::v4::{
+    UnpackedPositionInfo, V4UserLiquidityPosition,
+    pool_manager::position_state::pool_manager_position_state_liquidity,
+    position_manager::{
+        position_manager_next_token_id, position_manager_owner_of,
+        position_manager_pool_key_and_info
+    }
+};
 
 use super::data_api::AngstromDataApi;
-use crate::types::{
-    contracts::{
-        UnpackedPositionInfo, UserLiquidityPosition,
-        pool_manager::position_state::pool_manager_position_state_liquidity,
-        position_manager::{
-            position_manager_next_token_id, position_manager_owner_of,
-            position_manager_pool_key_and_info
-        }
-    },
-    fees::{LiquidityPositionFees, position_fees}
-};
+use crate::types::fees::{LiquidityPositionFees, position_fees};
 
 #[async_trait::async_trait]
 pub trait AngstromUserApi: AngstromDataApi {
@@ -40,7 +38,7 @@ pub trait AngstromUserApi: AngstromDataApi {
         pool_id: Option<PoolId>,
         max_results: Option<usize>,
         block_number: Option<u64>
-    ) -> eyre::Result<Vec<UserLiquidityPosition>>;
+    ) -> eyre::Result<Vec<V4UserLiquidityPosition>>;
 
     async fn user_position_fees(
         &self,
@@ -64,7 +62,16 @@ impl<P: Provider> AngstromUserApi for P {
         )
         .await?;
 
-        Ok((pool_key, position_info))
+        Ok((
+            PoolKey {
+                currency0:   pool_key.currency0,
+                currency1:   pool_key.currency1,
+                fee:         pool_key.fee,
+                tickSpacing: pool_key.tickSpacing,
+                hooks:       pool_key.hooks
+            },
+            position_info
+        ))
     }
 
     async fn position_liquidity(
@@ -83,11 +90,12 @@ impl<P: Provider> AngstromUserApi for P {
         let liquidity = pool_manager_position_state_liquidity(
             self.root(),
             *POOL_MANAGER_ADDRESS.get().unwrap(),
-            block_number,
+            *POSITION_MANAGER_ADDRESS.get().unwrap(),
             pool_key.into(),
             position_token_id,
             position_info.tick_lower,
-            position_info.tick_upper
+            position_info.tick_upper,
+            block_number
         )
         .await?;
 
@@ -102,7 +110,7 @@ impl<P: Provider> AngstromUserApi for P {
         pool_id: Option<PoolId>,
         max_results: Option<usize>,
         block_number: Option<u64>
-    ) -> eyre::Result<Vec<UserLiquidityPosition>> {
+    ) -> eyre::Result<Vec<V4UserLiquidityPosition>> {
         let position_manager_address = *POSITION_MANAGER_ADDRESS.get().unwrap();
         let pool_manager_address = *POOL_MANAGER_ADDRESS.get().unwrap();
         let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
@@ -144,7 +152,7 @@ impl<P: Provider> AngstromUserApi for P {
 
             if pool_key.hooks != angstrom_address
                 || pool_id
-                    .map(|id| id != PoolId::from(pool_key))
+                    .map(|id| id != B256::from(pool_key))
                     .unwrap_or_default()
             {
                 start_token_id += U256::from(1u8);
@@ -154,15 +162,16 @@ impl<P: Provider> AngstromUserApi for P {
             let liquidity = pool_manager_position_state_liquidity(
                 root,
                 pool_manager_address,
-                block_number,
+                position_manager_address,
                 pool_key.into(),
                 start_token_id,
                 position_info.tick_lower,
-                position_info.tick_upper
+                position_info.tick_upper,
+                block_number
             )
             .await?;
 
-            all_positions.push(UserLiquidityPosition {
+            all_positions.push(V4UserLiquidityPosition {
                 token_id: start_token_id,
                 tick_lower: position_info.tick_lower,
                 tick_upper: position_info.tick_upper,
@@ -199,6 +208,7 @@ impl<P: Provider> AngstromUserApi for P {
             self.root(),
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *ANGSTROM_ADDRESS.get().unwrap(),
+            *POSITION_MANAGER_ADDRESS.get().unwrap(),
             block_number,
             pool_id,
             slot0.tick,

@@ -1,9 +1,8 @@
 use alloy_primitives::{Address, U256, aliases::I24};
 use angstrom_types::primitive::PoolId;
-
-use crate::types::{
+use uniswap_storage::{
     StorageSlotFetcher,
-    contracts::pool_manager::position_state::{
+    v4::pool_manager::position_state::{
         pool_manager_position_fee_growth_inside, pool_manager_position_state_last_fee_growth_inside
     }
 };
@@ -11,6 +10,7 @@ use crate::types::{
 pub async fn uniswap_fee_deltas<F: StorageSlotFetcher>(
     slot_fetcher: &F,
     pool_manager_address: Address,
+    position_manager_address: Address,
     block_number: Option<u64>,
     pool_id: PoolId,
     current_pool_tick: I24,
@@ -25,20 +25,21 @@ pub async fn uniswap_fee_deltas<F: StorageSlotFetcher>(
         pool_manager_position_fee_growth_inside(
             slot_fetcher,
             pool_manager_address,
-            block_number,
             pool_id,
             current_pool_tick,
             tick_lower,
             tick_upper,
+            block_number,
         ),
         pool_manager_position_state_last_fee_growth_inside(
             slot_fetcher,
             pool_manager_address,
-            block_number,
+            position_manager_address,
             pool_id,
             position_token_id,
             tick_lower,
-            tick_upper
+            tick_upper,
+            block_number,
         ),
     )?;
 
@@ -50,7 +51,7 @@ pub async fn uniswap_fee_deltas<F: StorageSlotFetcher>(
 
 #[cfg(test)]
 mod tests {
-    use angstrom_types::primitive::POOL_MANAGER_ADDRESS;
+    use angstrom_types::primitive::{POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS};
 
     use super::*;
     use crate::test_utils::valid_test_params::init_valid_position_params_with_provider;
@@ -63,6 +64,7 @@ mod tests {
         let results = uniswap_fee_deltas(
             &provider,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
+            *POSITION_MANAGER_ADDRESS.get().unwrap(),
             Some(block_number),
             pos_info.pool_id,
             pos_info.current_pool_tick,

@@ -1,14 +1,14 @@
 use alloy_primitives::{Address, U256, aliases::I24};
 use angstrom_types::primitive::PoolId;
-
-use crate::types::{
+use uniswap_storage::{
     StorageSlotFetcher,
-    contracts::angstrom::{angstrom_growth_inside, angstrom_last_growth_inside}
+    angstrom::{angstrom_growth_inside, angstrom_last_growth_inside}
 };
 
 pub async fn angstrom_fee_delta_x128<F: StorageSlotFetcher>(
     slot_fetcher: &F,
     angstrom_address: Address,
+    position_manager_address: Address,
     block_number: Option<u64>,
     pool_id: PoolId,
     current_pool_tick: I24,
@@ -20,20 +20,21 @@ pub async fn angstrom_fee_delta_x128<F: StorageSlotFetcher>(
         angstrom_growth_inside(
             slot_fetcher,
             angstrom_address,
-            block_number,
             pool_id,
             current_pool_tick,
             tick_lower,
             tick_upper,
+            block_number,
         ),
         angstrom_last_growth_inside(
             slot_fetcher,
             angstrom_address,
-            block_number,
+            position_manager_address,
             pool_id,
             position_token_id,
             tick_lower,
-            tick_upper
+            tick_upper,
+            block_number,
         ),
     )?;
 
@@ -42,7 +43,7 @@ pub async fn angstrom_fee_delta_x128<F: StorageSlotFetcher>(
 
 #[cfg(test)]
 mod tests {
-    use angstrom_types::primitive::ANGSTROM_ADDRESS;
+    use angstrom_types::primitive::{ANGSTROM_ADDRESS, POSITION_MANAGER_ADDRESS};
 
     use super::*;
     use crate::test_utils::valid_test_params::init_valid_position_params_with_provider;
@@ -55,6 +56,7 @@ mod tests {
         let results = angstrom_fee_delta_x128(
             &provider,
             *ANGSTROM_ADDRESS.get().unwrap(),
+            *POSITION_MANAGER_ADDRESS.get().unwrap(),
             Some(block_number),
             pos_info.pool_id,
             pos_info.current_pool_tick,

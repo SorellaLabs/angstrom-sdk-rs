@@ -25,15 +25,13 @@ use angstrom_types::{
 use futures::{FutureExt, StreamExt};
 use itertools::Itertools;
 use pade::PadeDecode;
+use uniswap_storage::v4::{UnpackedSlot0, pool_manager::pool_state::pool_manager_pool_slot0};
 use uniswap_v4::uniswap::{
     pool::EnhancedUniswapPool, pool_data_loader::DataLoader, pool_factory::INITIAL_TICKS_PER_SIDE
 };
 
 use super::utils::*;
-use crate::types::{
-    contracts::{UnpackedSlot0, pool_manager::pool_state::pool_manager_pool_slot0},
-    *
-};
+use crate::types::*;
 
 #[async_trait::async_trait]
 pub trait AngstromDataApi: Send + Sized {
@@ -508,8 +506,8 @@ impl<P: Provider> AngstromDataApi for P {
         Ok(pool_manager_pool_slot0(
             self.root(),
             *POOL_MANAGER_ADDRESS.get().unwrap(),
-            block_number,
-            pool_id
+            pool_id,
+            block_number
         )
         .await?)
     }

@@ -41,6 +41,7 @@ serde_json.workspace = true
 testing-tools.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+uniswap-storage.workspace = true
 uniswap-v4.workspace = true
 validation.workspace = true
 
@@ -57,7 +58,7 @@ revm = { workspace = true, features = ["alloydb"], default-features = false }
 revm-database.workspace = true
 
 [features]
-default = ["ipc", "ws"]
+default = ["ipc", "ws", "full"]
 full = ["ipc", "ws", "local-reth"]
 local-reth = [
     "dep:lib-reth",

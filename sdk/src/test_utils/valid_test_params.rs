@@ -11,8 +11,9 @@ use angstrom_types::{
         PoolId, try_init_with_chain_id
     }
 };
+use uniswap_storage::v4::UnpackedPositionInfo;
 
-use crate::{test_utils::spawn_angstrom_api, types::contracts::UnpackedPositionInfo};
+use crate::test_utils::spawn_angstrom_api;
 
 pub struct ValidPositionTestParameters {
     pub angstrom_address: Address,
