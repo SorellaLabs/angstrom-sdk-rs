@@ -5963,7 +5963,7 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 [[package]]
 name = "lib-reth"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-reth#c4a682a00b9ccc66a04c5cd9d4cf98e5c493050a"
+source = "git+https://github.com/jnoorchashm37/lib-reth#b7b31888ec547d70f7dfd16a9ecded405d0f9c8a"
 dependencies = [
  "alloy-consensus",
  "alloy-network",
@@ -5972,6 +5972,7 @@ dependencies = [
  "alloy-rpc-client",
  "alloy-rpc-types",
  "alloy-rpc-types-eth",
+ "async-trait",
  "exe-runners",
  "eyre",
  "futures",
@@ -5991,6 +5992,7 @@ dependencies = [
  "revm-database",
  "tokio",
  "tokio-stream",
+ "uniswap-storage",
 ]
 
 [[package]]
