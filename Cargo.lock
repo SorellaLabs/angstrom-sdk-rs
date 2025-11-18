@@ -5281,7 +5281,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.58.0",
+ "windows-core 0.61.2",
 ]
 
 [[package]]
@@ -11445,14 +11445,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39a276ed142b4718dcf64bc9624f474373ed82ef20611025045c3fb23edbef9c"
 dependencies = [
  "alloy-eips",
- "alloy-provider",
- "alloy-transport",
  "revm-bytecode 6.2.2",
  "revm-database-interface 7.0.5",
  "revm-primitives 20.2.1",
  "revm-state 7.0.5",
  "serde",
- "tokio",
 ]
 
 [[package]]
@@ -11483,7 +11480,6 @@ dependencies = [
  "revm-primitives 20.2.1",
  "revm-state 7.0.5",
  "serde",
- "tokio",
 ]
 
 [[package]]
@@ -13876,7 +13872,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "uniswap-storage"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/uniswap-storage#e6cfe2963bf572d629097f9ba5b908b1d1692d0a"
+source = "git+https://github.com/jnoorchashm37/uniswap-storage#1c9cabf3ddb68386850e265310c6c741d95fa67b"
 dependencies = [
  "alloy-eips",
  "alloy-network",
@@ -13891,7 +13887,7 @@ dependencies = [
  "reth-provider",
  "reth-rpc",
  "reth-rpc-convert",
- "revm-database 7.0.5",
+ "revm-database 9.0.6",
  "serde",
 ]
 
