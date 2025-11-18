@@ -58,12 +58,12 @@ malachite = "0.4"
 malachite-q = "0.4"
 pade = { git = "https://github.com/SorellaLabs/pade", version = "0.1.0" }
 rand = "0.9"
-reth-db = { git = "https://github.com/paradigmxyz/reth", version = "1.8.1", tag = "v1.8.1", default-features = false, features = [
+reth-db = { git = "https://github.com/paradigmxyz/reth", version = "1.9.3", tag = "v1.9.3", default-features = false, features = [
   "mdbx",
 ] }
-reth-node-ethereum = { git = "https://github.com/paradigmxyz/reth", version = "1.8.1", tag = "v1.8.1" }
-reth-node-types = { git = "https://github.com/paradigmxyz/reth", version = "1.8.1", tag = "v1.8.1" }
-reth-provider = { git = "https://github.com/paradigmxyz/reth", version = "1.8.1", tag = "v1.8.1" }
+reth-node-ethereum = { git = "https://github.com/paradigmxyz/reth", version = "1.9.3", tag = "v1.9.3" }
+reth-node-types = { git = "https://github.com/paradigmxyz/reth", version = "1.9.3", tag = "v1.9.3" }
+reth-provider = { git = "https://github.com/paradigmxyz/reth", version = "1.9.3", tag = "v1.9.3" }
 revm = { version = "33.1.0", features = [
   "std",
   "secp256k1",
