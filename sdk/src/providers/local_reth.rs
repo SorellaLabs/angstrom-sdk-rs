@@ -26,7 +26,7 @@ use angstrom_types::{
     reth_db_provider::{RethDbLayer, RethDbProvider}
 };
 use futures::StreamExt;
-use lib_reth::{EthApiServer, reth_libmdbx::RethLibmdbxClient, traits::EthRevm};
+use lib_reth::{EthApiServer, reth_libmdbx::RethNodeClient, traits::EthRevm};
 use pade::PadeDecode;
 use reth_db::DatabaseEnv;
 use reth_node_ethereum::EthereumNode;
@@ -70,12 +70,12 @@ pub type RethLayerProviderWrapperType<P> = FillProvider<
 
 #[derive(Clone)]
 pub struct RethDbProviderWrapper<P: Provider + Clone> {
-    db_client: Arc<RethLibmdbxClient>,
+    db_client: Arc<RethNodeClient>,
     provider:  P
 }
 
 impl<P: Provider + Clone> RethDbProviderWrapper<P> {
-    pub fn new(db_client: Arc<RethLibmdbxClient>, provider: P) -> Self {
+    pub fn new(db_client: Arc<RethNodeClient>, provider: P) -> Self {
         Self { db_client, provider }
     }
 
@@ -90,7 +90,7 @@ impl<P: Provider + Clone> RethDbProviderWrapper<P> {
             .connect_provider(self.provider.clone())
     }
 
-    pub fn db_client(&self) -> Arc<RethLibmdbxClient> {
+    pub fn db_client(&self) -> Arc<RethNodeClient> {
         self.db_client.clone()
     }
 
@@ -626,7 +626,7 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
 }
 
 pub(crate) fn reth_db_view_call<IC>(
-    provider: &RethLibmdbxClient,
+    provider: &RethNodeClient,
     block_number: Option<u64>,
     contract: Address,
     call: IC

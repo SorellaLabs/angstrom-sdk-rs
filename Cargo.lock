@@ -473,19 +473,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "alloy-op-hardforks"
-version = "0.4.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95ac97adaba4c26e17192d81f49186ac20c1e844e35a00e169c8d3d58bc84e6b"
-dependencies = [
- "alloy-chains",
- "alloy-hardforks 0.4.4",
- "alloy-primitives",
- "auto_impl",
- "serde",
-]
-
-[[package]]
 name = "alloy-primitives"
 version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6009,7 +5996,7 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 [[package]]
 name = "lib-reth"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-reth#52229ccfe544e8ebcb869b164fa686cf7d8b8823"
+source = "git+https://github.com/jnoorchashm37/lib-reth#5494b4b294004624f89831c951ef4a90e45e517f"
 dependencies = [
  "alloy-consensus",
  "alloy-network",
@@ -6027,8 +6014,8 @@ dependencies = [
  "reth-network-api",
  "reth-node-ethereum",
  "reth-node-types",
- "reth-optimism-chainspec",
  "reth-optimism-primitives",
+ "reth-primitives-traits 1.9.3",
  "reth-provider",
  "reth-revm",
  "reth-rpc",
@@ -6642,7 +6629,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1fa76a2c86f704bdb222d66965fb3d63269ce38518b83cb0575fca855ebb6316"
 dependencies = [
  "adler2",
- "serde",
 ]
 
 [[package]]
@@ -7037,25 +7023,6 @@ dependencies = [
  "derive_more",
  "serde",
  "serde_with",
- "thiserror 2.0.17",
-]
-
-[[package]]
-name = "op-alloy-rpc-types"
-version = "0.22.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc252b5fa74dbd33aa2f9a40e5ff9cfe34ed2af9b9b235781bc7cc8ec7d6aca8"
-dependencies = [
- "alloy-consensus",
- "alloy-eips",
- "alloy-network-primitives",
- "alloy-primitives",
- "alloy-rpc-types-eth",
- "alloy-serde",
- "derive_more",
- "op-alloy-consensus 0.22.1",
- "serde",
- "serde_json",
  "thiserror 2.0.17",
 ]
 
@@ -10140,43 +10107,6 @@ dependencies = [
  "reth-engine-primitives",
  "reth-payload-primitives",
  "reth-primitives-traits 1.9.3",
-]
-
-[[package]]
-name = "reth-optimism-chainspec"
-version = "1.9.3"
-source = "git+https://github.com/paradigmxyz/reth?tag=v1.9.3#27a8c0f5a6dfb27dea84c5751776ecabdd069646"
-dependencies = [
- "alloy-chains",
- "alloy-consensus",
- "alloy-eips",
- "alloy-genesis",
- "alloy-hardforks 0.4.4",
- "alloy-primitives",
- "derive_more",
- "miniz_oxide",
- "op-alloy-consensus 0.22.1",
- "op-alloy-rpc-types",
- "reth-chainspec 1.9.3",
- "reth-ethereum-forks 1.9.3",
- "reth-network-peers 1.9.3",
- "reth-optimism-forks",
- "reth-optimism-primitives",
- "reth-primitives-traits 1.9.3",
- "serde",
- "serde_json",
- "thiserror 2.0.17",
-]
-
-[[package]]
-name = "reth-optimism-forks"
-version = "1.9.3"
-source = "git+https://github.com/paradigmxyz/reth?tag=v1.9.3#27a8c0f5a6dfb27dea84c5751776ecabdd069646"
-dependencies = [
- "alloy-op-hardforks",
- "alloy-primitives",
- "once_cell",
- "reth-ethereum-forks 1.9.3",
 ]
 
 [[package]]
