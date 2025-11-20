@@ -88,6 +88,10 @@ where
         self.provider.node_client()
     }
 
+    pub fn rpc_provider(&self) -> P {
+        self.provider.rpc_provider()
+    }
+
     async fn get_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
         // let logs_res = self.db_client.eth_filter().logs(filter.clone()).await;
         // match logs_res {
