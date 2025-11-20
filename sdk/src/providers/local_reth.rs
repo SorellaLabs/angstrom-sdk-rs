@@ -2,12 +2,12 @@ use std::{collections::HashSet, sync::Arc};
 
 use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
-use alloy_network::Ethereum;
+use alloy_network::{Network, ReceiptResponse, TransactionResponse};
 use alloy_primitives::{
     Address, FixedBytes, TxHash, TxKind, U256,
     aliases::{I24, U24}
 };
-use alloy_provider::{Identity, Provider, ProviderBuilder, fillers::*};
+use alloy_provider::{Provider, fillers::*};
 use alloy_rpc_types::{Filter, Log};
 use alloy_sol_types::{SolCall, SolEvent};
 use angstrom_types::{
@@ -22,16 +22,16 @@ use angstrom_types::{
     primitive::{
         ANGSTROM_ADDRESS, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS,
         PoolId
-    },
-    reth_db_provider::{RethDbLayer, RethDbProvider}
+    }
 };
 use futures::StreamExt;
-use lib_reth::{DualRethNodeClient, EthApiServer, reth_libmdbx::RethNodeClient, traits::EthRevm};
+use lib_reth::{
+    DualRethNodeClient, EthApiServer,
+    reth_libmdbx::{NodeClientSpec, RethNodeClient},
+    traits::EthRevm
+};
 use pade::PadeDecode;
-use reth_db::DatabaseEnv;
-use reth_node_ethereum::EthereumNode;
-use reth_node_types::NodeTypesWithDBAdapter;
-use reth_provider::providers::BlockchainProvider;
+use reth_provider::BlockNumReader;
 use revm::{ExecuteEvm, context::TxEnv};
 use uniswap_storage::v4::{
     UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
@@ -60,21 +60,23 @@ use crate::{
     }
 };
 
-pub type RethLayerProviderWrapperType<P> = FillProvider<
-    JoinFill<
-        Identity,
-        JoinFill<GasFiller, JoinFill<BlobGasFiller, JoinFill<NonceFiller, ChainIdFiller>>>
-    >,
-    RethDbProvider<P, BlockchainProvider<NodeTypesWithDBAdapter<EthereumNode, Arc<DatabaseEnv>>>>
->;
-
 #[derive(Clone)]
-pub struct RethDbProviderWrapper<P: Provider + Clone> {
-    provider: DualRethNodeClient<EthereumNode, P, Ethereum>
+pub struct RethDbProviderWrapper<Node, P, N>
+where
+    Node: NodeClientSpec,
+    P: Provider<N> + Clone,
+    N: Network
+{
+    provider: DualRethNodeClient<Node, P, N>
 }
 
-impl<P: Provider + Clone> RethDbProviderWrapper<P> {
-    pub fn new(node_client: Arc<RethNodeClient<EthereumNode>>, provider: P) -> Self {
+impl<Node, P, N> RethDbProviderWrapper<Node, P, N>
+where
+    Node: NodeClientSpec,
+    P: Provider<N> + Clone,
+    N: Network
+{
+    pub fn new(node_client: Arc<RethNodeClient<Node>>, provider: P) -> Self {
         Self { provider: DualRethNodeClient::new(node_client, provider) }
     }
 
@@ -82,14 +84,7 @@ impl<P: Provider + Clone> RethDbProviderWrapper<P> {
         self.provider.replace_rpc_provider(provider);
     }
 
-    pub fn as_provider_with_db_layer(&self) -> RethLayerProviderWrapperType<P> {
-        ProviderBuilder::<_, _, Ethereum>::default()
-            .with_recommended_fillers()
-            .layer(RethDbLayer::new(self.provider.node_client().eth_db_provider().clone()))
-            .connect_provider(self.provider.rpc_provider().clone())
-    }
-
-    pub fn db_client(&self) -> Arc<RethNodeClient<EthereumNode>> {
+    pub fn db_client(&self) -> Arc<RethNodeClient<Node>> {
         self.provider.node_client()
     }
 
@@ -112,7 +107,12 @@ impl<P: Provider + Clone> RethDbProviderWrapper<P> {
 }
 
 #[async_trait::async_trait]
-impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
+impl<Node, P, N> AngstromDataApi for RethDbProviderWrapper<Node, P, N>
+where
+    Node: NodeClientSpec,
+    P: Provider<N> + Clone,
+    N: Network + RecommendedFillers
+{
     async fn tokens_by_partial_pool_key(
         &self,
         pool_partial_key: AngstromPoolPartialKey,
@@ -314,11 +314,11 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         let block_number = if let Some(bn) = block_number {
             bn
         } else {
-            self.db_client().eth_api().block_number()?.to()
+            lib_reth::helpers::EthApiSpec::chain_info(&self.db_client().eth_api())?.best_number
         };
 
         enhanced_uni_pool
-            .initialize(Some(block_number), Arc::new(self.as_provider_with_db_layer()))
+            .initialize(Some(block_number), Arc::new(self.provider.as_provider_with_db_layer()))
             .await?;
 
         Ok((block_number, enhanced_uni_pool))
@@ -331,7 +331,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         AngstromPoolConfigStore::load_from_chain(
             *ANGSTROM_ADDRESS.get().unwrap(),
             block_number.map(Into::into).unwrap_or(BlockId::latest()),
-            &self.as_provider_with_db_layer()
+            &self.provider.as_provider_with_db_layer()
         )
         .await
         .map_err(|e| eyre::eyre!("{e:?}"))
@@ -343,7 +343,7 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
         block_number: Option<u64>
     ) -> eyre::Result<UnpackedSlot0> {
         Ok(pool_manager_pool_slot0(
-            self,
+            &self.provider,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             pool_id,
             block_number
@@ -376,11 +376,11 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
                 let call = Angstrom::executeCall::abi_decode(input).ok()?;
                 let mut input = call.encoded.as_ref();
                 Some((
-                    *transaction.inner.tx_hash(),
+                    transaction.tx_hash(),
                     WithEthMeta::new(
-                        transaction.block_number,
-                        Some(*transaction.inner.tx_hash()),
-                        transaction.transaction_index,
+                        transaction.block_number(),
+                        Some(transaction.tx_hash()),
+                        transaction.transaction_index(),
                         AngstromBundle::pade_decode(&mut input, None).ok()?
                     )
                 ))
@@ -443,9 +443,9 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
             .and_then(|decoded| {
                 let mut input = decoded.encoded.as_ref();
                 Some(WithEthMeta::new(
-                    transaction.block_number,
-                    Some(*transaction.inner.tx_hash()),
-                    transaction.transaction_index,
+                    transaction.block_number(),
+                    Some(transaction.tx_hash()),
+                    transaction.transaction_index(),
                     AngstromBundle::pade_decode(&mut input, None).ok()?
                 ))
             }))
@@ -453,14 +453,19 @@ impl<P: Provider + Clone> AngstromDataApi for RethDbProviderWrapper<P> {
 }
 
 #[async_trait::async_trait]
-impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
+impl<Node, P, N> AngstromUserApi for RethDbProviderWrapper<Node, P, N>
+where
+    Node: NodeClientSpec,
+    P: Provider<N> + Clone,
+    N: Network + RecommendedFillers
+{
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,
         block_number: Option<u64>
     ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
-            self,
+            &self.db_client(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             block_number,
             position_token_id
@@ -485,7 +490,7 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
         block_number: Option<u64>
     ) -> eyre::Result<u128> {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
-            self,
+            &self.db_client(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             block_number,
             position_token_id
@@ -493,7 +498,7 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
         .await?;
 
         let liquidity = pool_manager_position_state_liquidity(
-            self,
+            &self.db_client(),
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             pool_key.into(),
@@ -525,15 +530,18 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
         }
 
         if end_token_id == U256::ZERO {
-            end_token_id =
-                position_manager_next_token_id(self, position_manager_address, block_number)
-                    .await?;
+            end_token_id = position_manager_next_token_id(
+                &self.db_client(),
+                position_manager_address,
+                block_number
+            )
+            .await?;
         }
 
         let mut all_positions = Vec::new();
         while start_token_id <= end_token_id {
             let owner_of = position_manager_owner_of(
-                self,
+                &self.db_client(),
                 position_manager_address,
                 block_number,
                 start_token_id
@@ -546,7 +554,7 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
             }
 
             let (pool_key, position_info) = position_manager_pool_key_and_info(
-                self,
+                &self.db_client(),
                 position_manager_address,
                 block_number,
                 start_token_id
@@ -563,7 +571,7 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
             }
 
             let liquidity = pool_manager_position_state_liquidity(
-                self,
+                &self.db_client(),
                 pool_manager_address,
                 position_manager_address,
                 pool_key.into(),
@@ -608,7 +616,7 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
         let slot0 = self.slot0_by_pool_id(pool_id, block_number).await?;
 
         Ok(position_fees(
-            self,
+            &self.db_client(),
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *ANGSTROM_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
@@ -624,13 +632,14 @@ impl<P: Provider + Clone> AngstromUserApi for RethDbProviderWrapper<P> {
     }
 }
 
-pub(crate) fn reth_db_view_call<IC>(
-    provider: &RethNodeClient<EthereumNode>,
+pub(crate) fn reth_db_view_call<Node, IC>(
+    provider: &RethNodeClient<Node>,
     block_number: Option<u64>,
     contract: Address,
     call: IC
 ) -> eyre::Result<Result<IC::Return, alloy_sol_types::Error>>
 where
+    Node: NodeClientSpec,
     IC: SolCall + Send
 {
     let tx = TxEnv {
@@ -639,8 +648,11 @@ where
         ..Default::default()
     };
 
-    let block_number =
-        if let Some(bn) = block_number { bn } else { provider.eth_api().block_number()?.to() };
+    let block_number = if let Some(bn) = block_number {
+        bn
+    } else {
+        provider.eth_db_provider().best_block_number()?
+    };
 
     let mut evm = provider.make_empty_evm(block_number)?;
 

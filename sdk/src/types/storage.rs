@@ -1,13 +1,20 @@
 #[cfg(feature = "local-reth")]
 mod reth_db_impls {
+    use alloy_network::Network;
     use alloy_primitives::{Address, StorageKey, StorageValue};
     use alloy_provider::Provider;
+    use lib_reth::reth_libmdbx::NodeClientSpec;
     use uniswap_storage::StorageSlotFetcher;
 
     use crate::providers::local_reth::RethDbProviderWrapper;
 
     #[async_trait::async_trait]
-    impl<P: Provider + Clone> StorageSlotFetcher for RethDbProviderWrapper<P> {
+    impl<Node, P, N> StorageSlotFetcher for RethDbProviderWrapper<Node, P, N>
+    where
+        Node: NodeClientSpec,
+        N: Network,
+        P: Provider<N> + Clone
+    {
         async fn storage_at(
             &self,
             address: Address,
@@ -16,7 +23,6 @@ mod reth_db_impls {
         ) -> eyre::Result<StorageValue> {
             Ok(self
                 .db_client()
-                .eth_api()
                 .storage_at(address, key.into(), block_number)
                 .await?)
         }
