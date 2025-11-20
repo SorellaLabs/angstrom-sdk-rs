@@ -76,8 +76,8 @@ where
     P: Provider<N> + Clone,
     N: Network
 {
-    pub fn new(node_client: Arc<RethNodeClient<Node>>, provider: P) -> Self {
-        Self { provider: DualRethNodeClient::new(node_client, provider) }
+    pub fn new(provider: DualRethNodeClient<Node, P, N>) -> Self {
+        Self { provider }
     }
 
     pub fn replace_provider(&mut self, provider: P) {
