@@ -691,7 +691,7 @@ where
     P: Provider<N> + Clone,
     N: Network<TransactionRequest = TransactionRequest>
 {
-    const UNLOCKED_FEES_SLOT: u64 = 3;
+    const UNLOCKED_FEES_SLOT: u64 = 2;
 
     let mut preimage = [0u8; 64];
     let key_bytes: &[u8; 27] = pool_partial_key.deref();

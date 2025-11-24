@@ -64,5 +64,5 @@ serde_json = "1.0"
 testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", default-features = false }
 thiserror = "1.0"
 tokio = { version = "1", features = ["full"] }
-uni-v4 = { git = "https://github.com/SorellaLabs/angstrom-v4.git" }
+uni-v4 = { git = "https://github.com/SorellaLabs/angstrom-v4.git", branch = "feat/refactor-for-single-pool" }
 uniswap-storage = { git = "https://github.com/jnoorchashm37/uniswap-storage" }

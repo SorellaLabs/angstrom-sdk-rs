@@ -167,7 +167,7 @@ pub trait AngstromNodeApi<T: AngstromOrderApiClient>: Send + Sync {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "example-utils"))]
 mod tests {
 
     use std::task::Poll;
@@ -207,7 +207,7 @@ mod tests {
             provider: &AngstromProvider<P, T>
         ) -> Result<Self, AngstromSdkError>
         where
-            P: Provider,
+            P: Provider + Clone,
             T: AngstromOrderApiClientClone
         {
             let (generator, _rx) = make_order_generator(provider).await.unwrap();

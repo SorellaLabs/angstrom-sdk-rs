@@ -18,6 +18,8 @@ use angstrom_types_primitives::{
         }
     }
 };
+#[cfg(feature = "example-utils")]
+#[cfg(feature = "example-utils")]
 use futures::future::try_join_all;
 use jsonrpsee_http_client::HttpClient;
 use revm::{
@@ -26,9 +28,14 @@ use revm::{
     primitives::hardfork::SpecId
 };
 use revm_database::{AlloyDB, CacheDB, EmptyDBTyped, WrapDatabaseAsync};
+#[cfg(feature = "example-utils")]
 use rust_utils::ToHashMapByKey;
-use testing_tools::order_generator::OrderGenerator;
-use tokio::{runtime::Handle, sync::Notify};
+use tokio::runtime::Handle;
+#[cfg(feature = "example-utils")]
+use tokio::sync::Notify;
+#[cfg(feature = "example-utils")]
+use testing_tools::order_generator::{InternalBalanceMode, OrderGenerator};
+#[cfg(feature = "example-utils")]
 use uni_v4::{
     baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
     pool_data_loader::DataLoader,
@@ -44,6 +51,7 @@ use crate::{
     test_utils::{AlloyRpcProvider, AngstromOrderApiClientClone}
 };
 
+#[cfg(feature = "example-utils")]
 pub async fn make_order_generator<P, T>(
     provider: &AngstromProvider<P, T>
 ) -> eyre::Result<(OrderGenerator<T>, tokio::sync::mpsc::Receiver<(TickRangeToLoad, Arc<Notify>)>)>
@@ -58,19 +66,11 @@ where
     let enhanced_pools = try_join_all(pools.into_iter().map(|pool_key| {
         let provider = provider.eth_provider().clone();
         async move {
-            let uni_pool_key = uni_v4::PoolKey {
-                currency0:   pool_key.pool_key.currency0,
-                currency1:   pool_key.pool_key.currency1,
-                fee:         pool_key.pool_fee_in_e6,
-                tickSpacing: pool_key.pool_key.tickSpacing,
-                hooks:       pool_key.pool_key.hooks
-            };
-
-            let public_pool_id = keccak256(uni_pool_key.abi_encode());
-            let mut private_pool_key = uni_pool_key;
+            let public_pool_id: PoolId = pool_key.pool_key.into();
+            let mut private_pool_key = pool_key.pool_key;
             private_pool_key.fee = U24::from(0x800000);
-            let private_pool_id = keccak256(private_pool_key.abi_encode());
-            let registry = vec![uni_pool_key].into();
+            let private_pool_id: PoolId = private_pool_key.into();
+            let registry = vec![pool_key.pool_key].into();
 
             let data_loader = DataLoader::new_with_registry(
                 private_pool_id,

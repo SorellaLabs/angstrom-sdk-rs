@@ -13,7 +13,7 @@ use angstrom_types_primitives::{
 };
 use uniswap_storage::v4::UnpackedPositionInfo;
 
-use crate::test_utils::spawn_angstrom_api;
+use crate::test_utils::{USDC, WETH, spawn_angstrom_api};
 
 pub struct ValidPositionTestParameters {
     pub angstrom_address: Address,
@@ -65,8 +65,8 @@ pub fn init_valid_position_params() -> ValidPositionTestParameters {
 
     let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
     let pool_key = PoolManager::PoolKey {
-        currency0:   address!("0x1c7d4b196cb0c7b01d743fbc6116a902379c7238"),
-        currency1:   address!("0xfff9976782d46cc05630d1f6ebab18b2324d6b14"),
+        currency0:   USDC,
+        currency1:   WETH,
         fee:         U24::from(0x800000),
         tickSpacing: I24::unchecked_from(10),
         hooks:       angstrom_address
@@ -77,19 +77,19 @@ pub fn init_valid_position_params() -> ValidPositionTestParameters {
         position_token_id,
         tick_lower,
         position_liquidity: 45448764343813,
-        block_number: 8642854,
-        current_pool_tick: I24::unchecked_from(190088),
+        block_number: 23870000,
+        current_pool_tick: I24::unchecked_from(196699),
         tick_upper,
         position_manager_pool_map_key,
         owner,
         pool_key,
         angstrom_address,
-        block_for_liquidity_add: 8642751,
-        valid_block_after_swaps: 8678399,
+        block_for_liquidity_add: 23871281,
+        valid_block_after_swaps: 23870004,
         pool_manager_address: *POOL_MANAGER_ADDRESS.get().unwrap(),
         position_manager_address: *POSITION_MANAGER_ADDRESS.get().unwrap(),
         controller_v1_address: *CONTROLLER_V1_ADDRESS.get().unwrap(),
-        bundle_tx_hash: b256!("0x9ce27e5b59826ceab910d59a526ad9cdb23df71adff51df9bca82e24577c458a")
+        bundle_tx_hash: b256!("0x0e154cbadc0af7195c7cd7fbb7110e68c79d1e453d2c6e315b3f6c4225f0dc79")
     }
 }
 
