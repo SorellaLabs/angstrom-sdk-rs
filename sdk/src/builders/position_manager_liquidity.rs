@@ -274,8 +274,8 @@ impl<M> PositionManagerLiquidityBuilder<M, TakePair> {
 
 /// Module containing Solidity function call definitions and types
 pub mod _liquidity_calls {
-    use alloy::sol;
-    use angstrom_types::contract_bindings::{
+    use alloy_sol_types::sol;
+    use angstrom_types_primitives::contract_bindings::{
         pool_manager::PoolManager, position_manager::PositionManager
     };
 
@@ -729,7 +729,7 @@ mod tests {
 
     #[test]
     fn test_pool_key_conversion_from_pool_manager() {
-        use angstrom_types::contract_bindings::pool_manager::PoolManager;
+        use angstrom_types_primitives::contract_bindings::pool_manager::PoolManager;
 
         let pm_key = PoolManager::PoolKey {
             currency0:   address!("1111111111111111111111111111111111111111"),
@@ -750,7 +750,7 @@ mod tests {
 
     #[test]
     fn test_pool_key_conversion_from_position_manager() {
-        use angstrom_types::contract_bindings::position_manager::PositionManager;
+        use angstrom_types_primitives::contract_bindings::position_manager::PositionManager;
 
         let pm_key = PositionManager::PoolKey {
             currency0:   address!("1111111111111111111111111111111111111111"),

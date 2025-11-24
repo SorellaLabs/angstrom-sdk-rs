@@ -1,17 +1,19 @@
 use std::{
     collections::{HashMap, HashSet},
+    ops::Deref,
     sync::Arc
 };
 
 use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
 use alloy_primitives::{
-    Address, FixedBytes, TxHash,
-    aliases::{I24, U24}
+    Address, FixedBytes, TxHash, U256,
+    aliases::{I24, U24},
+    keccak256
 };
 use alloy_provider::Provider;
 use alloy_sol_types::{SolCall, SolEvent};
-use angstrom_types::{
+use angstrom_types_primitives::{
     contract_bindings::{
         angstrom::Angstrom,
         controller_v_1::ControllerV1::getPoolByKeyCall,
@@ -22,13 +24,16 @@ use angstrom_types::{
     },
     primitive::{ANGSTROM_ADDRESS, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS, PoolId}
 };
-use futures::{FutureExt, StreamExt};
+use futures::StreamExt;
 use itertools::Itertools;
 use pade::PadeDecode;
-use uniswap_storage::v4::{UnpackedSlot0, pool_manager::pool_state::pool_manager_pool_slot0};
-use uniswap_v4::uniswap::{
-    pool::EnhancedUniswapPool, pool_data_loader::DataLoader, pool_factory::INITIAL_TICKS_PER_SIDE
+use uni_v4::{
+    BaselinePoolState, FeeConfiguration, PoolKey as UniPoolKey,
+    liquidity_base::BaselineLiquidity,
+    pool_data_loader::{DataLoader, PoolDataLoader},
+    sqrt_pricex96::SqrtPriceX96
 };
+use uniswap_storage::v4::{UnpackedSlot0, pool_manager::pool_state::pool_manager_pool_slot0};
 
 use super::utils::*;
 use crate::types::*;
@@ -218,13 +223,13 @@ pub trait AngstromDataApi: Send + Sized {
         token0: Address,
         token1: Address,
         block_number: Option<u64>
-    ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)>;
+    ) -> eyre::Result<(u64, BaselinePoolState)>;
 
     async fn pool_data_by_pool_id(
         &self,
         pool_id: PoolId,
         block_number: Option<u64>
-    ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
+    ) -> eyre::Result<(u64, BaselinePoolState)> {
         let pool_key = self.pool_key_by_pool_id(pool_id, block_number).await?;
         self.pool_data_by_tokens(
             pool_key.pool_key.currency0,
@@ -237,7 +242,7 @@ pub trait AngstromDataApi: Send + Sized {
     async fn all_pool_data(
         &self,
         block_number: Option<u64>
-    ) -> eyre::Result<Vec<(u64, EnhancedUniswapPool<DataLoader>)>> {
+    ) -> eyre::Result<Vec<(u64, BaselinePoolState)>> {
         let token_pairs = self.all_token_pairs(block_number).await?;
 
         let pools = futures::future::try_join_all(
@@ -273,7 +278,7 @@ pub trait AngstromDataApi: Send + Sized {
 }
 
 #[async_trait::async_trait]
-impl<P: Provider> AngstromDataApi for P {
+impl<P: Provider + Clone> AngstromDataApi for P {
     async fn tokens_by_partial_pool_key(
         &self,
         pool_partial_key: AngstromPoolPartialKey,
@@ -454,16 +459,28 @@ impl<P: Provider> AngstromDataApi for P {
         token0: Address,
         token1: Address,
         block_number: Option<u64>
-    ) -> eyre::Result<(u64, EnhancedUniswapPool<DataLoader>)> {
+    ) -> eyre::Result<(u64, BaselinePoolState)> {
         let (token0, token1) = sort_tokens(token0, token1);
 
         let pool_key = self
             .pool_key_by_tokens(token0, token1, block_number)
             .await?;
 
-        let public_pool_id = pool_key.as_angstrom_pool_id();
-        let private_pool_id: PoolId = pool_key.pool_key.into();
-        let registry = vec![pool_key.as_angstrom_pool_key_type()].into();
+        let pool_partial_key = AngstromPoolConfigStore::derive_store_key(token0, token1);
+
+        let uni_pool_key = UniPoolKey {
+            currency0:   pool_key.pool_key.currency0,
+            currency1:   pool_key.pool_key.currency1,
+            fee:         pool_key.pool_fee_in_e6,
+            tickSpacing: pool_key.pool_key.tickSpacing,
+            hooks:       pool_key.pool_key.hooks
+        };
+
+        let public_pool_id: PoolId = PoolId::from(uni_pool_key);
+        let mut private_pool_key = uni_pool_key;
+        private_pool_key.fee = U24::from(0x800000);
+        let private_pool_id: PoolId = PoolId::from(private_pool_key);
+        let registry = vec![uni_pool_key].into();
 
         let data_loader = DataLoader::new_with_registry(
             private_pool_id,
@@ -472,17 +489,39 @@ impl<P: Provider> AngstromDataApi for P {
             *POOL_MANAGER_ADDRESS.get().unwrap()
         );
 
-        let mut enhanced_uni_pool = EnhancedUniswapPool::new(data_loader, INITIAL_TICKS_PER_SIDE);
+        let block_number = match block_number {
+            Some(bn) => bn,
+            None => self.get_block_number().await?
+        };
 
-        let block_number =
-            if let Some(bn) = block_number { bn } else { self.get_block_number().await? };
-
-        enhanced_uni_pool
-            .initialize(Some(block_number), Arc::new(self))
-            .boxed()
+        let pool_data = data_loader
+            .load_pool_data(Some(block_number), Arc::new(self.clone()))
             .await?;
 
-        Ok((block_number, enhanced_uni_pool))
+        let fee_config =
+            fetch_fee_configuration(self, pool_partial_key, pool_key.pool_fee_in_e6, block_number)
+                .await?;
+
+        let baseline_liquidity = BaselineLiquidity::new(
+            pool_data.tickSpacing.as_i32(),
+            pool_data.tick.as_i32(),
+            SqrtPriceX96::from(pool_data.sqrtPrice),
+            pool_data.liquidity,
+            HashMap::new(),
+            HashMap::new()
+        );
+
+        let baseline_state = BaselinePoolState::new(
+            baseline_liquidity,
+            block_number,
+            fee_config,
+            pool_data.tokenA,
+            pool_data.tokenB,
+            pool_data.tokenADecimals,
+            pool_data.tokenBDecimals
+        );
+
+        Ok((block_number, baseline_state))
     }
 
     async fn pool_config_store(
@@ -595,6 +634,40 @@ impl<P: Provider> AngstromDataApi for P {
                 ))
             }))
     }
+}
+
+async fn fetch_fee_configuration<P: Provider + Clone>(
+    provider: &P,
+    pool_partial_key: AngstromPoolPartialKey,
+    bundle_fee: U24,
+    block_number: u64
+) -> eyre::Result<FeeConfiguration> {
+    // _unlockedFees mapping lives at storage slot 3 in Angstrom (TopLevelAuth).
+    const UNLOCKED_FEES_SLOT: u64 = 3;
+
+    let mut preimage = [0u8; 64];
+    let key_bytes: &[u8; 27] = pool_partial_key.deref();
+    preimage[..27].copy_from_slice(key_bytes);
+    preimage[32..].copy_from_slice(&U256::from(UNLOCKED_FEES_SLOT).to_be_bytes::<32>());
+    let slot = keccak256(preimage);
+
+    let raw = view_call(
+        provider,
+        Some(block_number),
+        *ANGSTROM_ADDRESS.get().unwrap(),
+        Angstrom::extsloadCall { slot: U256::from_be_bytes(*slot) }
+    )
+    .await??;
+
+    let bytes = raw.to_be_bytes::<32>();
+    let unlocked_fee = U24::from_be_bytes([bytes[29], bytes[30], bytes[31]]);
+    let protocol_fee = U24::from_be_bytes([bytes[26], bytes[27], bytes[28]]);
+
+    Ok(FeeConfiguration {
+        bundle_fee:   bundle_fee.to::<u32>(),
+        swap_fee:     unlocked_fee.to::<u32>(),
+        protocol_fee: protocol_fee.to::<u32>()
+    })
 }
 
 #[cfg(test)]
@@ -821,7 +894,6 @@ mod tests {
 
         assert_eq!(pool_data.token0, state.pool_key.currency0);
         assert_eq!(pool_data.token1, state.pool_key.currency1);
-        assert_eq!(pool_data.private_address(), PoolId::from(state.pool_key));
     }
 
     #[tokio::test]
@@ -835,7 +907,6 @@ mod tests {
 
         assert_eq!(pool_data.token0, state.pool_key.currency0);
         assert_eq!(pool_data.token1, state.pool_key.currency1);
-        assert_eq!(pool_data.private_address(), PoolId::from(state.pool_key));
     }
 
     #[tokio::test]

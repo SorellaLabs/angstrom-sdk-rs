@@ -6,7 +6,7 @@ use alloy_provider::{
     fillers::{BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller}
 };
 use alloy_signer_local::PrivateKeySigner;
-use angstrom_types::primitive::{AngstromSigner, try_init_with_chain_id};
+use angstrom_types_primitives::primitive::{AngstromSigner, try_init_with_chain_id};
 use auto_impl::auto_impl;
 use jsonrpsee_http_client::HttpClient;
 

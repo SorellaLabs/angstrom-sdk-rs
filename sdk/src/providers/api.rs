@@ -2,7 +2,7 @@ use alloy_network::TxSigner;
 use alloy_primitives::{Address, FixedBytes, Signature};
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
-use angstrom_types::sol_bindings::grouped_orders::AllOrders;
+use angstrom_types_primitives::sol_bindings::grouped_orders::AllOrders;
 use jsonrpsee_http_client::HttpClient;
 use jsonrpsee_ws_client::WsClient;
 

@@ -1,11 +1,11 @@
-use alloy::transports::TransportErrorKind;
 use alloy_eips::{BlockId, BlockNumberOrTag};
 use alloy_json_rpc::RpcError;
 use alloy_primitives::{Address, TxKind};
 use alloy_provider::Provider;
 use alloy_rpc_types::{Filter, TransactionInput, TransactionRequest};
 use alloy_sol_types::{SolCall, SolEvent};
-use angstrom_types::{
+use alloy_transport::TransportErrorKind;
+use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager,
     primitive::{ANGSTROM_DEPLOYED_BLOCK, POOL_MANAGER_ADDRESS}
 };

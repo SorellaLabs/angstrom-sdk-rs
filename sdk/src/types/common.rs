@@ -4,7 +4,7 @@ use alloy_primitives::{
     keccak256
 };
 use alloy_sol_types::SolValue;
-use angstrom_types::{
+use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager::PoolKey,
     contract_payloads::angstrom::AngPoolConfigEntry,
     primitive::{ANGSTROM_ADDRESS, PoolId}
@@ -102,8 +102,8 @@ impl PoolKeyWithAngstromFee {
 
     pub(crate) fn as_angstrom_pool_key_type(
         &self
-    ) -> angstrom_types::contract_bindings::angstrom::Angstrom::PoolKey {
-        angstrom_types::contract_bindings::angstrom::Angstrom::PoolKey {
+    ) -> angstrom_types_primitives::contract_bindings::angstrom::Angstrom::PoolKey {
+        angstrom_types_primitives::contract_bindings::angstrom::Angstrom::PoolKey {
             currency0:   self.pool_key.currency0,
             currency1:   self.pool_key.currency1,
             fee:         self.pool_fee_in_e6,

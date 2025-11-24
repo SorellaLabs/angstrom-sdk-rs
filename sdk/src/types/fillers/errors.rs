@@ -1,6 +1,6 @@
-use alloy::transports::TransportErrorKind;
 use alloy_json_rpc::RpcError;
 use alloy_primitives::{Address, U256};
+use alloy_transport::TransportErrorKind;
 
 #[derive(Debug, thiserror::Error)]
 pub enum FillerError {

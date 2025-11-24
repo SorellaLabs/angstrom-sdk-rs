@@ -4,7 +4,7 @@ use alloy_primitives::{
     b256
 };
 use alloy_provider::{Provider, RootProvider};
-use angstrom_types::{
+use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager,
     primitive::{
         ANGSTROM_ADDRESS, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS,

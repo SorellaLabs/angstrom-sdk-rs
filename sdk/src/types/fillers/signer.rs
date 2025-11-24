@@ -1,7 +1,7 @@
 use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
-use angstrom_types::{
+use angstrom_types_primitives::{
     primitive::ANGSTROM_DOMAIN,
     sol_bindings::{
         grouped_orders::AllOrders,
@@ -119,7 +119,7 @@ impl<S: Signer + SignerSync + Send + Sync + Clone> FillFrom<AngstromSignerFiller
 #[cfg(test)]
 mod tests {
     use alloy_signer_local::LocalSigner;
-    use angstrom_types::primitive::init_with_chain_id;
+    use angstrom_types_primitives::primitive::init_with_chain_id;
 
     use super::*;
     use crate::{

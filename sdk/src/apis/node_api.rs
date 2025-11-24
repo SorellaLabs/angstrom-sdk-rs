@@ -1,15 +1,13 @@
 use std::collections::HashSet;
 
 use alloy_primitives::{Address, B256, FixedBytes, TxHash, U256};
-use angstrom_rpc::{
-    api::OrderApiClient,
-    types::{
-        OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult, PendingOrder
-    }
+use angstrom_rpc_api::OrderApiClient;
+use angstrom_rpc_types::{
+    OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult, PendingOrder
 };
-use angstrom_types::{
-    orders::{CancelOrderRequest, OrderLocation, OrderStatus},
-    primitive::PoolId,
+use angstrom_types_primitives::{
+    orders::CancelOrderRequest,
+    primitive::{OrderLocation, OrderStatus, PoolId},
     sol_bindings::grouped_orders::AllOrders
 };
 use auto_impl::auto_impl;
@@ -175,7 +173,7 @@ mod tests {
     use std::task::Poll;
 
     use alloy_provider::Provider;
-    use angstrom_types::sol_bindings::{RawPoolOrder, rpc_orders::TopOfBlockOrder};
+    use angstrom_types_primitives::sol_bindings::{RawPoolOrder, rpc_orders::TopOfBlockOrder};
     use testing_tools::order_generator::GeneratedPoolOrders;
 
     use super::*;

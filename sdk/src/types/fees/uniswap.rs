@@ -1,5 +1,5 @@
 use alloy_primitives::{Address, U256, aliases::I24};
-use angstrom_types::primitive::PoolId;
+use angstrom_types_primitives::primitive::PoolId;
 use uniswap_storage::{
     StorageSlotFetcher,
     v4::pool_manager::position_state::{
@@ -51,7 +51,7 @@ pub async fn uniswap_fee_deltas<F: StorageSlotFetcher>(
 
 #[cfg(test)]
 mod tests {
-    use angstrom_types::primitive::{POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS};
+    use angstrom_types_primitives::primitive::{POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS};
 
     use super::*;
     use crate::test_utils::valid_test_params::init_valid_position_params_with_provider;

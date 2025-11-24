@@ -2,7 +2,7 @@ mod balance_check;
 pub mod errors;
 use alloy_primitives::Address;
 use alloy_provider::Provider;
-use angstrom_types::sol_bindings::grouped_orders::AllOrders;
+use angstrom_types_primitives::sol_bindings::grouped_orders::AllOrders;
 pub use balance_check::*;
 mod signer;
 use errors::FillerError;

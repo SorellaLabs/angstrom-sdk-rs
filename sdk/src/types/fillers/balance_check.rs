@@ -1,6 +1,6 @@
 use alloy_primitives::{Address, U256};
 use alloy_provider::Provider;
-use angstrom_types::{primitive::ERC20, sol_bindings::RawPoolOrder};
+use angstrom_types_primitives::{primitive::ERC20, sol_bindings::RawPoolOrder};
 
 use super::{AllOrders, FillWrapper, errors::FillerError};
 use crate::{

@@ -10,7 +10,6 @@ exclude.workspace = true
 name = "angstrom_sdk_rs"
 
 [dependencies]
-alloy.workspace = true
 alloy-consensus.workspace = true
 alloy-eips.workspace = true
 alloy-json-rpc.workspace = true
@@ -22,8 +21,10 @@ alloy-rpc-types.workspace = true
 alloy-signer.workspace = true
 alloy-signer-local.workspace = true
 alloy-sol-types.workspace = true
-angstrom-rpc.workspace = true
-angstrom-types.workspace = true
+alloy-transport.workspace = true
+angstrom-rpc-api.workspace = true
+angstrom-rpc-types.workspace = true
+angstrom-types-primitives.workspace = true
 async-trait.workspace = true
 auto_impl.workspace = true
 dotenv.workspace = true
@@ -38,12 +39,10 @@ rand.workspace = true
 rust-utils.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-testing-tools.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
+uni-v4.workspace = true
 uniswap-storage.workspace = true
-uniswap-v4.workspace = true
-validation.workspace = true
 
 lib-reth = { workspace = true, optional = true }
 reth-db = { workspace = true, optional = true }
@@ -52,10 +51,12 @@ reth-node-types = { workspace = true, optional = true }
 reth-provider = { workspace = true, optional = true }
 revm = { workspace = true, optional = true }
 revm-database = { workspace = true, features = ["alloydb"] }
+testing-tools = { workspace = true, optional = true }
 
 [dev-dependencies]
 revm = { workspace = true, features = ["alloydb"], default-features = false }
 revm-database.workspace = true
+testing-tools.workspace = true
 
 [features]
 default = ["ipc", "ws", "full"]
@@ -72,4 +73,4 @@ local-reth = [
 ipc = []
 ws = []
 
-example-utils = ["revm/alloydb"]
+example-utils = ["revm/alloydb", "dep:testing-tools"]

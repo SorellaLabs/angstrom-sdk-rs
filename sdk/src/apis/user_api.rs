@@ -1,6 +1,6 @@
 use alloy_primitives::{Address, B256, U256};
 use alloy_provider::Provider;
-use angstrom_types::{
+use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager::PoolKey,
     primitive::{ANGSTROM_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS, PoolId}
 };
@@ -48,7 +48,7 @@ pub trait AngstromUserApi: AngstromDataApi {
 }
 
 #[async_trait::async_trait]
-impl<P: Provider> AngstromUserApi for P {
+impl<P: Provider + Clone> AngstromUserApi for P {
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,

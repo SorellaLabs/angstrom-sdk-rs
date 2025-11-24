@@ -5,11 +5,11 @@ use std::{
 
 use alloy_eips::BlockId;
 use alloy_node_bindings::{Anvil, AnvilInstance};
-use alloy_primitives::{Address, TxKind, U256, keccak256};
+use alloy_primitives::{Address, TxKind, U256, aliases::U24, keccak256};
 use alloy_provider::{Provider, RootProvider, ext::AnvilApi};
 use alloy_sol_types::{SolCall, SolValue};
-use angstrom_types::{
-    primitive::ERC20,
+use angstrom_types_primitives::{
+    primitive::{ERC20, POOL_MANAGER_ADDRESS, PoolId},
     sol_bindings::{
         grouped_orders::AllOrders,
         rpc_orders::{
@@ -18,6 +18,7 @@ use angstrom_types::{
         }
     }
 };
+use futures::future::try_join_all;
 use jsonrpsee_http_client::HttpClient;
 use revm::{
     Context, ExecuteEvm, MainBuilder,
@@ -26,9 +27,16 @@ use revm::{
 };
 use revm_database::{AlloyDB, CacheDB, EmptyDBTyped, WrapDatabaseAsync};
 use rust_utils::ToHashMapByKey;
-use testing_tools::order_generator::{InternalBalanceMode, OrderGenerator};
+use testing_tools::order_generator::OrderGenerator;
 use tokio::{runtime::Handle, sync::Notify};
-use uniswap_v4::uniswap::pool_manager::{SyncedUniswapPools, TickRangeToLoad};
+use uni_v4::{
+    baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
+    pool_data_loader::DataLoader,
+    uniswap::{
+        pool::EnhancedUniswapPool,
+        pool_manager::{SyncedUniswapPools, TickRangeToLoad}
+    }
+};
 
 use crate::{
     apis::{AngstromNodeApi, data_api::AngstromDataApi},
@@ -40,16 +48,50 @@ pub async fn make_order_generator<P, T>(
     provider: &AngstromProvider<P, T>
 ) -> eyre::Result<(OrderGenerator<T>, tokio::sync::mpsc::Receiver<(TickRangeToLoad, Arc<Notify>)>)>
 where
-    P: Provider,
+    P: Provider + Clone,
     T: AngstromOrderApiClientClone
 {
     let block_number = provider.eth_provider().get_block_number().await?;
 
-    let uniswap_pools = provider
-        .all_pool_data(Some(block_number))
-        .await?
+    let pools = provider.all_pool_keys(Some(block_number)).await?;
+
+    let enhanced_pools = try_join_all(pools.into_iter().map(|pool_key| {
+        let provider = provider.eth_provider().clone();
+        async move {
+            let uni_pool_key = uni_v4::PoolKey {
+                currency0:   pool_key.pool_key.currency0,
+                currency1:   pool_key.pool_key.currency1,
+                fee:         pool_key.pool_fee_in_e6,
+                tickSpacing: pool_key.pool_key.tickSpacing,
+                hooks:       pool_key.pool_key.hooks
+            };
+
+            let public_pool_id = keccak256(uni_pool_key.abi_encode());
+            let mut private_pool_key = uni_pool_key;
+            private_pool_key.fee = U24::from(0x800000);
+            let private_pool_id = keccak256(private_pool_key.abi_encode());
+            let registry = vec![uni_pool_key].into();
+
+            let data_loader = DataLoader::new_with_registry(
+                private_pool_id,
+                public_pool_id,
+                registry,
+                *POOL_MANAGER_ADDRESS.get().unwrap()
+            );
+
+            let mut pool = EnhancedUniswapPool::new(data_loader, INITIAL_TICKS_PER_SIDE);
+            pool.initialize(Some(block_number), Arc::new(provider))
+                .await?;
+            eyre::Ok((public_pool_id, Arc::new(RwLock::new(pool))))
+        }
+    }))
+    .await?
+    .into_iter()
+    .collect::<Vec<_>>();
+
+    let uniswap_pools = enhanced_pools
         .into_iter()
-        .hashmap_by_key_val(|(_, pool)| (pool.public_address(), Arc::new(RwLock::new(pool))));
+        .hashmap_by_key_val(|(id, pool)| (id, pool));
     let cloned = provider.angstrom_rpc_provider().clone();
 
     let (tx, rx) = tokio::sync::mpsc::channel(100);

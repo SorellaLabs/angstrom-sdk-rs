@@ -2,7 +2,7 @@ mod angstrom;
 use alloy_primitives::{Address, U256, aliases::I24};
 pub use angstrom::*;
 mod uniswap;
-use angstrom_types::primitive::PoolId;
+use angstrom_types_primitives::primitive::PoolId;
 pub use uniswap::*;
 use uniswap_storage::{
     StorageSlotFetcher,
@@ -82,7 +82,7 @@ pub async fn position_fees<F: StorageSlotFetcher>(
 
 #[cfg(test)]
 mod tests {
-    use angstrom_types::primitive::{
+    use angstrom_types_primitives::primitive::{
         ANGSTROM_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS
     };
 

@@ -3,7 +3,7 @@ pub mod api;
 pub mod local_reth;
 use std::marker::PhantomData;
 
-use angstrom_types::primitive::{AngstromAddressBuilder, init_with_chain_id};
+use angstrom_types_primitives::primitive::{AngstromAddressBuilder, init_with_chain_id};
 pub use api::AngstromApi;
 pub(crate) mod backend;
 
