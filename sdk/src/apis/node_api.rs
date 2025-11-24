@@ -8,8 +8,8 @@ use angstrom_rpc::{
     }
 };
 use angstrom_types::{
-    orders::{CancelOrderRequest, OrderLocation, OrderStatus},
-    primitive::PoolId,
+    orders::CancelOrderRequest,
+    primitive::{OrderLocation, OrderStatus, PoolId},
     sol_bindings::grouped_orders::AllOrders
 };
 use auto_impl::auto_impl;
