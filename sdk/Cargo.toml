@@ -50,7 +50,7 @@ reth-db = { workspace = true, optional = true }
 reth-node-ethereum = { workspace = true, optional = true }
 reth-node-types = { workspace = true, optional = true }
 reth-provider = { workspace = true, optional = true }
-revm.workspace = true
+revm = { workspace = true, optional = true }
 revm-database = { workspace = true, features = ["alloydb"] }
 
 [dev-dependencies]
@@ -58,9 +58,16 @@ revm = { workspace = true, features = ["alloydb"], default-features = false }
 revm-database.workspace = true
 
 [features]
-default = ["ipc", "ws"]
+default = ["ipc", "ws", "full"]
 full = ["ipc", "ws", "local-reth"]
-local-reth = ["dep:lib-reth", "dep:reth-db", "dep:reth-node-ethereum", "dep:reth-node-types", "dep:reth-provider"]
+local-reth = [
+    "dep:lib-reth",
+    "dep:revm",
+    "dep:reth-db",
+    "dep:reth-node-ethereum",
+    "dep:reth-node-types",
+    "dep:reth-provider",
+]
 
 ipc = []
 ws = []

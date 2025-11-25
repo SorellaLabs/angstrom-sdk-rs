@@ -35,6 +35,7 @@ pub struct ValidPositionTestParameters {
     pub valid_block_after_swaps: u64
 }
 
+#[cfg(not(feature = "local-reth"))]
 pub async fn init_valid_position_params_with_provider()
 -> (RootProvider, ValidPositionTestParameters) {
     let params = init_valid_position_params();
@@ -47,6 +48,41 @@ pub async fn init_valid_position_params_with_provider()
         .clone();
 
     (provider, params)
+}
+
+#[cfg(feature = "local-reth")]
+pub async fn init_valid_position_params_with_provider() -> (
+    crate::providers::local_reth::RethDbProviderWrapper<
+        lib_reth::EthereumNode,
+        RootProvider,
+        alloy_network::Ethereum
+    >,
+    ValidPositionTestParameters
+) {
+    use std::sync::Arc;
+
+    use lib_reth::{DualRethNodeClient, MAINNET, reth_libmdbx::RethNodeClientBuilder};
+
+    use crate::providers::local_reth::RethDbProviderWrapper;
+
+    let params = init_valid_position_params();
+    let rpc_provider = spawn_angstrom_api()
+        .await
+        .unwrap()
+        .eth_provider()
+        .clone()
+        .root()
+        .clone();
+    let provider = DualRethNodeClient::new(
+        Arc::new(
+            RethNodeClientBuilder::new("/var/lib/eth/mainnet/reth/", 1000, MAINNET.clone())
+                .build()
+                .unwrap()
+        ),
+        rpc_provider
+    );
+
+    (RethDbProviderWrapper::new(provider), params)
 }
 
 pub fn init_valid_position_params() -> ValidPositionTestParameters {

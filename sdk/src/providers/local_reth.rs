@@ -8,13 +8,13 @@ use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
 use alloy_network::{Network, ReceiptResponse, TransactionResponse};
 use alloy_primitives::{
-    Address, FixedBytes, TxHash, TxKind, U256,
+    Address, Bytes, FixedBytes, TxHash, TxKind, U256,
     aliases::{I24, U24},
     keccak256
 };
 use alloy_provider::{Provider, fillers::*};
-use alloy_rpc_types::{Filter, Log, TransactionInput, TransactionRequest};
-use alloy_sol_types::{SolCall, SolEvent};
+use alloy_rpc_types::{Filter, Log, TransactionRequest};
+use alloy_sol_types::{SolCall, SolEvent, SolType};
 use angstrom_types_primitives::{
     contract_bindings::{
         angstrom::Angstrom,
@@ -40,9 +40,10 @@ use reth_provider::BlockNumReader;
 use revm::{ExecuteEvm, context::TxEnv};
 use uni_v4::{
     BaselinePoolState, FeeConfiguration, PoolKey as UniPoolKey,
+    baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
     liquidity_base::BaselineLiquidity,
-    pool_data_loader::{DataLoader, PoolDataLoader},
-    sqrt_pricex96::SqrtPriceX96
+    loaders::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
+    pool_data_loader::{PoolData, PoolDataV4}
 };
 use uniswap_storage::v4::{
     UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
@@ -65,7 +66,8 @@ use crate::{
     types::{
         fees::{LiquidityPositionFees, position_fees},
         *
-    }
+    },
+    utils::pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader}
 };
 
 #[derive(Clone)]
@@ -302,15 +304,19 @@ where
         &self,
         token0: Address,
         token1: Address,
+        load_ticks: bool,
         block_number: Option<u64>
     ) -> eyre::Result<(u64, BaselinePoolState)> {
+        let block_number = if let Some(bn) = block_number {
+            bn
+        } else {
+            lib_reth::helpers::EthApiSpec::chain_info(&self.db_client().eth_api())?.best_number
+        };
         let (token0, token1) = sort_tokens(token0, token1);
 
         let pool_key = self
-            .pool_key_by_tokens(token0, token1, block_number)
+            .pool_key_by_tokens(token0, token1, Some(block_number))
             .await?;
-
-        let pool_partial_key = AngstromPoolConfigStore::derive_store_key(token0, token1);
 
         let uni_pool_key = UniPoolKey {
             currency0:   pool_key.pool_key.currency0,
@@ -320,44 +326,61 @@ where
             hooks:       pool_key.pool_key.hooks
         };
 
-        let public_pool_id: PoolId = PoolId::from(uni_pool_key);
-        let mut private_pool_key = uni_pool_key;
-        private_pool_key.fee = U24::from(0x800000);
-        let private_pool_id: PoolId = PoolId::from(private_pool_key);
-        let registry = vec![uni_pool_key].into();
+        let pool_id: PoolId = pool_key.into();
 
-        let data_loader = DataLoader::new_with_registry(
-            private_pool_id,
-            public_pool_id,
-            registry,
-            *POOL_MANAGER_ADDRESS.get().unwrap()
-        );
+        let data_deployer_call = GetUniswapV4PoolData::deploy_builder(
+            &self.rpc_provider(),
+            pool_id,
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            pool_key.pool_key.currency0,
+            pool_key.pool_key.currency1
+        )
+        .into_transaction_request();
 
-        let block_number = if let Some(bn) = block_number {
-            bn
-        } else {
-            lib_reth::helpers::EthApiSpec::chain_info(&self.db_client().eth_api())?.best_number
-        };
+        let out_pool_data = reth_db_deploy_call::<_, PoolDataV4>(
+            &self.db_client(),
+            Some(block_number),
+            alloy_network::TransactionBuilder::input(&data_deployer_call)
+                .cloned()
+                .unwrap_or_default()
+        )??;
+        let pool_data: PoolData = (uni_pool_key, out_pool_data).into();
 
-        let pool_data = data_loader
-            .load_pool_data(Some(block_number), Arc::new(self.provider.as_provider_with_db_layer()))
+        let fee_config = self
+            .fee_configuration_by_tokens(
+                pool_key.pool_key.currency0,
+                pool_key.pool_key.currency1,
+                Some(pool_key.pool_fee_in_e6),
+                Some(block_number)
+            )
             .await?;
 
-        let fee_config = fetch_fee_configuration(
-            &self.provider.rpc_provider(),
-            pool_partial_key,
-            pool_key.pool_fee_in_e6,
-            block_number
-        )
-        .await?;
+        let (ticks, tick_bitmap) = if load_ticks {
+            self.load_tick_data_in_band(
+                pool_id,
+                pool_data.tick.as_i32(),
+                uni_pool_key.tickSpacing.as_i32(),
+                Some(block_number),
+                INITIAL_TICKS_PER_SIDE,
+                DEFAULT_TICKS_PER_BATCH
+            )
+            .await?
+        } else {
+            (HashMap::default(), HashMap::default())
+        };
+
+        let liquidity = pool_data.liquidity;
+        let sqrt_price_x96 = pool_data.sqrtPrice.into();
+        let tick = pool_data.tick.as_i32();
+        let tick_spacing = pool_data.tickSpacing.as_i32();
 
         let baseline_liquidity = BaselineLiquidity::new(
-            pool_data.tickSpacing.as_i32(),
-            pool_data.tick.as_i32(),
-            SqrtPriceX96::from(pool_data.sqrtPrice),
-            pool_data.liquidity,
-            HashMap::new(),
-            HashMap::new()
+            tick_spacing,
+            tick,
+            sqrt_price_x96,
+            liquidity,
+            ticks,
+            tick_bitmap
         );
 
         let baseline_state = BaselinePoolState::new(
@@ -498,6 +521,49 @@ where
                     AngstromBundle::pade_decode(&mut input, None).ok()?
                 ))
             }))
+    }
+
+    async fn fee_configuration_by_tokens(
+        &self,
+        token0: Address,
+        token1: Address,
+        bundle_fee: Option<U24>,
+        block_number: Option<u64>
+    ) -> eyre::Result<FeeConfiguration> {
+        const UNLOCKED_FEES_SLOT: u64 = 2;
+
+        let pool_partial_key = AngstromPoolConfigStore::derive_store_key(token0, token1);
+
+        let mut preimage = [0u8; 64];
+        let key_bytes: &[u8; 27] = pool_partial_key.deref();
+        preimage[..27].copy_from_slice(key_bytes);
+        preimage[32..].copy_from_slice(&U256::from(UNLOCKED_FEES_SLOT).to_be_bytes::<32>());
+        let slot = keccak256(preimage);
+
+        let bundle_fee = if let Some(f) = bundle_fee {
+            f
+        } else {
+            self.pool_key_by_tokens(token0, token1, block_number)
+                .await?
+                .pool_fee_in_e6
+        };
+
+        let raw = reth_db_view_call(
+            &self.db_client(),
+            block_number,
+            *ANGSTROM_ADDRESS.get().unwrap(),
+            Angstrom::extsloadCall { slot: U256::from_be_bytes(*slot) }
+        )??;
+
+        let bytes = raw.to_be_bytes::<32>();
+        let unlocked_fee = U24::from_be_bytes([bytes[29], bytes[30], bytes[31]]);
+        let protocol_fee = U24::from_be_bytes([bytes[26], bytes[27], bytes[28]]);
+
+        Ok(FeeConfiguration {
+            bundle_fee:   bundle_fee.to::<u32>(),
+            swap_fee:     unlocked_fee.to::<u32>(),
+            protocol_fee: protocol_fee.to::<u32>()
+        })
     }
 }
 
@@ -681,46 +747,6 @@ where
     }
 }
 
-async fn fetch_fee_configuration<P, N>(
-    provider: &P,
-    pool_partial_key: AngstromPoolPartialKey,
-    bundle_fee: U24,
-    block_number: u64
-) -> eyre::Result<FeeConfiguration>
-where
-    P: Provider<N> + Clone,
-    N: Network<TransactionRequest = TransactionRequest>
-{
-    const UNLOCKED_FEES_SLOT: u64 = 2;
-
-    let mut preimage = [0u8; 64];
-    let key_bytes: &[u8; 27] = pool_partial_key.deref();
-    preimage[..27].copy_from_slice(key_bytes);
-    preimage[32..].copy_from_slice(&U256::from(UNLOCKED_FEES_SLOT).to_be_bytes::<32>());
-    let slot = keccak256(preimage);
-
-    let call = Angstrom::extsloadCall { slot: U256::from_be_bytes(*slot) };
-    let tx = TransactionRequest {
-        to: Some(TxKind::Call(*ANGSTROM_ADDRESS.get().unwrap())),
-        input: TransactionInput::both(call.abi_encode().into()),
-        ..Default::default()
-    };
-
-    let data = provider.call(tx).block(block_number.into()).await?;
-
-    let raw = Angstrom::extsloadCall::abi_decode_returns(&data)?;
-
-    let bytes = raw.to_be_bytes::<32>();
-    let unlocked_fee = U24::from_be_bytes([bytes[29], bytes[30], bytes[31]]);
-    let protocol_fee = U24::from_be_bytes([bytes[26], bytes[27], bytes[28]]);
-
-    Ok(FeeConfiguration {
-        bundle_fee:   bundle_fee.to::<u32>(),
-        swap_fee:     unlocked_fee.to::<u32>(),
-        protocol_fee: protocol_fee.to::<u32>()
-    })
-}
-
 pub(crate) fn reth_db_view_call<Node, IC>(
     provider: &RethNodeClient<Node>,
     block_number: Option<u64>,
@@ -748,4 +774,372 @@ where
     let data = evm.transact(tx)?;
 
     Ok(IC::abi_decode_returns(data.result.output().unwrap_or_default()))
+}
+
+pub(crate) fn reth_db_deploy_call<Node, IC>(
+    provider: &RethNodeClient<Node>,
+    block_number: Option<u64>,
+    call_data: Bytes
+) -> eyre::Result<Result<IC::RustType, alloy_sol_types::Error>>
+where
+    Node: NodeClientSpec,
+    IC: SolType + Send
+{
+    let tx = TxEnv { kind: TxKind::Create, data: call_data, ..Default::default() };
+
+    let block_number = if let Some(bn) = block_number {
+        bn
+    } else {
+        provider.eth_db_provider().best_block_number()?
+    };
+
+    let mut evm = provider.make_empty_evm(block_number)?;
+
+    let data = evm.transact(tx)?;
+
+    Ok(IC::abi_decode(data.result.output().unwrap_or_default()))
+}
+
+#[cfg(test)]
+mod tests {
+
+    use alloy_primitives::aliases::U24;
+
+    use super::*;
+    use crate::test_utils::{
+        USDC, WETH, valid_test_params::init_valid_position_params_with_provider
+    };
+
+    #[tokio::test]
+    async fn test_fetch_fee_configuration() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let fee_config = provider
+            .fee_configuration_by_tokens(USDC, WETH, None, Some(state.block_number))
+            .await
+            .unwrap();
+
+        assert_eq!(
+            FeeConfiguration { bundle_fee: 200, swap_fee: 238, protocol_fee: 112 },
+            fee_config
+        );
+    }
+
+    #[tokio::test]
+    async fn test_tokens_by_partial_pool_key() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let token_pair = provider
+            .tokens_by_partial_pool_key(
+                AngstromPoolConfigStore::derive_store_key(
+                    state.pool_key.currency0,
+                    state.pool_key.currency1
+                ),
+                Some(state.block_number)
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(token_pair.token0, state.pool_key.currency0);
+        assert_eq!(token_pair.token1, state.pool_key.currency1);
+    }
+
+    #[tokio::test]
+    async fn test_all_token_pairs_with_config_store() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let config_store = provider
+            .pool_config_store(Some(state.block_number))
+            .await
+            .unwrap();
+
+        let all_pairs = provider
+            .all_token_pairs_with_config_store(config_store, Some(state.block_number))
+            .await
+            .unwrap();
+
+        assert_eq!(all_pairs.len(), 2);
+        assert!(!all_pairs.contains(&TokenPair { token0: Address::ZERO, token1: Address::ZERO }));
+    }
+
+    #[tokio::test]
+    async fn test_all_token_pairs() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let all_pairs = provider
+            .all_token_pairs(Some(state.block_number))
+            .await
+            .unwrap();
+
+        assert_eq!(all_pairs.len(), 2);
+        assert!(!all_pairs.contains(&TokenPair { token0: Address::ZERO, token1: Address::ZERO }));
+    }
+
+    #[tokio::test]
+    async fn test_all_tokens() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let all_tokens = provider.all_tokens(Some(state.block_number)).await.unwrap();
+
+        assert_eq!(all_tokens.len(), 3);
+        assert!(!all_tokens.contains(&Address::ZERO));
+    }
+
+    #[tokio::test]
+    async fn test_all_tokens_with_config_store() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+        let config_store = provider
+            .pool_config_store(Some(state.block_number))
+            .await
+            .unwrap();
+
+        let all_tokens = provider
+            .all_tokens_with_config_store(config_store, Some(state.block_number))
+            .await
+            .unwrap();
+
+        assert_eq!(all_tokens.len(), 3);
+        assert!(!all_tokens.contains(&Address::ZERO));
+    }
+
+    #[tokio::test]
+    async fn test_pool_key_by_tokens() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let pool_key = provider
+            .pool_key_by_tokens(
+                state.pool_key.currency0,
+                state.pool_key.currency1,
+                Some(state.block_number)
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(
+            pool_key,
+            PoolKeyWithAngstromFee {
+                pool_fee_in_e6: U24::from(200_u16),
+                pool_key:       state.pool_key
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn test_pool_key_by_pool_id() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let pool_key = provider
+            .pool_key_by_pool_id(state.pool_key.into(), Some(state.block_number))
+            .await
+            .unwrap();
+
+        assert_eq!(
+            pool_key,
+            PoolKeyWithAngstromFee {
+                pool_fee_in_e6: U24::from(200_u16),
+                pool_key:       state.pool_key
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn test_pool_id() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let pool_key = provider
+            .pool_id(state.pool_key.currency0, state.pool_key.currency1, Some(state.block_number))
+            .await
+            .unwrap();
+
+        assert_eq!(pool_key, PoolId::from(state.pool_key));
+    }
+
+    #[tokio::test]
+    async fn test_pool_key_by_pool_id_with_config_store() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+        let config_store = provider
+            .pool_config_store(Some(state.block_number))
+            .await
+            .unwrap();
+
+        let pool_key = provider
+            .pool_key_by_pool_id_with_config_store(
+                state.pool_key.into(),
+                config_store,
+                Some(state.block_number)
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(
+            pool_key,
+            PoolKeyWithAngstromFee {
+                pool_fee_in_e6: U24::from(200_u16),
+                pool_key:       state.pool_key
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn test_historical_orders() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let filter = HistoricalOrdersFilter::new()
+            .from_block(state.valid_block_after_swaps)
+            .to_block(state.valid_block_after_swaps)
+            .order_kind(OrderKind::User);
+        let orders = provider.historical_orders(filter, None).await.unwrap();
+
+        assert_eq!(orders.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_historical_bundles() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let orders = provider
+            .historical_bundles(
+                Some(state.valid_block_after_swaps),
+                Some(state.valid_block_after_swaps),
+                None
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(orders.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_historical_liquidity_changes() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let modify_liquidity = provider
+            .historical_liquidity_changes(
+                Some(state.block_for_liquidity_add),
+                Some(state.block_for_liquidity_add)
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(modify_liquidity.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_pool_data_by_tokens() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let (_, pool_data) = provider
+            .pool_data_by_tokens(
+                state.pool_key.currency0,
+                state.pool_key.currency1,
+                true,
+                Some(state.block_number)
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(pool_data.token0, state.pool_key.currency0);
+        assert_eq!(pool_data.token1, state.pool_key.currency1);
+        assert!(
+            !pool_data
+                .get_baseline_liquidity()
+                .initialized_ticks()
+                .is_empty()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_pool_data_by_pool_id() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let (_, pool_data) = provider
+            .pool_data_by_pool_id(PoolId::from(state.pool_key), true, Some(state.block_number))
+            .await
+            .unwrap();
+
+        assert_eq!(pool_data.token0, state.pool_key.currency0);
+        assert_eq!(pool_data.token1, state.pool_key.currency1);
+        assert!(
+            !pool_data
+                .get_baseline_liquidity()
+                .initialized_ticks()
+                .is_empty()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_all_pool_data() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let all_pool_data = provider
+            .all_pool_data(true, Some(state.block_number))
+            .await
+            .unwrap();
+
+        assert_eq!(all_pool_data.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_pool_config_store() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let config_store = provider
+            .pool_config_store(Some(state.block_number))
+            .await
+            .unwrap();
+
+        assert_eq!(config_store.all_entries().len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_slot0_by_pool_id() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let slot0 = provider
+            .slot0_by_pool_id(PoolId::from(state.pool_key), Some(state.block_number))
+            .await
+            .unwrap();
+
+        assert_eq!(slot0.tick, state.current_pool_tick);
+    }
+
+    #[tokio::test]
+    async fn test_slot0_by_tokens() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let slot0 = provider
+            .slot0_by_tokens(
+                state.pool_key.currency0,
+                state.pool_key.currency1,
+                Some(state.block_number)
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(slot0.tick, state.current_pool_tick);
+    }
+
+    #[tokio::test]
+    async fn test_get_bundle_by_block() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let bundle = provider
+            .get_bundle_by_block(state.valid_block_after_swaps, true)
+            .await
+            .unwrap();
+
+        assert!(bundle.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_get_bundle_by_tx_hash() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let bundle = provider
+            .get_bundle_by_tx_hash(state.bundle_tx_hash, true)
+            .await
+            .unwrap();
+
+        assert!(bundle.is_some());
+    }
 }

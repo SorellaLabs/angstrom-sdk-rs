@@ -1,3 +1,4 @@
+mod local_reth;
 mod root_provider;
 
 use alloy_primitives::{BlockNumber, U256, aliases::I24};
