@@ -61,6 +61,7 @@ revm-database = { version = "9.0.5", default-features = false }
 rust-utils = { git = "https://github.com/jnoorchashm37/rust-utils.git" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serial_test = "3.2"
 testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", default-features = false }
 thiserror = "1.0"
 tokio = { version = "1", features = ["full"] }

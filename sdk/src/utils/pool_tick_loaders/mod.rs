@@ -1,3 +1,4 @@
+#[cfg(feature = "local-reth")]
 mod local_reth;
 mod root_provider;
 

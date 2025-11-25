@@ -811,6 +811,7 @@ mod tests {
     };
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_fetch_fee_configuration() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -826,6 +827,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_tokens_by_partial_pool_key() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -845,6 +847,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_all_token_pairs_with_config_store() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -863,6 +866,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_all_token_pairs() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -876,6 +880,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_all_tokens() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -886,6 +891,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_all_tokens_with_config_store() {
         let (provider, state) = init_valid_position_params_with_provider().await;
         let config_store = provider
@@ -903,6 +909,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_pool_key_by_tokens() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -925,6 +932,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_pool_key_by_pool_id() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -943,6 +951,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_pool_id() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -955,6 +964,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_pool_key_by_pool_id_with_config_store() {
         let (provider, state) = init_valid_position_params_with_provider().await;
         let config_store = provider
@@ -981,6 +991,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_historical_orders() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -994,6 +1005,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_historical_bundles() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -1010,6 +1022,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_historical_liquidity_changes() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -1025,6 +1038,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_pool_data_by_tokens() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -1049,6 +1063,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_pool_data_by_pool_id() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -1068,6 +1083,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_all_pool_data() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -1080,6 +1096,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_pool_config_store() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -1092,6 +1109,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_slot0_by_pool_id() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -1104,6 +1122,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_slot0_by_tokens() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -1120,6 +1139,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_get_bundle_by_block() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
@@ -1132,6 +1152,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial]
     async fn test_get_bundle_by_tx_hash() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 

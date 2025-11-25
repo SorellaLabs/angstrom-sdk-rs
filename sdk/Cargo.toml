@@ -56,6 +56,9 @@ revm-database = { workspace = true, features = ["alloydb"] }
 [dev-dependencies]
 revm = { workspace = true, features = ["alloydb"], default-features = false }
 revm-database.workspace = true
+serial_test.workspace = true
+testing-tools.workspace = true
+uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git" }
 
 [features]
 default = ["ipc", "ws", "full"]
