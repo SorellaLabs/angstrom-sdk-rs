@@ -227,14 +227,14 @@ pub trait AngstromDataApi: PoolTickDataLoader + Send + Sized {
         token1: Address,
         load_ticks: bool,
         block_number: Option<u64>
-    ) -> eyre::Result<(u64, BaselinePoolState)>;
+    ) -> eyre::Result<(u64, BaselinePoolStateWithKey)>;
 
     async fn pool_data_by_pool_id(
         &self,
         pool_id: PoolId,
         load_ticks: bool,
         block_number: Option<u64>
-    ) -> eyre::Result<(u64, BaselinePoolState)> {
+    ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
         let pool_key = self.pool_key_by_pool_id(pool_id, block_number).await?;
         self.pool_data_by_tokens(
             pool_key.pool_key.currency0,
@@ -249,7 +249,7 @@ pub trait AngstromDataApi: PoolTickDataLoader + Send + Sized {
         &self,
         load_ticks: bool,
         block_number: Option<u64>
-    ) -> eyre::Result<Vec<(u64, BaselinePoolState)>> {
+    ) -> eyre::Result<Vec<(u64, BaselinePoolStateWithKey)>> {
         let token_pairs = self.all_token_pairs(block_number).await?;
 
         let pools = futures::future::try_join_all(token_pairs.into_iter().map(|pair| {
@@ -488,7 +488,7 @@ impl<P: Provider + Clone> AngstromDataApi for P {
         token1: Address,
         load_ticks: bool,
         block_number: Option<u64>
-    ) -> eyre::Result<(u64, BaselinePoolState)> {
+    ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
         let block_number = match block_number {
             Some(bn) => bn,
             None => self.get_block_number().await?
@@ -571,7 +571,10 @@ impl<P: Provider + Clone> AngstromDataApi for P {
             pool_data.tokenBDecimals
         );
 
-        Ok((block_number, baseline_state))
+        Ok((
+            block_number,
+            BaselinePoolStateWithKey { pool: baseline_state, pool_key: pool_key.pool_key }
+        ))
     }
 
     async fn pool_config_store(
@@ -968,10 +971,11 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(pool_data.token0, state.pool_key.currency0);
-        assert_eq!(pool_data.token1, state.pool_key.currency1);
+        assert_eq!(pool_data.pool.token0, state.pool_key.currency0);
+        assert_eq!(pool_data.pool.token1, state.pool_key.currency1);
         assert!(
             !pool_data
+                .pool
                 .get_baseline_liquidity()
                 .initialized_ticks()
                 .is_empty()
@@ -987,10 +991,11 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(pool_data.token0, state.pool_key.currency0);
-        assert_eq!(pool_data.token1, state.pool_key.currency1);
+        assert_eq!(pool_data.pool.token0, state.pool_key.currency0);
+        assert_eq!(pool_data.pool.token1, state.pool_key.currency1);
         assert!(
             !pool_data
+                .pool
                 .get_baseline_liquidity()
                 .initialized_ticks()
                 .is_empty()

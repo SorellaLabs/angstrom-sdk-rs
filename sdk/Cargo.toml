@@ -52,16 +52,16 @@ reth-node-types = { workspace = true, optional = true }
 reth-provider = { workspace = true, optional = true }
 revm = { workspace = true, optional = true }
 revm-database = { workspace = true, features = ["alloydb"] }
+uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git", optional = true }
 
 [dev-dependencies]
 revm = { workspace = true, features = ["alloydb"], default-features = false }
 revm-database.workspace = true
 serial_test.workspace = true
 testing-tools.workspace = true
-uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git" }
 
 [features]
-default = ["ipc", "ws", "full"]
+default = ["ipc", "ws", "full", "example-utils"]
 full = ["ipc", "ws", "local-reth"]
 local-reth = [
     "dep:lib-reth",
@@ -75,4 +75,4 @@ local-reth = [
 ipc = []
 ws = []
 
-example-utils = ["revm/alloydb", "dep:testing-tools"]
+example-utils = ["revm/alloydb", "dep:testing-tools", "dep:uniswap-v4"]

@@ -306,7 +306,7 @@ where
         token1: Address,
         load_ticks: bool,
         block_number: Option<u64>
-    ) -> eyre::Result<(u64, BaselinePoolState)> {
+    ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
         let block_number = if let Some(bn) = block_number {
             bn
         } else {
@@ -393,7 +393,10 @@ where
             pool_data.tokenBDecimals
         );
 
-        Ok((block_number, baseline_state))
+        Ok((
+            block_number,
+            BaselinePoolStateWithKey { pool: baseline_state, pool_key: pool_key.pool_key }
+        ))
     }
 
     async fn pool_config_store(
@@ -1052,10 +1055,11 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(pool_data.token0, state.pool_key.currency0);
-        assert_eq!(pool_data.token1, state.pool_key.currency1);
+        assert_eq!(pool_data.pool.token0, state.pool_key.currency0);
+        assert_eq!(pool_data.pool.token1, state.pool_key.currency1);
         assert!(
             !pool_data
+                .pool
                 .get_baseline_liquidity()
                 .initialized_ticks()
                 .is_empty()
@@ -1072,10 +1076,11 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(pool_data.token0, state.pool_key.currency0);
-        assert_eq!(pool_data.token1, state.pool_key.currency1);
+        assert_eq!(pool_data.pool.token0, state.pool_key.currency0);
+        assert_eq!(pool_data.pool.token1, state.pool_key.currency1);
         assert!(
             !pool_data
+                .pool
                 .get_baseline_liquidity()
                 .initialized_ticks()
                 .is_empty()

@@ -10,6 +10,7 @@ use angstrom_types_primitives::{
     primitive::{ANGSTROM_ADDRESS, PoolId}
 };
 use serde::{Deserialize, Serialize};
+use uni_v4::BaselinePoolState;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TokenPair {
@@ -151,4 +152,10 @@ impl<D> WithEthMeta<D> {
             inner:        f(self.inner)
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BaselinePoolStateWithKey {
+    pub pool:     BaselinePoolState,
+    pub pool_key: PoolKey
 }

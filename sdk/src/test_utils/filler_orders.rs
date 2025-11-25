@@ -9,7 +9,7 @@ use alloy_primitives::{Address, TxKind, U256, aliases::U24, keccak256};
 use alloy_provider::{Provider, RootProvider, ext::AnvilApi};
 use alloy_sol_types::{SolCall, SolValue};
 use angstrom_types_primitives::{
-    primitive::{ERC20, POOL_MANAGER_ADDRESS, PoolId},
+    primitive::{ERC20, POOL_MANAGER_ADDRESS, PoolId, UniswapPoolRegistry},
     sol_bindings::{
         grouped_orders::AllOrders,
         rpc_orders::{
@@ -18,8 +18,6 @@ use angstrom_types_primitives::{
         }
     }
 };
-#[cfg(feature = "example-utils")]
-#[cfg(feature = "example-utils")]
 use futures::future::try_join_all;
 use jsonrpsee_http_client::HttpClient;
 use revm::{
@@ -28,26 +26,21 @@ use revm::{
     primitives::hardfork::SpecId
 };
 use revm_database::{AlloyDB, CacheDB, EmptyDBTyped, WrapDatabaseAsync};
-#[cfg(feature = "example-utils")]
 use rust_utils::ToHashMapByKey;
-#[cfg(feature = "example-utils")]
 use testing_tools::order_generator::{InternalBalanceMode, OrderGenerator};
-use tokio::runtime::Handle;
-#[cfg(feature = "example-utils")]
-use tokio::sync::Notify;
-#[cfg(feature = "example-utils")]
-use uni_v4::{
-    baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
-    pool_data_loader::DataLoader,
-    uniswap::{
-        pool::EnhancedUniswapPool,
-        pool_manager::{SyncedUniswapPools, TickRangeToLoad}
-    }
+use tokio::{runtime::Handle, sync::Notify};
+use uni_v4::baseline_pool_factory::INITIAL_TICKS_PER_SIDE;
+use uniswap_v4::uniswap::{
+    pool::EnhancedUniswapPool,
+    pool_manager::{SyncedUniswapPools, TickRangeToLoad}
 };
 
-use crate::{providers::backend::AngstromProvider, test_utils::AlloyRpcProvider};
+use crate::{
+    apis::data_api::AngstromDataApi,
+    providers::backend::AngstromProvider,
+    test_utils::{AlloyRpcProvider, AngstromOrderApiClientClone}
+};
 
-#[cfg(feature = "example-utils")]
 pub async fn make_order_generator<P, T>(
     provider: &AngstromProvider<P, T>
 ) -> eyre::Result<(OrderGenerator<T>, tokio::sync::mpsc::Receiver<(TickRangeToLoad, Arc<Notify>)>)>
@@ -55,6 +48,8 @@ where
     P: Provider + Clone,
     T: AngstromOrderApiClientClone
 {
+    use crate::apis::AngstromNodeApi;
+
     let block_number = provider.eth_provider().get_block_number().await?;
 
     let pools = provider.all_pool_keys(Some(block_number)).await?;
@@ -66,9 +61,9 @@ where
             let mut private_pool_key = pool_key.pool_key;
             private_pool_key.fee = U24::from(0x800000);
             let private_pool_id: PoolId = private_pool_key.into();
-            let registry = vec![pool_key.pool_key].into();
+            let registry = UniswapPoolRegistry::from(vec![pool_key.as_angstrom_pool_key_type()]);
 
-            let data_loader = DataLoader::new_with_registry(
+            let data_loader = uniswap_v4::uniswap::pool_data_loader::DataLoader::new_with_registry(
                 private_pool_id,
                 public_pool_id,
                 registry,
