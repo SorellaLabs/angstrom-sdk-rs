@@ -106,6 +106,14 @@ pub struct AllOrdersSpecific {
 }
 
 impl AllOrdersSpecific {
+    pub fn with_address(&mut self, from: Address) {
+        self.tob.meta.from = from;
+        self.partial_flash.meta.from = from;
+        self.exact_flash.meta.from = from;
+        self.partial_standing.meta.from = from;
+        self.exact_standing.meta.from = from;
+    }
+
     pub async fn test_filler_order(self, f: impl AsyncFn(AllOrders) -> bool) {
         assert!(f(AllOrders::TOB(self.tob)).await, "tob failed");
         assert!(f(AllOrders::PartialFlash(self.partial_flash)).await, "partial_flash failed");
@@ -143,7 +151,7 @@ impl AnvilAngstromProvider {
         let seed: u16 = rand::random();
         let eth_ipc = format!("/tmp/anvil_{seed}.ipc");
         let anvil = Anvil::new()
-            .chain_id(11155111)
+            .chain_id(1)
             .ipc_path(&eth_ipc)
             .fork(eth_ws_url)
             .try_spawn()?;

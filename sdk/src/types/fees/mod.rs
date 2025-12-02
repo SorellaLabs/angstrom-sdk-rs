@@ -94,8 +94,13 @@ mod tests {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
         let block_number = pos_info.block_number;
 
+        #[cfg(feature = "local-reth")]
+        let provider = provider.provider();
+        #[cfg(not(feature = "local-reth"))]
+        let provider = &provider;
+
         let results = position_fees(
-            provider.provider(),
+            provider,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *ANGSTROM_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
@@ -110,10 +115,14 @@ mod tests {
         .await
         .unwrap();
 
-        println!("{results:?}");
-
-        // let expected =
-        //     U256::from_str_radix("120172277127583782077734552915892808915697"
-        // , 10).unwrap(); assert_eq!(results, expected);
+        assert_eq!(
+            results,
+            LiquidityPositionFees {
+                position_liquidity:   807449445327074,
+                angstrom_token0_fees: U256::from(214093138_u128),
+                uniswap_token0_fees:  U256::from(9502619_u128),
+                uniswap_token1_fees:  U256::from(3715513971140452_u128)
+            }
+        );
     }
 }

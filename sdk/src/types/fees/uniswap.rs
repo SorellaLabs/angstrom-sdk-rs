@@ -61,8 +61,13 @@ mod tests {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
         let block_number = pos_info.block_number;
 
+        #[cfg(feature = "local-reth")]
+        let provider = provider.provider();
+        #[cfg(not(feature = "local-reth"))]
+        let provider = &provider;
+
         let results = uniswap_fee_deltas(
-            provider.provider(),
+            provider,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             Some(block_number),
@@ -75,11 +80,12 @@ mod tests {
         .await
         .unwrap();
 
-        println!("{results:?}");
-
-        // assert_eq!(
-        //     results,
-        //     U256::from_str_radix("120172277127583782077734552915892808915697"
-        // , 10).unwrap() );
+        assert_eq!(
+            results,
+            (
+                U256::from(4004676340914304001936429601015_u128),
+                U256::from_str_radix("1565824208245443875813344119471164423504", 10).unwrap()
+            )
+        );
     }
 }

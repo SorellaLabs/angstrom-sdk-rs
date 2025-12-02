@@ -1,11 +1,12 @@
 use alloy_primitives::{Address, U256};
 use alloy_provider::Provider;
-use angstrom_types_primitives::{primitive::ERC20, sol_bindings::RawPoolOrder};
+use angstrom_types_primitives::primitive::ERC20;
 
 use super::{AllOrders, FillWrapper, errors::FillerError};
 use crate::{
     apis::{node_api::AngstromOrderApiClient, utils::view_call},
-    providers::backend::AngstromProvider
+    providers::backend::AngstromProvider,
+    types::OrderFrom
 };
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -43,7 +44,7 @@ impl FillWrapper for TokenBalanceCheckFiller {
         provider: &AngstromProvider<P, T>,
         order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError> {
-        if order.from() != Address::ZERO {
+        if order.from_address() != Address::ZERO {
             let (token, amt) = match order {
                 AllOrders::PartialStanding(partial_standing_order) => (
                     partial_standing_order.asset_in,
@@ -69,7 +70,7 @@ impl FillWrapper for TokenBalanceCheckFiller {
                 )
             };
 
-            Self::check_balance(provider, order.from(), token, U256::from(amt)).await?;
+            Self::check_balance(provider, order.from_address(), token, U256::from(amt)).await?;
         }
 
         Ok(())
@@ -78,26 +79,32 @@ impl FillWrapper for TokenBalanceCheckFiller {
 
 #[cfg(test)]
 mod tests {
-    use alloy_primitives::Address;
+    use alloy_signer_local::LocalSigner;
 
     use super::*;
     use crate::{
         AngstromApi,
-        test_utils::filler_orders::{AllOrdersSpecific, AnvilAngstromProvider}
+        test_utils::{
+            USDC,
+            filler_orders::{AllOrdersSpecific, AnvilAngstromProvider}
+        }
     };
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_balance_checker_angstrom_order() {
+        let signer = LocalSigner::random();
+        let from = signer.address();
+
         let provider = AnvilAngstromProvider::new().await.unwrap();
-        let api =
-            AngstromApi::new_with_provider(provider.provider.clone()).with_token_balance_filler();
+        let api = AngstromApi::new_with_provider(provider.provider.clone())
+            .with_token_balance_filler()
+            .with_angstrom_signer_filler(signer);
 
         let orders = AllOrdersSpecific::default();
 
-        let from = Address::random();
         let amount = 1000000000000000;
         let max_fee = 1000000000;
-        let asset = Address::ZERO;
+        let asset = USDC;
 
         let ref_api = &api;
         orders
@@ -107,26 +114,31 @@ mod tests {
                     AllOrders::ExactStanding(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.amount = amount;
+                        inner_order.meta.from = from;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
                     AllOrders::PartialStanding(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.max_amount_in = amount;
+                        inner_order.meta.from = from;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
                     AllOrders::ExactFlash(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.amount = amount;
+                        inner_order.meta.from = from;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
                     AllOrders::PartialFlash(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.max_amount_in = amount;
+                        inner_order.meta.from = from;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
                     AllOrders::TOB(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.quantity_in = amount;
+                        inner_order.meta.from = from;
                         inner_order.max_gas_asset0 = max_fee;
                     }
                 }
@@ -150,26 +162,31 @@ mod tests {
                     AllOrders::ExactStanding(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.amount = amount;
+                        inner_order.meta.from = from;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
                     AllOrders::PartialStanding(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.max_amount_in = amount;
+                        inner_order.meta.from = from;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
                     AllOrders::ExactFlash(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.amount = amount;
+                        inner_order.meta.from = from;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
                     AllOrders::PartialFlash(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.max_amount_in = amount;
+                        inner_order.meta.from = from;
                         inner_order.max_extra_fee_asset0 = max_fee;
                     }
                     AllOrders::TOB(inner_order) => {
                         inner_order.asset_in = asset;
                         inner_order.quantity_in = amount;
+                        inner_order.meta.from = from;
                         inner_order.max_gas_asset0 = max_fee;
                     }
                 }

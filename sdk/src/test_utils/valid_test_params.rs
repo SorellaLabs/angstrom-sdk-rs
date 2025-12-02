@@ -80,15 +80,15 @@ pub async fn init_valid_position_params_with_provider() -> (
 pub fn init_valid_position_params() -> ValidPositionTestParameters {
     let _ = try_init_with_chain_id(1);
 
-    let owner = address!("0x247bcb856d028d66bd865480604f45797446d179");
-    let pool_id = b256!("0x51416fa593479e6932829c5baea2984cb14a28ce753789e361ef3799a8ee7e5c");
-    let tick_lower = I24::unchecked_from(-887270);
-    let tick_upper = I24::unchecked_from(887270);
-    let position_token_id = U256::from(14328_u64);
+    let owner = address!("0xe344c3d419B7788006ab5aF4355E03b04CE75579");
+    let pool_id = b256!("0xe500210c7ea6bfd9f69dce044b09ef384ec2b34832f132baec3b418208e3a657");
+    let tick_lower = I24::unchecked_from(194970);
+    let tick_upper = I24::unchecked_from(198000);
+    let position_token_id = U256::from(102303_u128);
 
     let position_manager_pool_map_key = [
-        81, 65, 111, 165, 147, 71, 158, 105, 50, 130, 156, 91, 174, 162, 152, 76, 177, 74, 40, 206,
-        117, 55, 137, 227, 97
+        229, 0, 33, 12, 126, 166, 191, 217, 246, 157, 206, 4, 75, 9, 239, 56, 78, 194, 179, 72, 50,
+        241, 50, 186, 236
     ];
 
     let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
@@ -104,7 +104,7 @@ pub fn init_valid_position_params() -> ValidPositionTestParameters {
         pool_id,
         position_token_id,
         tick_lower,
-        position_liquidity: 45448764343813,
+        position_liquidity: 807449445327074,
         block_number: 23870000,
         current_pool_tick: I24::unchecked_from(196699),
         tick_upper,

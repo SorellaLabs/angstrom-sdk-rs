@@ -5,9 +5,11 @@ use alloy_primitives::{
 };
 use alloy_sol_types::SolValue;
 use angstrom_types_primitives::{
+    ANGSTROM_DOMAIN,
     contract_bindings::pool_manager::PoolManager::PoolKey,
     contract_payloads::angstrom::AngPoolConfigEntry,
-    primitive::{ANGSTROM_ADDRESS, PoolId}
+    primitive::{ANGSTROM_ADDRESS, PoolId},
+    sol_bindings::{RawPoolOrder, grouped_orders::AllOrders, rpc_orders::OmitOrderMeta}
 };
 use serde::{Deserialize, Serialize};
 use uni_v4::BaselinePoolState;
@@ -158,4 +160,40 @@ impl<D> WithEthMeta<D> {
 pub struct BaselinePoolStateWithKey {
     pub pool:     BaselinePoolState,
     pub pool_key: PoolKey
+}
+
+pub trait OrderFrom {
+    fn from_address(&self) -> Address;
+}
+
+impl OrderFrom for AllOrders {
+    fn from_address(&self) -> Address {
+        let init_from = self.from();
+        if init_from != Address::ZERO {
+            return init_from;
+        }
+        self.order_signature()
+            .map(|sig| {
+                let hash = match self {
+                    AllOrders::ExactStanding(order) => {
+                        order.no_meta_eip712_signing_hash(ANGSTROM_DOMAIN.get().unwrap())
+                    }
+                    AllOrders::PartialStanding(order) => {
+                        order.no_meta_eip712_signing_hash(ANGSTROM_DOMAIN.get().unwrap())
+                    }
+                    AllOrders::ExactFlash(order) => {
+                        order.no_meta_eip712_signing_hash(ANGSTROM_DOMAIN.get().unwrap())
+                    }
+                    AllOrders::PartialFlash(order) => {
+                        order.no_meta_eip712_signing_hash(ANGSTROM_DOMAIN.get().unwrap())
+                    }
+                    AllOrders::TOB(order) => {
+                        order.no_meta_eip712_signing_hash(ANGSTROM_DOMAIN.get().unwrap())
+                    }
+                };
+
+                sig.recover_address_from_prehash(&hash).unwrap_or_default()
+            })
+            .unwrap_or_default()
+    }
 }

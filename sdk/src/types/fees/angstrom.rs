@@ -53,8 +53,13 @@ mod tests {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
         let block_number = pos_info.block_number;
 
+        #[cfg(feature = "local-reth")]
+        let provider = provider.provider();
+        #[cfg(not(feature = "local-reth"))]
+        let provider = &provider;
+
         let results = angstrom_fee_delta_x128(
-            provider.provider(),
+            provider,
             *ANGSTROM_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             Some(block_number),
@@ -67,7 +72,7 @@ mod tests {
         .await
         .unwrap();
 
-        let expected = U256::from(2644126388530582615137110269_u128);
+        let expected = U256::from(90224992210989852552811100631246_u128);
         assert_eq!(results, expected);
     }
 }

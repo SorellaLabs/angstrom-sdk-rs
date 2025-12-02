@@ -230,13 +230,14 @@ mod tests {
 
     use crate::{
         apis::AngstromUserApi,
-        test_utils::valid_test_params::init_valid_position_params_with_provider
+        test_utils::valid_test_params::init_valid_position_params_with_provider,
+        types::fees::LiquidityPositionFees
     };
 
     #[tokio::test]
     async fn test_position_and_pool_info_by_token_id() {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
-        let block_number = pos_info.block_number;
+        let block_number = pos_info.block_for_liquidity_add + 1;
 
         let (pool_key, unpacked_position_info) = provider
             .position_and_pool_info(pos_info.position_token_id, Some(block_number))
@@ -250,7 +251,7 @@ mod tests {
     #[tokio::test]
     async fn test_position_liquidity_by_token_id() {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
-        let block_number = pos_info.block_number;
+        let block_number = pos_info.block_for_liquidity_add + 1;
 
         let position_liquidity = provider
             .position_liquidity(pos_info.position_token_id, Some(block_number))
@@ -263,7 +264,7 @@ mod tests {
     #[tokio::test(flavor = "multi_thread")]
     async fn test_all_user_positions() {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
-        let block_number = pos_info.block_number;
+        let block_number = pos_info.block_for_liquidity_add + 1;
 
         let bound: u64 = 10;
 
@@ -279,19 +280,27 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(position_liquidity.len(), 4);
+        assert_eq!(position_liquidity.len(), 1);
     }
 
     #[tokio::test]
     async fn test_user_position_fees() {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
-        let block_number = pos_info.block_number;
+        let block_number = pos_info.block_for_liquidity_add + 100;
 
         let results = provider
             .user_position_fees(pos_info.position_token_id, Some(block_number))
             .await
             .unwrap();
 
-        println!("{results:?}");
+        assert_eq!(
+            results,
+            LiquidityPositionFees {
+                position_liquidity:   807449445327074,
+                angstrom_token0_fees: U256::from(45197_u128),
+                uniswap_token0_fees:  U256::from(2754_u128),
+                uniswap_token1_fees:  U256::from(837588354352_u128)
+            }
+        );
     }
 }
