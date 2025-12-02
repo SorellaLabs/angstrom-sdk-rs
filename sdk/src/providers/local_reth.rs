@@ -1,19 +1,17 @@
 use std::{
     collections::{HashMap, HashSet},
-    ops::Deref,
-    sync::Arc
+    ops::Deref
 };
 
 use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
-use alloy_network::{Network, ReceiptResponse, TransactionResponse};
+use alloy_network::TransactionResponse;
 use alloy_primitives::{
     Address, Bytes, FixedBytes, TxHash, TxKind, U256,
     aliases::{I24, U24},
     keccak256
 };
-use alloy_provider::{Provider, fillers::*};
-use alloy_rpc_types::{Filter, Log, TransactionRequest};
+use alloy_provider::Provider;
 use alloy_sol_types::{SolCall, SolEvent, SolType};
 use angstrom_types_primitives::{
     contract_bindings::{
@@ -31,9 +29,9 @@ use angstrom_types_primitives::{
 };
 use futures::StreamExt;
 use lib_reth::{
-    DualRethNodeClient, EthApiServer,
+    EthApiServer, EthereumNode,
     reth_libmdbx::{NodeClientSpec, RethNodeClient},
-    traits::EthRevm
+    traits::{EthRevm, EthStream}
 };
 use pade::PadeDecode;
 use reth_provider::BlockNumReader;
@@ -70,70 +68,52 @@ use crate::{
     utils::pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader}
 };
 
-#[derive(Clone)]
-pub struct RethDbProviderWrapper<Node, P, N>
-where
-    Node: NodeClientSpec,
-    P: Provider<N> + Clone,
-    N: Network
-{
-    provider: DualRethNodeClient<Node, P, N>
-}
+// #[derive(Clone)]
+// pub struct RethDbProviderWrapper
+// where
+//     Node: NodeClientSpec,
+//     P: Provider<N> + Clone,
+//     N: Network
+// {
+// provider: RethNodeClient<EthereumNode>
+// }
 
-impl<Node, P, N> RethDbProviderWrapper<Node, P, N>
-where
-    Node: NodeClientSpec,
-    P: Provider<N> + Clone,
-    N: Network
-{
-    pub fn new(provider: DualRethNodeClient<Node, P, N>) -> Self {
-        Self { provider }
-    }
+// impl<Node, P, N> RethDbProviderWrapper<Node, P, N>
+// where
+//     Node: NodeClientSpec,
+//     P: Provider<N> + Clone,
+//     N: Network
+// {
+// pub fn new(provider: RethNodeClient<Node, P, N>) -> Self {
+//     Self { provider }
+// }
 
-    pub fn replace_provider(&mut self, provider: P) {
-        self.provider.replace_rpc_provider(provider);
-    }
+// pub fn replace_provider(&mut self, provider: P) {
+//     self.provider.replace_rpc_provider(provider);
+// }
 
-    pub fn db_client(&self) -> Arc<RethNodeClient<Node>> {
-        self.provider.node_client()
-    }
+// pub fn db_client(&self) -> Arc<RethNodeClient<Node>> {
+//     self.provider.node_client()
+// }
 
-    pub fn rpc_provider(&self) -> P {
-        self.provider.rpc_provider()
-    }
+// pub fn rpc_provider(&self) -> P {
+//     self.provider.rpc_provider()
+// }
 
-    async fn get_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
-        // let logs_res = self.db_client.eth_filter().logs(filter.clone()).await;
-        // match logs_res {
-        //     Ok(vals) => Ok(vals),
-        //     Err(_) => {
-        //         self.db_client()
-        //             .eth_db_provider()
-        //             .consistent_provider()?
-        //             .static_file_provider()
-        //             .initialize_index()?;
-        //         tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-        //         Ok(self.db_client.eth_filter().logs(filter.clone()).await?)
-        //     }
-        // }
-        Ok(self.provider.rpc_provider().get_logs(filter).await?)
-    }
-}
+// async fn get_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
+//     Ok(self.provider.rpc_provider().get_logs(filter).await?)
+// }
+// }
 
 #[async_trait::async_trait]
-impl<Node, P, N> AngstromDataApi for RethDbProviderWrapper<Node, P, N>
-where
-    Node: NodeClientSpec,
-    P: Provider<N> + Clone,
-    N: Network<TransactionRequest = TransactionRequest> + RecommendedFillers
-{
+impl AngstromDataApi for RethNodeClient<EthereumNode> {
     async fn tokens_by_partial_pool_key(
         &self,
         pool_partial_key: AngstromPoolPartialKey,
         block_number: Option<u64>
     ) -> eyre::Result<TokenPair> {
         let out = reth_db_view_call(
-            &self.db_client(),
+            &self,
             block_number,
             *CONTROLLER_V1_ADDRESS.get().unwrap(),
             ControllerV1::getPoolByKeyCall { key: FixedBytes::from(*pool_partial_key) }
@@ -191,11 +171,13 @@ where
         end_block: Option<u64>,
         block_stream_buffer: Option<usize>
     ) -> eyre::Result<Vec<WithEthMeta<AngstromBundle>>> {
+        let root_provider = self.root_provider().await?;
+
         let filters = historical_pool_manager_swap_filter(start_block, end_block);
         let logs = futures::future::try_join_all(
             filters
                 .into_iter()
-                .map(async move |filter| self.get_logs(&filter).await)
+                .map(async |filter| root_provider.get_logs(&filter).await)
         )
         .await?;
 
@@ -223,6 +205,8 @@ where
         start_block: Option<u64>,
         end_block: Option<u64>
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
+        let root_provider = self.root_provider().await?;
+
         let all_pool_ids = self
             .all_pool_keys(end_block)
             .await?
@@ -234,7 +218,7 @@ where
         let logs = futures::future::try_join_all(
             filters
                 .into_iter()
-                .map(async move |filter| self.get_logs(&filter).await)
+                .map(async |filter| root_provider.get_logs(&filter).await)
         )
         .await?;
 
@@ -263,6 +247,8 @@ where
         start_block: Option<u64>,
         end_block: Option<u64>
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::Swap>>> {
+        let root_provider = self.root_provider().await?;
+
         let all_pool_ids = self
             .all_pool_keys(end_block)
             .await?
@@ -274,7 +260,7 @@ where
         let logs = futures::future::try_join_all(
             filters
                 .into_iter()
-                .map(async move |filter| self.get_logs(&filter).await)
+                .map(async |filter| root_provider.get_logs(&filter).await)
         )
         .await?;
 
@@ -310,7 +296,7 @@ where
         let block_number = if let Some(bn) = block_number {
             bn
         } else {
-            lib_reth::helpers::EthApiSpec::chain_info(&self.db_client().eth_api())?.best_number
+            lib_reth::helpers::EthApiSpec::chain_info(&self.eth_api())?.best_number
         };
         let (token0, token1) = sort_tokens(token0, token1);
 
@@ -329,7 +315,7 @@ where
         let pool_id: PoolId = pool_key.into();
 
         let data_deployer_call = GetUniswapV4PoolData::deploy_builder(
-            &self.rpc_provider(),
+            &self.root_provider().await?,
             pool_id,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             pool_key.pool_key.currency0,
@@ -338,7 +324,7 @@ where
         .into_transaction_request();
 
         let out_pool_data = reth_db_deploy_call::<_, PoolDataV4>(
-            &self.db_client(),
+            self,
             Some(block_number),
             alloy_network::TransactionBuilder::input(&data_deployer_call)
                 .cloned()
@@ -406,7 +392,7 @@ where
         AngstromPoolConfigStore::load_from_chain(
             *ANGSTROM_ADDRESS.get().unwrap(),
             block_number.map(Into::into).unwrap_or(BlockId::latest()),
-            &self.provider.as_provider_with_db_layer()
+            &self.root_provider().await?
         )
         .await
         .map_err(|e| eyre::eyre!("{e:?}"))
@@ -418,7 +404,7 @@ where
         block_number: Option<u64>
     ) -> eyre::Result<UnpackedSlot0> {
         Ok(pool_manager_pool_slot0(
-            &self.provider,
+            self,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             pool_id,
             block_number
@@ -432,7 +418,6 @@ where
         verify_successful_tx: bool
     ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
         let Some(block) = self
-            .db_client()
             .eth_api()
             .block_by_number(block_number.into(), true)
             .await?
@@ -465,7 +450,6 @@ where
             let bundles =
                 futures::future::try_join_all(angstrom_bundles.map(async |(tx_hash, bundle)| {
                     if self
-                        .db_client()
                         .eth_api()
                         .transaction_receipt(tx_hash)
                         .await?
@@ -491,18 +475,12 @@ where
         tx_hash: TxHash,
         verify_successful_tx: bool
     ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
-        let Some(transaction) = self
-            .db_client()
-            .eth_api()
-            .transaction_by_hash(tx_hash)
-            .await?
-        else {
+        let Some(transaction) = self.eth_api().transaction_by_hash(tx_hash).await? else {
             return Ok(None)
         };
 
         if verify_successful_tx
             && !self
-                .db_client()
                 .eth_api()
                 .transaction_receipt(tx_hash)
                 .await?
@@ -552,7 +530,7 @@ where
         };
 
         let raw = reth_db_view_call(
-            &self.db_client(),
+            self,
             block_number,
             *ANGSTROM_ADDRESS.get().unwrap(),
             Angstrom::extsloadCall { slot: U256::from_be_bytes(*slot) }
@@ -571,19 +549,14 @@ where
 }
 
 #[async_trait::async_trait]
-impl<Node, P, N> AngstromUserApi for RethDbProviderWrapper<Node, P, N>
-where
-    Node: NodeClientSpec,
-    P: Provider<N> + Clone,
-    N: Network<TransactionRequest = TransactionRequest> + RecommendedFillers
-{
+impl AngstromUserApi for RethNodeClient<EthereumNode> {
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,
         block_number: Option<u64>
     ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
-            &self.db_client(),
+            self,
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             block_number,
             position_token_id
@@ -608,7 +581,7 @@ where
         block_number: Option<u64>
     ) -> eyre::Result<u128> {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
-            &self.db_client(),
+            self,
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             block_number,
             position_token_id
@@ -616,7 +589,7 @@ where
         .await?;
 
         let liquidity = pool_manager_position_state_liquidity(
-            &self.db_client(),
+            self,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             pool_key.into(),
@@ -648,18 +621,15 @@ where
         }
 
         if end_token_id == U256::ZERO {
-            end_token_id = position_manager_next_token_id(
-                &self.db_client(),
-                position_manager_address,
-                block_number
-            )
-            .await?;
+            end_token_id =
+                position_manager_next_token_id(self, position_manager_address, block_number)
+                    .await?;
         }
 
         let mut all_positions = Vec::new();
         while start_token_id <= end_token_id {
             let owner_of = position_manager_owner_of(
-                &self.db_client(),
+                self,
                 position_manager_address,
                 block_number,
                 start_token_id
@@ -672,7 +642,7 @@ where
             }
 
             let (pool_key, position_info) = position_manager_pool_key_and_info(
-                &self.db_client(),
+                self,
                 position_manager_address,
                 block_number,
                 start_token_id
@@ -689,7 +659,7 @@ where
             }
 
             let liquidity = pool_manager_position_state_liquidity(
-                &self.db_client(),
+                self,
                 pool_manager_address,
                 position_manager_address,
                 pool_key.into(),
@@ -734,7 +704,7 @@ where
         let slot0 = self.slot0_by_pool_id(pool_id, block_number).await?;
 
         Ok(position_fees(
-            &self.db_client(),
+            self,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *ANGSTROM_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),

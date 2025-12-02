@@ -36,7 +36,7 @@ use uniswap_v4::uniswap::{
 };
 
 use crate::{
-    apis::data_api::AngstromDataApi,
+    apis::{AngstromNodeApi, data_api::AngstromDataApi},
     providers::backend::AngstromProvider,
     test_utils::{AlloyRpcProvider, AngstromOrderApiClientClone}
 };
@@ -48,8 +48,6 @@ where
     P: Provider + Clone,
     T: AngstromOrderApiClientClone
 {
-    use crate::apis::AngstromNodeApi;
-
     let block_number = provider.eth_provider().get_block_number().await?;
 
     let pools = provider.all_pool_keys(Some(block_number)).await?;
