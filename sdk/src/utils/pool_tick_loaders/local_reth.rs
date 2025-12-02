@@ -1,18 +1,19 @@
 use alloy_network::TransactionBuilder;
 use alloy_primitives::{BlockNumber, U256, aliases::I24};
 use angstrom_types_primitives::{POOL_MANAGER_ADDRESS, PoolId};
-use lib_reth::{EthereumNode, reth_libmdbx::RethNodeClient, traits::EthStream};
+use lib_reth::{EthereumNode, traits::EthStream};
 use uni_v4::{
     loaders::get_uniswap_v_4_tick_data::GetUniswapV4TickData,
     pool_data_loader::{TickData, TicksWithBlock}
 };
 
 use crate::{
-    providers::local_reth::reth_db_deploy_call, utils::pool_tick_loaders::PoolTickDataLoader
+    providers::local_reth::{RethDbProviderWrapper, reth_db_deploy_call},
+    utils::pool_tick_loaders::PoolTickDataLoader
 };
 
 #[async_trait::async_trait]
-impl PoolTickDataLoader for RethNodeClient<EthereumNode> {
+impl PoolTickDataLoader for RethDbProviderWrapper {
     async fn load_tick_data(
         &self,
         pool_id: PoolId,
@@ -23,7 +24,7 @@ impl PoolTickDataLoader for RethNodeClient<EthereumNode> {
         block_number: Option<BlockNumber>
     ) -> eyre::Result<(Vec<TickData>, U256)> {
         let deployer_tx = GetUniswapV4TickData::deploy_builder(
-            self.root_provider().await?,
+            self.provider().root_provider().await?,
             pool_id,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             zero_for_one,
@@ -34,7 +35,7 @@ impl PoolTickDataLoader for RethNodeClient<EthereumNode> {
         .into_transaction_request();
 
         let out_tick_data = reth_db_deploy_call::<EthereumNode, TicksWithBlock>(
-            &self,
+            self.provider(),
             block_number,
             TransactionBuilder::input(&deployer_tx)
                 .cloned()

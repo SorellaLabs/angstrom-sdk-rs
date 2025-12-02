@@ -62,7 +62,7 @@ mod tests {
         let block_number = pos_info.block_number;
 
         let results = uniswap_fee_deltas(
-            &provider,
+            provider.provider(),
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             Some(block_number),

@@ -95,7 +95,7 @@ mod tests {
         let block_number = pos_info.block_number;
 
         let results = position_fees(
-            &provider,
+            provider.provider(),
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *ANGSTROM_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),

@@ -54,7 +54,7 @@ mod tests {
         let block_number = pos_info.block_number;
 
         let results = angstrom_fee_delta_x128(
-            &provider,
+            provider.provider(),
             *ANGSTROM_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             Some(block_number),

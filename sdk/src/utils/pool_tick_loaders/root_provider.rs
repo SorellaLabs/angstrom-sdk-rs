@@ -13,7 +13,7 @@ use crate::{
 #[async_trait::async_trait]
 impl<P> PoolTickDataLoader for P
 where
-    P: ProviderBlanket + Clone
+    P: ProviderBlanket
 {
     async fn load_tick_data(
         &self,

@@ -53,17 +53,17 @@ pub async fn init_valid_position_params_with_provider()
 
 #[cfg(feature = "local-reth")]
 pub async fn init_valid_position_params_with_provider() -> (
-    std::sync::Arc<lib_reth::reth_libmdbx::RethNodeClient<lib_reth::EthereumNode>>,
+    std::sync::Arc<crate::providers::local_reth::RethDbProviderWrapper>,
     ValidPositionTestParameters
 ) {
     use std::sync::Arc;
 
     use lib_reth::{MAINNET, reth_libmdbx::RethNodeClientBuilder};
 
-    use crate::test_utils::eth_ws_url;
+    use crate::{providers::local_reth::RethDbProviderWrapper, test_utils::eth_ws_url};
 
     let params = init_valid_position_params();
-    let provider = Arc::new(
+    let provider = Arc::new(RethDbProviderWrapper::new(
         RethNodeClientBuilder::new(
             "/var/lib/eth/mainnet/reth/",
             1000,
@@ -72,7 +72,7 @@ pub async fn init_valid_position_params_with_provider() -> (
         )
         .build()
         .unwrap()
-    );
+    ));
 
     (provider, params)
 }
