@@ -1,7 +1,7 @@
 use alloy_primitives::Address;
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
-use angstrom_types::{
+use angstrom_types_primitives::{
     primitive::ANGSTROM_DOMAIN,
     sol_bindings::{
         grouped_orders::AllOrders,
@@ -24,6 +24,7 @@ impl<S: Signer + SignerSync + Clone> AngstromSignerFiller<S> {
     fn sign_into_meta<O: OmitOrderMeta>(&self, order: &O) -> Result<OrderMeta, FillerError> {
         let hash = order.no_meta_eip712_signing_hash(ANGSTROM_DOMAIN.get().unwrap());
         let sig = self.0.sign_hash_sync(&hash)?;
+
         Ok(OrderMeta {
             isEcdsa:   true,
             from:      self.0.address(),
@@ -71,7 +72,6 @@ impl<S: Signer + SignerSync + Send + Sync + Clone> FillWrapper for AngstromSigne
             AllOrders::TOB(inner_order) => {
                 let mut inner_order = inner_order.clone();
                 inner_order.recipient = self.0.address();
-
                 self.sign_into_meta(&inner_order)?
             }
         };
@@ -119,7 +119,7 @@ impl<S: Signer + SignerSync + Send + Sync + Clone> FillFrom<AngstromSignerFiller
 #[cfg(test)]
 mod tests {
     use alloy_signer_local::LocalSigner;
-    use angstrom_types::primitive::init_with_chain_id;
+    use angstrom_types_primitives::primitive::try_init_with_chain_id;
 
     use super::*;
     use crate::{
@@ -129,7 +129,7 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_signer_angstrom_order() {
-        init_with_chain_id(11155111);
+        let _ = try_init_with_chain_id(1);
 
         let signer = LocalSigner::random();
         let provider = AnvilAngstromProvider::new().await.unwrap();
@@ -156,29 +156,31 @@ mod tests {
                 let domain = ANGSTROM_DOMAIN.get().expect("ANGSTROM_DOMAIN not set");
                 match &mut order {
                     AllOrders::ExactStanding(inner_order) => {
+                        inner_order.recipient = signer.address();
                         let hash = inner_order.no_meta_eip712_signing_hash(domain);
                         inner_order.meta = sig_f(hash);
-                        inner_order.recipient = signer.address();
                     }
                     AllOrders::PartialStanding(inner_order) => {
+                        inner_order.recipient = signer.address();
                         let hash = inner_order.no_meta_eip712_signing_hash(domain);
                         inner_order.meta = sig_f(hash);
-                        inner_order.recipient = signer.address();
                     }
                     AllOrders::ExactFlash(inner_order) => {
+                        inner_order.recipient = signer.address();
                         let hash = inner_order.no_meta_eip712_signing_hash(domain);
                         inner_order.meta = sig_f(hash);
-                        inner_order.recipient = signer.address();
                     }
                     AllOrders::PartialFlash(inner_order) => {
+                        inner_order.recipient = signer.address();
                         let hash = inner_order.no_meta_eip712_signing_hash(domain);
                         inner_order.meta = sig_f(hash);
+
                         inner_order.recipient = signer.address();
                     }
                     AllOrders::TOB(inner_order) => {
+                        inner_order.recipient = signer.address();
                         let hash = inner_order.no_meta_eip712_signing_hash(domain);
                         inner_order.meta = sig_f(hash);
-                        inner_order.recipient = signer.address();
                     }
                 }
 

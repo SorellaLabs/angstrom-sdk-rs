@@ -1,14 +1,27 @@
-use alloy_primitives::{Address, U256};
+use std::fmt::Debug;
+
+use alloy_primitives::{Address, B256, U256, hex, keccak256};
 use alloy_provider::Provider;
-use angstrom_types::{
-    primitive::ANGSTROM_ADDRESS,
-    sol_bindings::{RawPoolOrder, grouped_orders::AllOrders}
+use angstrom_types_primitives::{
+    primitive::ANGSTROM_ADDRESS, sol_bindings::grouped_orders::AllOrders
 };
-use validation::order::state::db_state_utils::nonces::Nonces;
 
 use super::{FillFrom, FillWrapper, errors::FillerError};
-use crate::{apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider};
+use crate::{
+    apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider, types::OrderFrom
+};
 
+/// The nonce location for quick db lookup
+const ANGSTROM_NONCE_SLOT_CONST: [u8; 4] = hex!("daa050e9");
+
+fn get_nonce_word_slot(user: Address, nonce: u64) -> B256 {
+    let nonce = nonce.to_be_bytes();
+    let mut arry = [0u8; 31];
+    arry[0..20].copy_from_slice(&**user);
+    arry[20..24].copy_from_slice(&ANGSTROM_NONCE_SLOT_CONST);
+    arry[24..31].copy_from_slice(&nonce[0..7]);
+    keccak256(arry)
+}
 #[derive(Clone, Copy, Debug, Default)]
 pub struct NonceGeneratorFiller;
 
@@ -17,11 +30,9 @@ impl NonceGeneratorFiller {
         user: Address,
         provider: &P
     ) -> Result<u64, FillerError> {
-        let nonce_tracker = Nonces::new(*ANGSTROM_ADDRESS.get().unwrap());
-
         let mut nonce: u64 = rand::random();
         loop {
-            let slot = nonce_tracker.get_nonce_word_slot(user, nonce);
+            let slot = get_nonce_word_slot(user, nonce);
 
             let word = provider
                 .get_storage_at(*ANGSTROM_ADDRESS.get().unwrap(), slot.into())
@@ -55,9 +66,10 @@ impl FillWrapper for NonceGeneratorFiller {
             return Ok(None);
         }
 
-        if order.from() != Address::default() {
+        if order.from_address() != Address::ZERO {
             let nonce =
-                Self::get_valid_angstrom_nonce(order.from(), provider.eth_provider()).await?;
+                Self::get_valid_angstrom_nonce(order.from_address(), provider.eth_provider())
+                    .await?;
             Ok(Some(nonce))
         } else {
             Ok(None)
@@ -113,7 +125,8 @@ mod tests {
     #[tokio::test]
     async fn test_nonce_generator_angstrom_order() {
         let api = spawn_api_with_filler().await.unwrap();
-        let orders = AllOrdersSpecific::default();
+        let mut orders = AllOrdersSpecific::default();
+        orders.with_address(Address::random());
 
         let provider = &api;
         orders

@@ -1,4 +1,4 @@
-use angstrom_types::contract_payloads::{
+use angstrom_types_primitives::contract_payloads::{
     Asset, Pair,
     angstrom::{AngstromBundle, TopOfBlockOrder, UserOrder}
 };

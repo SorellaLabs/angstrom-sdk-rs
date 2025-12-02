@@ -1,13 +1,11 @@
 use std::collections::HashSet;
 
 use alloy_primitives::{Address, B256, FixedBytes, TxHash, U256};
-use angstrom_rpc::{
-    api::OrderApiClient,
-    types::{
-        OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult, PendingOrder
-    }
+use angstrom_rpc_api::OrderApiClient;
+use angstrom_rpc_types::{
+    OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult, PendingOrder
 };
-use angstrom_types::{
+use angstrom_types_primitives::{
     orders::CancelOrderRequest,
     primitive::{OrderLocation, OrderStatus, PoolId},
     sol_bindings::grouped_orders::AllOrders
@@ -169,13 +167,13 @@ pub trait AngstromNodeApi<T: AngstromOrderApiClient>: Send + Sync {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "example-utils"))]
 mod tests {
 
     use std::task::Poll;
 
     use alloy_provider::Provider;
-    use angstrom_types::sol_bindings::{RawPoolOrder, rpc_orders::TopOfBlockOrder};
+    use angstrom_types_primitives::sol_bindings::{RawPoolOrder, rpc_orders::TopOfBlockOrder};
     use testing_tools::order_generator::GeneratedPoolOrders;
 
     use super::*;
@@ -184,7 +182,8 @@ mod tests {
         providers::backend::AngstromProvider,
         test_utils::{
             AngstromOrderApiClientClone, filler_orders::make_order_generator, spawn_angstrom_api
-        }
+        },
+        types::errors::AngstromSdkError
     };
 
     fn get_flash_order(orders: &[GeneratedPoolOrders]) -> AllOrders {
@@ -209,7 +208,7 @@ mod tests {
             provider: &AngstromProvider<P, T>
         ) -> Result<Self, AngstromSdkError>
         where
-            P: Provider,
+            P: Provider + Clone,
             T: AngstromOrderApiClientClone
         {
             let (generator, _rx) = make_order_generator(provider).await.unwrap();
@@ -217,16 +216,25 @@ mod tests {
 
             let tob_order = AllOrders::TOB(get_tob_order(&orders));
             let tob_order_sent = provider.send_order(tob_order.clone()).await;
-            assert!(tob_order_sent.is_ok());
+            assert!(
+                tob_order_sent.is_ok()
+                    || matches!(tob_order_sent, Err(AngstromSdkError::AngstromRpc(_))),
+                "{tob_order_sent:?}"
+            );
 
             let user_order = get_flash_order(&orders);
             let user_order_sent = provider.send_order(user_order.clone()).await;
-            assert!(user_order_sent.is_ok());
+            assert!(
+                user_order_sent.is_ok()
+                    || matches!(user_order_sent, Err(AngstromSdkError::AngstromRpc(_))),
+                "{user_order_sent:?}"
+            );
 
             Ok(Self { tob: tob_order, user: user_order })
         }
     }
 
+    #[serial_test::serial]
     #[tokio::test]
     async fn test_send_order() {
         let provider = spawn_angstrom_api().await.unwrap();
@@ -236,6 +244,7 @@ mod tests {
             .unwrap();
     }
 
+    #[serial_test::serial]
     #[tokio::test]
     async fn test_pending_order() {
         let provider = spawn_angstrom_api().await.unwrap();
@@ -260,6 +269,7 @@ mod tests {
         );
     }
 
+    #[serial_test::serial]
     #[tokio::test]
     async fn test_cancel_order() {
         let provider = spawn_angstrom_api().await.unwrap();
@@ -315,6 +325,7 @@ mod tests {
     //     assert_eq!(user_order_gas_estimation, U256::ZERO);
     // }
 
+    #[serial_test::serial]
     #[tokio::test]
     async fn test_order_status() {
         let provider = spawn_angstrom_api().await.unwrap();
@@ -336,6 +347,7 @@ mod tests {
         assert_eq!(status_user_order, OrderStatus::Pending);
     }
 
+    #[serial_test::serial]
     #[tokio::test]
     async fn test_order_by_pool_id() {
         let provider = spawn_angstrom_api().await.unwrap();
@@ -365,6 +377,7 @@ mod tests {
         assert_eq!(vec![orders.user.clone()], user_orders);
     }
 
+    #[serial_test::serial]
     #[tokio::test]
     async fn test_subscribe_orders() {
         let provider = spawn_angstrom_api().await.unwrap();

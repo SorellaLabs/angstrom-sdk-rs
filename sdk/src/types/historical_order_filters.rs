@@ -4,7 +4,7 @@ use std::{
 };
 
 use alloy_primitives::Address;
-use angstrom_types::{
+use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager::PoolKey,
     contract_payloads::angstrom::{AngstromBundle, TopOfBlockOrder, UserOrder},
     primitive::PoolId

@@ -1,13 +1,13 @@
 use alloy_primitives::{B256, Bytes, I256, U256, aliases::I24};
 use alloy_sol_types::{SolCall, SolValue};
-use angstrom_types::{
+use angstrom_types_primitives::{
     contract_bindings::{
         pool_manager::{IPoolManager, PoolManager},
         position_manager::PositionManager
     },
+    orders::builders::{ToBOrderBuilder, UserOrderBuilder},
     sol_bindings::{grouped_orders::AllOrders, rpc_orders::TopOfBlockOrder}
 };
-use testing_tools::type_generator::orders::{ToBOrderBuilder, UserOrderBuilder};
 
 use crate::builders::PositionManagerLiquidity;
 

@@ -1,11 +1,12 @@
-use alloy::transports::TransportErrorKind;
 use alloy_eips::{BlockId, BlockNumberOrTag};
 use alloy_json_rpc::RpcError;
+use alloy_network::Network;
 use alloy_primitives::{Address, TxKind};
 use alloy_provider::Provider;
 use alloy_rpc_types::{Filter, TransactionInput, TransactionRequest};
-use alloy_sol_types::{SolCall, SolEvent};
-use angstrom_types::{
+use alloy_sol_types::{SolCall, SolEvent, SolType};
+use alloy_transport::TransportErrorKind;
+use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager,
     primitive::{ANGSTROM_DEPLOYED_BLOCK, POOL_MANAGER_ADDRESS}
 };
@@ -31,6 +32,23 @@ where
         .block(block_number.map(Into::into).unwrap_or(BlockId::latest()))
         .await?;
     Ok(IC::abi_decode_returns(&data))
+}
+
+pub(crate) async fn view_deploy<P, N, IC>(
+    provider: &P,
+    block_number: Option<u64>,
+    tx: <N as Network>::TransactionRequest
+) -> Result<Result<IC::RustType, alloy_sol_types::Error>, RpcError<TransportErrorKind>>
+where
+    P: Provider<N>,
+    N: Network,
+    IC: SolType + Send
+{
+    let data = provider
+        .call(tx)
+        .block(block_number.map(Into::into).unwrap_or(BlockId::latest()))
+        .await?;
+    Ok(IC::abi_decode(&data))
 }
 
 pub(crate) fn historical_pool_manager_swap_filter(

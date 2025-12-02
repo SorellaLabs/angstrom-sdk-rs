@@ -1,12 +1,13 @@
 pub mod filler_orders;
 pub mod valid_test_params;
 
+use alloy_primitives::{Address, address};
 use alloy_provider::{
     Identity, Provider, RootProvider, WsConnect,
     fillers::{BlobGasFiller, ChainIdFiller, FillProvider, GasFiller, JoinFill, NonceFiller}
 };
 use alloy_signer_local::PrivateKeySigner;
-use angstrom_types::primitive::{AngstromSigner, try_init_with_chain_id};
+use angstrom_types_primitives::primitive::{AngstromSigner, try_init_with_chain_id};
 use auto_impl::auto_impl;
 use jsonrpsee_http_client::HttpClient;
 
@@ -19,6 +20,9 @@ pub type AlloyRpcProvider<P> = FillProvider<
     >,
     P
 >;
+
+pub const USDC: Address = address!("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
+pub const WETH: Address = address!("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
 
 #[auto_impl(&, Box, Arc)]
 pub trait AngstromOrderApiClientClone: AngstromOrderApiClient + Clone + Sync {}
