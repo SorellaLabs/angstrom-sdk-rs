@@ -2,6 +2,7 @@
 #![allow(async_fn_in_trait)]
 #![allow(clippy::type_complexity)]
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::wrong_self_convention)]
 
 pub mod apis;
 pub use providers::AngstromApi;

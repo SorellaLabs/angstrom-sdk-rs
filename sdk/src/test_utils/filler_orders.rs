@@ -55,7 +55,7 @@ where
     let enhanced_pools = try_join_all(pools.into_iter().map(|pool_key| {
         let provider = provider.eth_provider().clone();
         async move {
-            let public_pool_id: PoolId = pool_key.pool_key.into();
+            let public_pool_id: PoolId = pool_key.as_angstrom_pool_key_type().into();
             let mut private_pool_key = pool_key.pool_key;
             private_pool_key.fee = U24::from(0x800000);
             let private_pool_id: PoolId = private_pool_key.into();
