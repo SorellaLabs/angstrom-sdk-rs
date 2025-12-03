@@ -35,7 +35,7 @@ impl PoolTickDataLoader for RethDbProviderWrapper {
         .into_transaction_request();
 
         let out_tick_data = reth_db_deploy_call::<EthereumNode, TicksWithBlock>(
-            self.provider(),
+            self.provider_ref(),
             block_number,
             TransactionBuilder::input(&deployer_tx)
                 .cloned()
