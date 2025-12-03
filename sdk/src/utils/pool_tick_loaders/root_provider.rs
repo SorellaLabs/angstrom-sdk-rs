@@ -1,19 +1,17 @@
 use alloy_primitives::{BlockNumber, U256, aliases::I24};
+use alloy_provider::Provider;
 use angstrom_types_primitives::{POOL_MANAGER_ADDRESS, PoolId};
 use uni_v4::{
     loaders::get_uniswap_v_4_tick_data::GetUniswapV4TickData,
     pool_data_loader::{TickData, TicksWithBlock}
 };
 
-use crate::{
-    apis::utils::view_deploy,
-    utils::{pool_tick_loaders::PoolTickDataLoader, provider_blanket::ProviderBlanket}
-};
+use crate::{apis::utils::view_deploy, utils::pool_tick_loaders::PoolTickDataLoader};
 
 #[async_trait::async_trait]
 impl<P> PoolTickDataLoader for P
 where
-    P: ProviderBlanket
+    P: Provider + Clone
 {
     async fn load_tick_data(
         &self,

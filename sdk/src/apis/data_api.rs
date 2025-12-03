@@ -10,6 +10,7 @@ use alloy_primitives::{
     aliases::{I24, U24},
     keccak256
 };
+use alloy_provider::Provider;
 use alloy_sol_types::{SolCall, SolEvent};
 use angstrom_types_primitives::{
     contract_bindings::{
@@ -37,10 +38,7 @@ use uniswap_storage::v4::{UnpackedSlot0, pool_manager::pool_state::pool_manager_
 use super::utils::*;
 use crate::{
     types::*,
-    utils::{
-        pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader, PoolTickDataLoader},
-        provider_blanket::ProviderBlanket
-    }
+    utils::pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader, PoolTickDataLoader}
 };
 
 #[async_trait::async_trait]
@@ -308,7 +306,7 @@ pub trait AngstromDataApi: PoolTickDataLoader + Send + Sized {
 }
 
 #[async_trait::async_trait]
-impl<P: ProviderBlanket> AngstromDataApi for P {
+impl<P: Provider + Clone> AngstromDataApi for P {
     async fn tokens_by_partial_pool_key(
         &self,
         pool_partial_key: AngstromPoolPartialKey,
