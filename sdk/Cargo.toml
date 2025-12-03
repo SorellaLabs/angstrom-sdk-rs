@@ -58,7 +58,7 @@ serial_test.workspace = true
 testing-tools.workspace = true
 
 [features]
-default = ["ipc", "ws", "full", "example-utils"]
+default = ["ipc", "ws"]
 full = ["ipc", "ws", "local-reth"]
 local-reth = ["dep:lib-reth", "dep:revm", "dep:reth-provider"]
 

@@ -226,8 +226,9 @@ mod full {
             // Process only initialized ticks
             for tick_data in fetched_ticks.into_iter().filter(|t| t.initialized) {
                 let tick_info = TickInfo {
-                    initialized:   tick_data.initialized,
-                    liquidity_net: tick_data.liquidityNet
+                    initialized:     tick_data.initialized,
+                    liquidity_net:   tick_data.liquidityNet,
+                    liquidity_gross: tick_data.liquidityGross
                 };
 
                 ticks.insert(tick_data.tick.as_i32(), tick_info);
