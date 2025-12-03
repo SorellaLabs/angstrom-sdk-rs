@@ -163,6 +163,23 @@ pub struct BaselinePoolStateWithKey {
     pub pool_key: PoolKey
 }
 
+impl BaselinePoolStateWithKey {
+    pub fn angstrom_pool_id(&self) -> PoolId {
+        PoolKey {
+            currency0:   self.pool_key.currency0,
+            currency1:   self.pool_key.currency1,
+            fee:         U24::from(self.pool.bundle_fee()),
+            tickSpacing: self.pool_key.tickSpacing,
+            hooks:       self.pool_key.hooks
+        }
+        .into()
+    }
+
+    pub fn uniswap_pool_id(&self) -> PoolId {
+        self.pool_key.into()
+    }
+}
+
 pub trait OrderFrom {
     fn from_address(&self) -> Address;
 }
