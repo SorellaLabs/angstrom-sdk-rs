@@ -103,6 +103,7 @@ impl PoolKeyWithAngstromFee {
         this.pool_key.into()
     }
 
+    #[allow(unused)]
     pub(crate) fn as_angstrom_pool_key_type(
         &self
     ) -> angstrom_types_primitives::contract_bindings::angstrom::Angstrom::PoolKey {

@@ -63,7 +63,7 @@ pub async fn init_valid_position_params_with_provider() -> (
     use crate::{providers::local_reth::RethDbProviderWrapper, test_utils::eth_ws_url};
 
     let params = init_valid_position_params();
-    let provider = Arc::new(RethDbProviderWrapper::new(
+    let provider = Arc::new(RethDbProviderWrapper::new(Arc::new(
         RethNodeClientBuilder::new(
             "/var/lib/eth/mainnet/reth/",
             1000,
@@ -72,7 +72,7 @@ pub async fn init_valid_position_params_with_provider() -> (
         )
         .build()
         .unwrap()
-    ));
+    )));
 
     (provider, params)
 }

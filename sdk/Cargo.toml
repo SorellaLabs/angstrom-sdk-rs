@@ -56,9 +56,10 @@ revm = { workspace = true, features = ["alloydb"], default-features = false }
 revm-database.workspace = true
 serial_test.workspace = true
 testing-tools.workspace = true
+uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git" }
 
 [features]
-default = ["ipc", "ws"]
+default = ["ipc", "ws", "full"]
 full = ["ipc", "ws", "local-reth"]
 local-reth = ["dep:lib-reth", "dep:revm", "dep:reth-provider"]
 

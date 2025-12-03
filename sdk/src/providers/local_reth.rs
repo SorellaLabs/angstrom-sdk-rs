@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
-    ops::Deref
+    ops::Deref,
+    sync::Arc
 };
 
 use alloy_consensus::Transaction;
@@ -69,11 +70,11 @@ use crate::{
 };
 
 pub struct RethDbProviderWrapper {
-    provider: RethNodeClient<EthereumNode>
+    provider: Arc<RethNodeClient<EthereumNode>>
 }
 
 impl RethDbProviderWrapper {
-    pub fn new(provider: RethNodeClient<EthereumNode>) -> Self {
+    pub fn new(provider: Arc<RethNodeClient<EthereumNode>>) -> Self {
         Self { provider }
     }
 
