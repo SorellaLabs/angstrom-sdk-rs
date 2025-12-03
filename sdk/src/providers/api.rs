@@ -21,14 +21,14 @@ use crate::{
 #[derive(Clone)]
 pub struct AngstromApi<P, T, F = ()>
 where
-    P: Provider,
+    P: Provider + Clone,
     T: AngstromOrderApiClient
 {
     provider: AngstromProvider<P, T>,
     filler:   F
 }
 
-impl<P: Provider> AngstromApi<P, HttpClient> {
+impl<P: Provider + Clone> AngstromApi<P, HttpClient> {
     pub fn new_angstrom_http(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
         Ok(Self {
             provider: AngstromProvider::new_angstrom_http(eth_provider, angstrom_url)?,
@@ -37,7 +37,7 @@ impl<P: Provider> AngstromApi<P, HttpClient> {
     }
 }
 
-impl<P: Provider> AngstromApi<P, WsClient> {
+impl<P: Provider + Clone> AngstromApi<P, WsClient> {
     pub async fn new_angstrom_ws(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
         Ok(Self {
             provider: AngstromProvider::new_angstrom_ws(eth_provider, angstrom_url).await?,
@@ -48,7 +48,7 @@ impl<P: Provider> AngstromApi<P, WsClient> {
 
 impl<P, T> AngstromApi<P, T>
 where
-    P: Provider,
+    P: Provider + Clone,
     T: AngstromOrderApiClient
 {
     #[allow(unused)]
@@ -63,7 +63,7 @@ where
 
 impl<P, T, F> AngstromApi<P, T, F>
 where
-    P: Provider,
+    P: Provider + Clone,
     F: AngstromFiller,
     T: AngstromOrderApiClient
 {
@@ -157,7 +157,7 @@ where
 #[async_trait::async_trait]
 impl<P, T, F> AngstromNodeApi<T> for AngstromApi<P, T, F>
 where
-    P: Provider,
+    P: Provider + Clone,
     F: AngstromFiller,
     T: AngstromOrderApiClient
 {
@@ -183,7 +183,7 @@ where
 
 impl<P, T, F> Provider for AngstromApi<P, T, F>
 where
-    P: Provider,
+    P: Provider + Clone,
     F: AngstromFiller,
     T: AngstromOrderApiClient
 {
@@ -195,7 +195,7 @@ where
 #[cfg(test)]
 impl<P, T, F> AngstromApi<P, T, F>
 where
-    P: Provider,
+    P: Provider + Clone,
     F: AngstromFiller,
     T: AngstromOrderApiClient
 {

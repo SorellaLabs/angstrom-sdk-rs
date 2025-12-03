@@ -16,20 +16,20 @@ pub type AlloyWalletRpcProvider<P> =
 #[derive(Debug, Clone)]
 pub struct AngstromProvider<P, T>
 where
-    P: Provider,
+    P: Provider + Clone,
     T: AngstromOrderApiClient
 {
     eth_provider:      P,
     angstrom_provider: T
 }
 
-impl<P: Provider> AngstromProvider<P, HttpClient> {
+impl<P: Provider + Clone> AngstromProvider<P, HttpClient> {
     pub fn new_angstrom_http(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
         Ok(Self { eth_provider, angstrom_provider: HttpClient::builder().build(angstrom_url)? })
     }
 }
 
-impl<P: Provider> AngstromProvider<P, WsClient> {
+impl<P: Provider + Clone> AngstromProvider<P, WsClient> {
     pub async fn new_angstrom_ws(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
         Ok(Self {
             eth_provider,
@@ -38,7 +38,7 @@ impl<P: Provider> AngstromProvider<P, WsClient> {
     }
 }
 
-impl<P: Provider, T: AngstromOrderApiClient> AngstromProvider<P, T> {
+impl<P: Provider + Clone, T: AngstromOrderApiClient> AngstromProvider<P, T> {
     pub fn new_with_providers(eth_provider: P, angstrom_provider: T) -> Self {
         Self { eth_provider, angstrom_provider }
     }
@@ -59,13 +59,13 @@ impl<P: Provider, T: AngstromOrderApiClient> AngstromProvider<P, T> {
     }
 }
 
-impl<P: Provider, T: AngstromOrderApiClient> AngstromNodeApi<T> for AngstromProvider<P, T> {
+impl<P: Provider + Clone, T: AngstromOrderApiClient> AngstromNodeApi<T> for AngstromProvider<P, T> {
     fn angstrom_rpc_provider(&self) -> &T {
         &self.angstrom_provider
     }
 }
 
-impl<P: Provider, T: AngstromOrderApiClient> Provider for AngstromProvider<P, T> {
+impl<P: Provider + Clone, T: AngstromOrderApiClient> Provider for AngstromProvider<P, T> {
     fn root(&self) -> &RootProvider {
         self.eth_provider.root()
     }

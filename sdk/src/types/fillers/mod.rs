@@ -39,7 +39,7 @@ where
         order: &mut AllOrders
     ) -> Result<(), FillerError>
     where
-        P: Provider,
+        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         self.left.fill(provider, order).await?;
@@ -54,7 +54,7 @@ where
         _: &AllOrders
     ) -> Result<(), FillerError>
     where
-        P: Provider,
+        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         Ok(())
@@ -77,7 +77,7 @@ pub(crate) trait FillWrapper: Send + Sync + Clone + Sized {
         order: &mut AllOrders
     ) -> Result<(), FillerError>
     where
-        P: Provider,
+        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         let input = self.prepare(provider, order).await?;
@@ -92,7 +92,7 @@ pub(crate) trait FillWrapper: Send + Sync + Clone + Sized {
         orders: &mut [AllOrders]
     ) -> Result<(), FillerError>
     where
-        P: Provider,
+        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         let inputs = self.prepare_many(provider, orders).await;
@@ -111,7 +111,7 @@ pub(crate) trait FillWrapper: Send + Sync + Clone + Sized {
         order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider,
+        P: Provider + Clone,
         T: AngstromOrderApiClient;
 
     async fn prepare_many<P, T>(
@@ -120,7 +120,7 @@ pub(crate) trait FillWrapper: Send + Sync + Clone + Sized {
         orders: &[AllOrders]
     ) -> Vec<Result<Self::FillOutput, FillerError>>
     where
-        P: Provider,
+        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         futures::future::join_all(
@@ -146,7 +146,7 @@ impl FillWrapper for () {
         _: &AllOrders
     ) -> Result<(), FillerError>
     where
-        P: Provider,
+        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         Ok(())

@@ -43,7 +43,7 @@ impl<S: Signer + SignerSync + Send + Sync + Clone> FillWrapper for AngstromSigne
         order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider,
+        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         let my_address = self.0.address();

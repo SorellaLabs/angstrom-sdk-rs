@@ -13,7 +13,7 @@ use crate::{
 pub struct TokenBalanceCheckFiller;
 
 impl TokenBalanceCheckFiller {
-    async fn check_balance<P: Provider, T: AngstromOrderApiClient>(
+    async fn check_balance<P: Provider + Clone, T: AngstromOrderApiClient>(
         provider: &AngstromProvider<P, T>,
         user: Address,
         token: Address,
@@ -39,7 +39,7 @@ impl TokenBalanceCheckFiller {
 impl FillWrapper for TokenBalanceCheckFiller {
     type FillOutput = ();
 
-    async fn prepare<P: Provider, T: AngstromOrderApiClient>(
+    async fn prepare<P: Provider + Clone, T: AngstromOrderApiClient>(
         &self,
         provider: &AngstromProvider<P, T>,
         order: &AllOrders

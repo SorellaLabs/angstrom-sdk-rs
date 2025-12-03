@@ -26,7 +26,7 @@ fn get_nonce_word_slot(user: Address, nonce: u64) -> B256 {
 pub struct NonceGeneratorFiller;
 
 impl NonceGeneratorFiller {
-    async fn get_valid_angstrom_nonce<P: Provider>(
+    async fn get_valid_angstrom_nonce<P: Provider + Clone>(
         user: Address,
         provider: &P
     ) -> Result<u64, FillerError> {
@@ -59,7 +59,7 @@ impl FillWrapper for NonceGeneratorFiller {
         order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider,
+        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         if !matches!(order, AllOrders::PartialStanding(_) | AllOrders::ExactStanding(_)) {

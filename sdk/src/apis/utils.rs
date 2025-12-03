@@ -18,7 +18,7 @@ pub(crate) async fn view_call<P, IC>(
     call: IC
 ) -> Result<Result<IC::Return, alloy_sol_types::Error>, RpcError<TransportErrorKind>>
 where
-    P: Provider,
+    P: Provider + Clone,
     IC: SolCall + Send
 {
     let tx = TransactionRequest {

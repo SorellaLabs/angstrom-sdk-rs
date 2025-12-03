@@ -181,7 +181,7 @@ impl AnvilAngstromProvider {
     }
 }
 
-fn find_slot_offset_for_balance<P: Provider>(
+fn find_slot_offset_for_balance<P: Provider + Clone>(
     provider: &P,
     token_address: Address,
     handle: Handle
