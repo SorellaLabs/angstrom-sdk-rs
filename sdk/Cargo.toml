@@ -59,7 +59,7 @@ testing-tools.workspace = true
 uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git" }
 
 [features]
-default = ["ipc", "ws", "full"]
+default = ["ipc", "ws"]
 full = ["ipc", "ws", "local-reth"]
 local-reth = ["dep:lib-reth", "dep:revm", "dep:reth-provider"]
 
