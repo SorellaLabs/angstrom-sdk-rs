@@ -69,6 +69,7 @@ use crate::{
     utils::pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader}
 };
 
+#[derive(Clone)]
 pub struct RethDbProviderWrapper {
     provider: Arc<RethNodeClient<EthereumNode>>
 }
