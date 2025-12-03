@@ -79,7 +79,7 @@ impl RethDbProviderWrapper {
         Self { provider }
     }
 
-    pub fn provider(&self) -> &RethNodeClient<EthereumNode> {
+    pub fn provider(&self) -> Arc<RethNodeClient<EthereumNode>> {
         self.provider.clone()
     }
 
