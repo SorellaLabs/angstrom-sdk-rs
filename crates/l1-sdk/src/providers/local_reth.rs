@@ -14,6 +14,7 @@ use alloy_primitives::{
 };
 use alloy_provider::Provider;
 use alloy_sol_types::{SolCall, SolEvent, SolType};
+use angstrom_sdk_types::providers::local_reth::RethDbProviderWrapper;
 use angstrom_types_primitives::{
     contract_bindings::{
         angstrom::Angstrom,
@@ -69,27 +70,8 @@ use crate::{
     utils::pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader}
 };
 
-#[derive(Clone)]
-pub struct RethDbProviderWrapper {
-    provider: Arc<RethNodeClient<EthereumNode>>
-}
-
-impl RethDbProviderWrapper {
-    pub fn new(provider: Arc<RethNodeClient<EthereumNode>>) -> Self {
-        Self { provider }
-    }
-
-    pub fn provider(&self) -> Arc<RethNodeClient<EthereumNode>> {
-        self.provider.clone()
-    }
-
-    pub fn provider_ref(&self) -> &RethNodeClient<EthereumNode> {
-        &self.provider
-    }
-}
-
 #[async_trait::async_trait]
-impl AngstromDataApi for RethDbProviderWrapper {
+impl AngstromDataApi for RethDbProviderWrapper<EthereumNode> {
     async fn tokens_by_partial_pool_key(
         &self,
         pool_partial_key: AngstromPoolPartialKey,
@@ -540,7 +522,7 @@ impl AngstromDataApi for RethDbProviderWrapper {
 }
 
 #[async_trait::async_trait]
-impl AngstromUserApi for RethDbProviderWrapper {
+impl AngstromUserApi for RethDbProviderWrapper<EthereumNode> {
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,

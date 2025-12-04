@@ -1,13 +1,10 @@
 [package]
-name = "angstrom-sdk-rs"
+name = "angstrom-sdk-types"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 exclude.workspace = true
-
-[lib]
-name = "angstrom_sdk_rs"
 
 [dependencies]
 alloy-consensus.workspace = true
@@ -61,9 +58,7 @@ uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git" }
 [features]
 default = ["ipc", "ws"]
 full = ["ipc", "ws", "local-reth"]
-local-reth = ["dep:lib-reth", "dep:revm", "dep:reth-provider"]
 
+local-reth = ["dep:lib-reth", "dep:revm", "dep:reth-provider"]
 ipc = []
 ws = []
-
-example-utils = ["revm/alloydb", "dep:testing-tools", "dep:uniswap-v4"]

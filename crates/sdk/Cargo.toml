@@ -1,0 +1,23 @@
+[package]
+name = "angstrom-sdk"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+exclude.workspace = true
+
+[dependencies]
+
+angstrom-l1-sdk = { workspace = true, optional = true }
+angstrom-l2-sdk = { workspace = true, optional = true }
+angstrom-sdk-types.workspace = true
+
+[features]
+default = ["full"]
+full = ["l1-full", "l2-full"]
+
+l1 = ["dep:angstrom-l1-sdk"]
+l2 = ["dep:angstrom-l2-sdk"]
+
+l1-full = ["dep:angstrom-l1-sdk", "angstrom-l1-sdk/full"]
+l2-full = ["dep:angstrom-l2-sdk", "angstrom-l2-sdk/full"]

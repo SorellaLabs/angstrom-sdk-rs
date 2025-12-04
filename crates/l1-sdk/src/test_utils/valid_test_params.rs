@@ -10,6 +10,8 @@ use angstrom_types_primitives::{
         PoolId, try_init_with_chain_id
     }
 };
+#[cfg(feature = "local-reth")]
+use lib_reth::EthereumNode;
 use uniswap_storage::v4::UnpackedPositionInfo;
 
 use crate::test_utils::{USDC, WETH};
@@ -53,14 +55,15 @@ pub async fn init_valid_position_params_with_provider()
 
 #[cfg(feature = "local-reth")]
 pub async fn init_valid_position_params_with_provider() -> (
-    std::sync::Arc<crate::providers::local_reth::RethDbProviderWrapper>,
+    std::sync::Arc<angstrom_sdk_types::providers::local_reth::RethDbProviderWrapper<EthereumNode>>,
     ValidPositionTestParameters
 ) {
     use std::sync::Arc;
 
+    use angstrom_sdk_types::providers::local_reth::RethDbProviderWrapper;
     use lib_reth::{MAINNET, reth_libmdbx::RethNodeClientBuilder};
 
-    use crate::{providers::local_reth::RethDbProviderWrapper, test_utils::eth_ws_url};
+    use crate::test_utils::eth_ws_url;
 
     let params = init_valid_position_params();
     let provider = Arc::new(RethDbProviderWrapper::new(Arc::new(

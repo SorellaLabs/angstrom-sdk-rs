@@ -2,12 +2,14 @@ use alloy_primitives::{Address, U256, aliases::I24};
 use angstrom_types_primitives::primitive::PoolId;
 use uniswap_storage::{
     StorageSlotFetcher,
-    angstrom::{angstrom_growth_inside, angstrom_last_growth_inside}
+    v4::pool_manager::position_state::{
+        pool_manager_position_fee_growth_inside, pool_manager_position_state_last_fee_growth_inside
+    }
 };
 
-pub async fn angstrom_fee_delta_x128<F: StorageSlotFetcher>(
+pub async fn uniswap_fee_deltas<F: StorageSlotFetcher>(
     slot_fetcher: &F,
-    angstrom_address: Address,
+    pool_manager_address: Address,
     position_manager_address: Address,
     block_number: Option<u64>,
     pool_id: PoolId,
@@ -15,20 +17,23 @@ pub async fn angstrom_fee_delta_x128<F: StorageSlotFetcher>(
     position_token_id: U256,
     tick_lower: I24,
     tick_upper: I24
-) -> eyre::Result<U256> {
-    let (growth_inside, last_growth_inside) = tokio::try_join!(
-        angstrom_growth_inside(
+) -> eyre::Result<(U256, U256)> {
+    let (
+        (fee_growth_inside0_x128, fee_growth_inside1_x128),
+        (fee_growth_inside0_last_x128, fee_growth_inside1_last_x128)
+    ) = tokio::try_join!(
+        pool_manager_position_fee_growth_inside(
             slot_fetcher,
-            angstrom_address,
+            pool_manager_address,
             pool_id,
             current_pool_tick,
             tick_lower,
             tick_upper,
             block_number,
         ),
-        angstrom_last_growth_inside(
+        pool_manager_position_state_last_fee_growth_inside(
             slot_fetcher,
-            angstrom_address,
+            pool_manager_address,
             position_manager_address,
             pool_id,
             position_token_id,
@@ -38,29 +43,32 @@ pub async fn angstrom_fee_delta_x128<F: StorageSlotFetcher>(
         ),
     )?;
 
-    Ok(growth_inside - last_growth_inside)
+    Ok((
+        fee_growth_inside0_x128 - fee_growth_inside0_last_x128,
+        fee_growth_inside1_x128 - fee_growth_inside1_last_x128
+    ))
 }
 
 #[cfg(test)]
 mod tests {
-    use angstrom_types_primitives::primitive::{ANGSTROM_ADDRESS, POSITION_MANAGER_ADDRESS};
+    use angstrom_types_primitives::primitive::{POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS};
 
     use super::*;
     use crate::test_utils::valid_test_params::init_valid_position_params_with_provider;
 
     #[tokio::test]
-    async fn test_angstrom_fee_delta_x128() {
+    async fn test_uniswap_fee_deltas() {
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
         let block_number = pos_info.block_number;
 
         #[cfg(feature = "local-reth")]
-        let provider = provider.provider();
+        let provider = provider.provider_ref();
         #[cfg(not(feature = "local-reth"))]
         let provider = &provider;
 
-        let results = angstrom_fee_delta_x128(
+        let results = uniswap_fee_deltas(
             provider,
-            *ANGSTROM_ADDRESS.get().unwrap(),
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             Some(block_number),
             pos_info.pool_id,
@@ -72,7 +80,12 @@ mod tests {
         .await
         .unwrap();
 
-        let expected = U256::from(90224992210989852552811100631246_u128);
-        assert_eq!(results, expected);
+        assert_eq!(
+            results,
+            (
+                U256::from(4004676340914304001936429601015_u128),
+                U256::from_str_radix("1565824208245443875813344119471164423504", 10).unwrap()
+            )
+        );
     }
 }

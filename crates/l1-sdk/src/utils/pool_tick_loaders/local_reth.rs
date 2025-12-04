@@ -1,5 +1,6 @@
 use alloy_network::TransactionBuilder;
 use alloy_primitives::{BlockNumber, U256, aliases::I24};
+use angstrom_sdk_types::providers::local_reth::RethDbProviderWrapper;
 use angstrom_types_primitives::{POOL_MANAGER_ADDRESS, PoolId};
 use lib_reth::{EthereumNode, traits::EthStream};
 use uni_v4::{
@@ -8,12 +9,11 @@ use uni_v4::{
 };
 
 use crate::{
-    providers::local_reth::{RethDbProviderWrapper, reth_db_deploy_call},
-    utils::pool_tick_loaders::PoolTickDataLoader
+    providers::local_reth::reth_db_deploy_call, utils::pool_tick_loaders::PoolTickDataLoader
 };
 
 #[async_trait::async_trait]
-impl PoolTickDataLoader for RethDbProviderWrapper {
+impl PoolTickDataLoader for RethDbProviderWrapper<EthereumNode> {
     async fn load_tick_data(
         &self,
         pool_id: PoolId,
