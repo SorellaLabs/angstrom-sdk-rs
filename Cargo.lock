@@ -1077,7 +1077,7 @@ checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
 [[package]]
 name = "angstrom"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy",
  "alloy-chains",
@@ -1116,7 +1116,7 @@ dependencies = [
 [[package]]
 name = "angstrom-amm-quoter"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "angstrom-types",
  "eyre",
@@ -1132,7 +1132,7 @@ dependencies = [
 [[package]]
 name = "angstrom-eth"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy",
  "angstrom-types",
@@ -1159,7 +1159,7 @@ dependencies = [
 [[package]]
 name = "angstrom-metrics"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "angstrom-types",
  "eyre",
@@ -1179,7 +1179,7 @@ dependencies = [
 [[package]]
 name = "angstrom-network"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy",
  "alloy-chains",
@@ -1220,7 +1220,7 @@ dependencies = [
 [[package]]
 name = "angstrom-rpc"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy-primitives",
  "angstrom-amm-quoter",
@@ -1243,7 +1243,7 @@ dependencies = [
 [[package]]
 name = "angstrom-rpc-api"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy-primitives",
  "angstrom-rpc-types",
@@ -1257,7 +1257,7 @@ dependencies = [
 [[package]]
 name = "angstrom-rpc-types"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy-primitives",
  "angstrom-types-primitives",
@@ -1315,7 +1315,7 @@ dependencies = [
 [[package]]
 name = "angstrom-types"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy",
  "alloy-primitives",
@@ -1355,7 +1355,7 @@ dependencies = [
 [[package]]
 name = "angstrom-types-constants"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy-dyn-abi",
  "alloy-primitives",
@@ -1366,7 +1366,7 @@ dependencies = [
 [[package]]
 name = "angstrom-types-primitives"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy-consensus",
  "alloy-contract",
@@ -1403,7 +1403,7 @@ dependencies = [
 [[package]]
 name = "angstrom-utils"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "futures",
  "tokio",
@@ -3191,7 +3191,7 @@ dependencies = [
 [[package]]
 name = "consensus"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy",
  "angstrom-metrics",
@@ -6363,7 +6363,7 @@ dependencies = [
 [[package]]
 name = "matching-engine"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy",
  "alloy-primitives",
@@ -7168,7 +7168,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 [[package]]
 name = "order-pool"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy",
  "angstrom-metrics",
@@ -12933,7 +12933,7 @@ dependencies = [
 [[package]]
 name = "telemetry"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy-primitives",
  "angstrom-eth",
@@ -12958,7 +12958,7 @@ dependencies = [
 [[package]]
 name = "telemetry-recorder"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "angstrom-types",
  "chrono",
@@ -12983,7 +12983,7 @@ dependencies = [
 [[package]]
 name = "testing-tools"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy",
  "alloy-chains",
@@ -13729,7 +13729,7 @@ checksum = "eaea85b334db583fe3274d12b4cd1880032beab409c0d774be044d4480ab9a94"
 [[package]]
 name = "uni-v4"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom-v4.git#685ca257035f5165d2b2c7c609184a2536a1215f"
+source = "git+https://github.com/SorellaLabs/angstrom-v4.git#0c21c4e3d1c222e35d47eb14febffb43e6ad0639"
 dependencies = [
  "uni-v4-common",
  "uni-v4-structure",
@@ -13739,7 +13739,7 @@ dependencies = [
 [[package]]
 name = "uni-v4-common"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom-v4.git#685ca257035f5165d2b2c7c609184a2536a1215f"
+source = "git+https://github.com/SorellaLabs/angstrom-v4.git#0c21c4e3d1c222e35d47eb14febffb43e6ad0639"
 dependencies = [
  "alloy-contract",
  "alloy-primitives",
@@ -13757,7 +13757,7 @@ dependencies = [
 [[package]]
 name = "uni-v4-structure"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom-v4.git#685ca257035f5165d2b2c7c609184a2536a1215f"
+source = "git+https://github.com/SorellaLabs/angstrom-v4.git#0c21c4e3d1c222e35d47eb14febffb43e6ad0639"
 dependencies = [
  "alloy-primitives",
  "eyre",
@@ -13770,7 +13770,7 @@ dependencies = [
 [[package]]
 name = "uni-v4-upkeeper"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom-v4.git#685ca257035f5165d2b2c7c609184a2536a1215f"
+source = "git+https://github.com/SorellaLabs/angstrom-v4.git#0c21c4e3d1c222e35d47eb14febffb43e6ad0639"
 dependencies = [
  "alloy-consensus",
  "alloy-contract",
@@ -13867,7 +13867,7 @@ dependencies = [
 [[package]]
 name = "uniswap-v4"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy",
  "alloy-primitives",
@@ -13993,7 +13993,7 @@ dependencies = [
 [[package]]
 name = "validation"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git#4d93f2e4fb14ef918860f90f58b96726385fe933"
+source = "git+https://github.com/SorellaLabs/angstrom.git#efc62bf53c2a1543a8389bf123124292e9b0a033"
 dependencies = [
  "alloy",
  "angstrom-metrics",
