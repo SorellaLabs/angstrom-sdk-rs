@@ -1,3 +1,4 @@
+use alloy_network::Network;
 use alloy_primitives::{BlockNumber, U256, aliases::I24};
 use alloy_provider::Provider;
 use angstrom_types_primitives::{POOL_MANAGER_ADDRESS, PoolId};
@@ -6,12 +7,13 @@ use uni_v4::{
     pool_data_loader::{TickData, TicksWithBlock}
 };
 
-use crate::l1::{apis::utils::view_deploy, utils::pool_tick_loaders::PoolTickDataLoader};
+use crate::types::{pool_tick_loaders::PoolTickDataLoader, providers::alloy_view_deploy};
 
 #[async_trait::async_trait]
-impl<P> PoolTickDataLoader for P
+impl<P, N> PoolTickDataLoader<N> for P
 where
-    P: Provider + Clone
+    P: Provider<N> + Clone,
+    N: Network
 {
     async fn load_tick_data(
         &self,
@@ -34,7 +36,7 @@ where
         .into_transaction_request();
 
         let out_tick_data =
-            view_deploy::<_, _, TicksWithBlock>(&self, block_number, deployer_tx).await??;
+            alloy_view_deploy::<_, _, TicksWithBlock>(&self, block_number, deployer_tx).await??;
 
         Ok((
             out_tick_data

@@ -3,10 +3,9 @@ use alloy_provider::Provider;
 use angstrom_types_primitives::primitive::ERC20;
 
 use super::{AllOrders, FillWrapper, errors::FillerError};
-use crate::l1::{
-    apis::{node_api::AngstromOrderApiClient, utils::view_call},
-    providers::backend::AngstromProvider,
-    types::OrderFrom
+use crate::{
+    l1::{apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider},
+    types::{common::*, providers::alloy_view_call}
 };
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -19,9 +18,13 @@ impl TokenBalanceCheckFiller {
         token: Address,
         requested_amount: U256
     ) -> Result<(), FillerError> {
-        let user_balance_of =
-            view_call(provider.eth_provider(), None, token, ERC20::balanceOfCall { _owner: user })
-                .await??;
+        let user_balance_of = alloy_view_call(
+            provider.eth_provider(),
+            None,
+            token,
+            ERC20::balanceOfCall { _owner: user }
+        )
+        .await??;
 
         if requested_amount > user_balance_of {
             return Err(FillerError::InsufficientBalanceError(

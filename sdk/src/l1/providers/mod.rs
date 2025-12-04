@@ -1,6 +1,5 @@
 pub mod api;
-#[cfg(feature = "local-reth")]
-pub mod local_reth;
+
 use std::marker::PhantomData;
 
 use angstrom_types_primitives::primitive::{AngstromAddressBuilder, init_with_chain_id};

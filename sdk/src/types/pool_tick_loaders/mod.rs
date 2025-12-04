@@ -1,7 +1,8 @@
+mod alloy_provider;
 #[cfg(feature = "local-reth")]
 mod local_reth;
-mod root_provider;
 
+use alloy_network::Network;
 use alloy_primitives::{BlockNumber, U256, aliases::I24};
 use angstrom_types_primitives::PoolId;
 pub use full::FullTickLoader;
@@ -10,7 +11,7 @@ use uni_v4::pool_data_loader::TickData;
 pub const DEFAULT_TICKS_PER_BATCH: usize = 10;
 
 #[async_trait::async_trait]
-pub trait PoolTickDataLoader: Send + Sync {
+pub trait PoolTickDataLoader<N: Network>: Send + Sync {
     async fn load_tick_data(
         &self,
         pool_id: PoolId,
@@ -25,6 +26,7 @@ pub trait PoolTickDataLoader: Send + Sync {
 mod full {
     use std::collections::HashMap;
 
+    use alloy_network::Network;
     use alloy_primitives::{U256, aliases::I24};
     use angstrom_types_primitives::PoolId;
     use uni_v4::{
@@ -32,7 +34,7 @@ mod full {
         tick_info::TickInfo
     };
 
-    use crate::l1::utils::pool_tick_loaders::PoolTickDataLoader;
+    use crate::types::pool_tick_loaders::PoolTickDataLoader;
 
     fn flip_tick_if_not_init(tick_bitmap: &mut HashMap<i16, U256>, tick: i32, tick_spacing: i32) {
         let compressed = tick / tick_spacing;
@@ -48,7 +50,7 @@ mod full {
     }
 
     #[async_trait::async_trait]
-    pub trait FullTickLoader {
+    pub trait FullTickLoader<N: Network> {
         async fn load_tick_data_in_band(
             &self,
             pool_id: PoolId,
@@ -88,9 +90,10 @@ mod full {
     }
 
     #[async_trait::async_trait]
-    impl<T> FullTickLoader for T
+    impl<T, N> FullTickLoader<N> for T
     where
-        T: PoolTickDataLoader + Sync
+        T: PoolTickDataLoader<N> + Sync,
+        N: Network
     {
         async fn load_tick_data_in_band(
             &self,

@@ -1,0 +1,103 @@
+use alloy_network::TransactionBuilder;
+use alloy_primitives::{BlockNumber, U256, aliases::I24};
+use angstrom_types_primitives::{POOL_MANAGER_ADDRESS, PoolId};
+use lib_reth::{reth_libmdbx::NodeClientSpec, traits::EthStream};
+use uni_v4::{
+    loaders::get_uniswap_v_4_tick_data::GetUniswapV4TickData,
+    pool_data_loader::{TickData, TicksWithBlock}
+};
+
+use crate::types::{
+    pool_tick_loaders::PoolTickDataLoader,
+    providers::{RethDbProviderWrapper, reth_db_deploy_call}
+};
+
+#[cfg(feature = "l1")]
+#[async_trait::async_trait]
+impl PoolTickDataLoader<alloy_network::Ethereum> for RethDbProviderWrapper<lib_reth::EthereumNode> {
+    async fn load_tick_data(
+        &self,
+        pool_id: PoolId,
+        current_tick: I24,
+        zero_for_one: bool,
+        num_ticks: u16,
+        tick_spacing: I24,
+        block_number: Option<BlockNumber>
+    ) -> eyre::Result<(Vec<TickData>, U256)> {
+        __load_tick_data(
+            self,
+            pool_id,
+            current_tick,
+            zero_for_one,
+            num_ticks,
+            tick_spacing,
+            block_number
+        )
+        .await
+    }
+}
+
+#[cfg(feature = "l2")]
+#[async_trait::async_trait]
+impl PoolTickDataLoader<op_alloy_network::Optimism>
+    for RethDbProviderWrapper<lib_reth::op_reth::OpNode>
+{
+    async fn load_tick_data(
+        &self,
+        pool_id: PoolId,
+        current_tick: I24,
+        zero_for_one: bool,
+        num_ticks: u16,
+        tick_spacing: I24,
+        block_number: Option<BlockNumber>
+    ) -> eyre::Result<(Vec<TickData>, U256)> {
+        __load_tick_data(
+            self,
+            pool_id,
+            current_tick,
+            zero_for_one,
+            num_ticks,
+            tick_spacing,
+            block_number
+        )
+        .await
+    }
+}
+
+async fn __load_tick_data<Node: NodeClientSpec>(
+    this: &RethDbProviderWrapper<Node>,
+    pool_id: PoolId,
+    current_tick: I24,
+    zero_for_one: bool,
+    num_ticks: u16,
+    tick_spacing: I24,
+    block_number: Option<BlockNumber>
+) -> eyre::Result<(Vec<TickData>, U256)> {
+    let deployer_tx = GetUniswapV4TickData::deploy_builder(
+        this.provider().root_provider().await?,
+        pool_id,
+        *POOL_MANAGER_ADDRESS.get().unwrap(),
+        zero_for_one,
+        current_tick,
+        num_ticks,
+        tick_spacing
+    )
+    .into_transaction_request();
+
+    let out_tick_data = reth_db_deploy_call::<Node, TicksWithBlock>(
+        this.provider_ref(),
+        block_number,
+        TransactionBuilder::input(&deployer_tx)
+            .cloned()
+            .unwrap_or_default()
+    )??;
+
+    Ok((
+        out_tick_data
+            .ticks
+            .into_iter()
+            .take(out_tick_data.validTo.to::<usize>())
+            .collect::<Vec<_>>(),
+        out_tick_data.blockNumber
+    ))
+}

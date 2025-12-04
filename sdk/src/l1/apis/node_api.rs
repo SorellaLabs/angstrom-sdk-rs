@@ -178,7 +178,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        apis::data_api::AngstromDataApi,
+        apis::data_api::AngstromL1DataApi,
         providers::backend::AngstromProvider,
         test_utils::{
             AngstromOrderApiClientClone, filler_orders::make_order_generator, spawn_angstrom_api

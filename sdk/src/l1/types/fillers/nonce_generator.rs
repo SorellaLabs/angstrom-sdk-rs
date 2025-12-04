@@ -7,8 +7,9 @@ use angstrom_types_primitives::{
 };
 
 use super::{FillFrom, FillWrapper, errors::FillerError};
-use crate::l1::{
-    apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider, types::OrderFrom
+use crate::{
+    l1::{apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider},
+    types::common::*
 };
 
 /// The nonce location for quick db lookup

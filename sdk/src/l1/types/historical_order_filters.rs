@@ -10,8 +10,7 @@ use angstrom_types_primitives::{
     primitive::PoolId
 };
 
-use super::PoolMetadata;
-use crate::l1::apis::data_api::AngstromDataApi;
+use crate::{l1::apis::data_api::AngstromL1DataApi, types::common::*};
 
 #[derive(Debug, Default, Clone)]
 pub struct HistoricalOrdersFilter {
@@ -154,7 +153,7 @@ impl AngstromPoolTokenIndexToPair {
         filter: &HistoricalOrdersFilter
     ) -> eyre::Result<Self>
     where
-        P: AngstromDataApi + Sized
+        P: AngstromL1DataApi + Sized
     {
         let token_pairs = filter
             .order_filters
