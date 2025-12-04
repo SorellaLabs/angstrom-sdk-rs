@@ -47,17 +47,15 @@ use uniswap_storage::v4::{
 };
 
 use crate::{
-    l1::apis::{
-        AngstromL1DataApi, AngstromL1UserApi,
-        utils::{
-            historical_pool_manager_modify_liquidity_filter, historical_pool_manager_swap_filter
-        }
-    },
+    l1::apis::{AngstromL1DataApi, AngstromL1UserApi},
     types::{
         common::*,
         fees::{LiquidityPositionFees, position_fees},
         pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader},
-        providers::{alloy_view_call, alloy_view_deploy}
+        providers::{alloy_view_call, alloy_view_deploy},
+        utils::{
+            historical_pool_manager_modify_liquidity_filter, historical_pool_manager_swap_filter
+        }
     }
 };
 

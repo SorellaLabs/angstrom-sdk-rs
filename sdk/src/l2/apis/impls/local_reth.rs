@@ -49,7 +49,7 @@ use uniswap_storage::v4::{
 };
 
 use crate::{
-    l1::apis::{AngstromL1DataApi, AngstromL1UserApi},
+    l2::apis::{AngstromL2DataApi, AngstromL2UserApi},
     types::{
         common::*,
         fees::{LiquidityPositionFees, position_fees},
@@ -62,7 +62,7 @@ use crate::{
 };
 
 #[async_trait::async_trait]
-impl AngstromL1DataApi for RethDbProviderWrapper<EthereumNode> {
+impl AngstromL2DataApi for RethDbProviderWrapper<EthereumNode> {
     async fn tokens_by_partial_pool_key(
         &self,
         pool_partial_key: AngstromPoolPartialKey,
@@ -513,7 +513,7 @@ impl AngstromL1DataApi for RethDbProviderWrapper<EthereumNode> {
 }
 
 #[async_trait::async_trait]
-impl AngstromL1UserApi for RethDbProviderWrapper<EthereumNode> {
+impl AngstromL2UserApi for RethDbProviderWrapper<EthereumNode> {
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,

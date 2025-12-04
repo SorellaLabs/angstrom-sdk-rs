@@ -4,3 +4,5 @@ pub(crate) mod utils;
 
 pub mod common;
 pub mod fees;
+
+pub mod contracts;

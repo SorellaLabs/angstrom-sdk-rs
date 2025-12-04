@@ -8,6 +8,7 @@ exclude.workspace = true
 
 [dependencies]
 alloy-consensus.workspace = true
+alloy-contract.workspace = true
 alloy-eips.workspace = true
 alloy-json-rpc.workspace = true
 alloy-network.workspace = true
@@ -55,6 +56,10 @@ revm-database.workspace = true
 serial_test.workspace = true
 testing-tools.workspace = true
 uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git" }
+
+[build-dependencies]
+convert_case = "0"
+itertools.workspace = true
 
 [features]
 default = ["ipc", "ws", "full"]

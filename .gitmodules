@@ -1,0 +1,3 @@
+[submodule "contracts/l2-angstrom"]
+	path = contracts/l2-angstrom
+	url = https://github.com/SorellaLabs/l2-angstrom.git

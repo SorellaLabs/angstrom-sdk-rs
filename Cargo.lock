@@ -1303,6 +1303,7 @@ name = "angstrom-sdk"
 version = "0.1.0"
 dependencies = [
  "alloy-consensus",
+ "alloy-contract",
  "alloy-eips",
  "alloy-json-rpc",
  "alloy-network",
@@ -1319,6 +1320,7 @@ dependencies = [
  "angstrom-types-primitives",
  "async-trait",
  "auto_impl",
+ "convert_case",
  "dotenv",
  "eyre",
  "futures",
