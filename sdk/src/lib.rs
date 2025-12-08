@@ -11,6 +11,4 @@ pub mod l2;
 
 pub mod types;
 
-pub fn set_angstrom_constants_with_chain_id(chain_id: u64) -> eyre::Result<()> {
-    angstrom_types_primitives::primitive::try_init_with_chain_id(chain_id)
-}
+

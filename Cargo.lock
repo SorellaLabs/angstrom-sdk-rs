@@ -1328,6 +1328,7 @@ dependencies = [
  "jsonrpsee-core",
  "jsonrpsee-http-client",
  "jsonrpsee-ws-client",
+ "lazy_static",
  "lib-reth",
  "op-alloy-network",
  "pade",
@@ -5360,7 +5361,7 @@ dependencies = [
  "js-sys",
  "log",
  "wasm-bindgen",
- "windows-core 0.61.2",
+ "windows-core 0.58.0",
 ]
 
 [[package]]
@@ -14291,7 +14292,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "uniswap-storage"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/uniswap-storage#1c9cabf3ddb68386850e265310c6c741d95fa67b"
+source = "git+https://github.com/jnoorchashm37/uniswap-storage#16539d4b6e5d20478147ab4f8c9cc7c94b0af98e"
 dependencies = [
  "alloy-eips",
  "alloy-network",

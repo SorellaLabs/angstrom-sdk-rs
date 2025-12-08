@@ -39,6 +39,7 @@ itertools = "0.14"
 jsonrpsee-core = "0.26.0"
 jsonrpsee-http-client = "0.26.0"
 jsonrpsee-ws-client = "0.26.0"
+lazy_static = "1.5.0"
 lib-reth = { git = "https://github.com/jnoorchashm37/lib-reth", features = ["rayon"] }
 malachite = "0.4"
 malachite-q = "0.4"
