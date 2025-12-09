@@ -1,35 +1,14 @@
-use std::{
-    collections::{HashMap, HashSet},
-    ops::Deref
-};
+use std::collections::{HashMap, HashSet};
 
-use alloy_consensus::Transaction;
-use alloy_eips::BlockId;
 use alloy_network::Network;
-use alloy_primitives::{
-    Address, B256, FixedBytes, TxHash, U256,
-    aliases::{I24, U24},
-    keccak256
-};
-use alloy_provider::{DynProvider, Provider};
+use alloy_primitives::{Address, B256, U256};
+use alloy_provider::Provider;
 use alloy_rpc_types::Filter;
-use alloy_sol_types::{SolCall, SolEvent};
+use alloy_sol_types::SolEvent;
 use angstrom_types_primitives::{
-    contract_bindings::{
-        angstrom::Angstrom,
-        controller_v_1::ControllerV1::getPoolByKeyCall,
-        pool_manager::PoolManager::{self, PoolKey}
-    },
-    contract_payloads::angstrom::{
-        AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
-    },
-    primitive::{
-        ANGSTROM_ADDRESS, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS,
-        PoolId
-    }
+    contract_bindings::pool_manager::PoolManager::{self, PoolKey},
+    primitive::PoolId
 };
-use futures::StreamExt;
-use pade::PadeDecode;
 use uni_v4::{
     BaselinePoolState, FeeConfiguration, PoolKey as UniPoolKey,
     baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
@@ -55,15 +34,11 @@ use crate::{
     },
     types::{
         common::*,
-        contracts::angstrom_l2::{
-            angstrom_l_2::AngstromL2, angstrom_l_2_factory::AngstromL2Factory
-        },
+        contracts::angstrom_l2::angstrom_l_2_factory::AngstromL2Factory,
         fees::{LiquidityPositionFees, position_fees},
         pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader},
-        providers::{alloy_view_call, alloy_view_deploy},
-        utils::{
-            historical_pool_manager_modify_liquidity_filter, historical_pool_manager_swap_filter
-        }
+        providers::alloy_view_deploy,
+        utils::historical_pool_manager_modify_liquidity_filter
     }
 };
 
@@ -98,76 +73,29 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
 
         Ok(keys)
     }
-}
 
-/*
-=
-
-    async fn historical_liquidity_changes(
+    async fn pool_data_by_pool_id(
         &self,
-        start_block: Option<u64>,
-        end_block: Option<u64>
-    ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
-        let all_pool_ids = self
-            .all_pool_keys(end_block)
-            .await?
-            .into_iter()
-            .map(|val| PoolId::from(val.pool_key))
-            .collect::<HashSet<_>>();
-
-        let filters = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
-
-        let logs = futures::future::try_join_all(
-            filters
-                .into_iter()
-                .map(async move |filter| self.get_logs(&filter).await)
-        )
-        .await?;
-
-        Ok(logs
-            .into_iter()
-            .flatten()
-            .flat_map(|log| {
-                PoolManager::ModifyLiquidity::decode_log(&log.inner)
-                    .ok()
-                    .and_then(|inner_log| {
-                        all_pool_ids.contains(&inner_log.id).then(|| {
-                            WithEthMeta::new(
-                                log.block_number,
-                                log.transaction_hash,
-                                log.transaction_index,
-                                inner_log.data
-                            )
-                        })
-                    })
-            })
-            .collect())
-    }
-
-    async fn pool_data_by_tokens(
-        &self,
-        token0: Address,
-        token1: Address,
+        pool_id: PoolId,
         load_ticks: bool,
-        block_number: Option<u64>
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
     ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
         let block_number = match block_number {
             Some(bn) => bn,
             None => self.get_block_number().await?
         };
 
-        let (token0, token1) = sort_tokens(token0, token1);
-
         let pool_key = self
-            .pool_key_by_tokens(token0, token1, Some(block_number))
+            .pool_key_by_pool_id(pool_id, Some(block_number), chain)
             .await?;
 
         let uni_pool_key = UniPoolKey {
-            currency0:   pool_key.pool_key.currency0,
-            currency1:   pool_key.pool_key.currency1,
-            fee:         pool_key.pool_fee_in_e6,
-            tickSpacing: pool_key.pool_key.tickSpacing,
-            hooks:       pool_key.pool_key.hooks
+            currency0:   pool_key.currency0,
+            currency1:   pool_key.currency1,
+            fee:         pool_key.fee,
+            tickSpacing: pool_key.tickSpacing,
+            hooks:       pool_key.hooks
         };
 
         let pool_id: PoolId = pool_key.into();
@@ -175,9 +103,9 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
         let data_deployer_call = GetUniswapV4PoolData::deploy_builder(
             &self,
             pool_id,
-            *POOL_MANAGER_ADDRESS.get().unwrap(),
-            pool_key.pool_key.currency0,
-            pool_key.pool_key.currency1
+            chain.constants().uniswap_constants().pool_manager(),
+            pool_key.currency0,
+            pool_key.currency1
         )
         .into_transaction_request();
 
@@ -187,12 +115,7 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
         let pool_data: PoolData = (uni_pool_key, out_pool_data).into();
 
         let fee_config = self
-            .fee_configuration_by_tokens(
-                pool_key.pool_key.currency0,
-                pool_key.pool_key.currency1,
-                Some(pool_key.pool_fee_in_e6),
-                Some(block_number)
-            )
+            .fee_configuration_by_pool_id(pool_id, Some(block_number), chain)
             .await?;
 
         let (ticks, tick_bitmap) = if load_ticks {
@@ -235,79 +158,98 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
 
         Ok((
             block_number,
-            BaselinePoolStateWithKey { pool: baseline_state, pool_key: pool_key.pool_key }
+            BaselinePoolStateWithKey {
+                pool:     baseline_state,
+                pool_key: PoolManager::PoolKey {
+                    currency0:   pool_key.currency0,
+                    currency1:   pool_key.currency1,
+                    fee:         pool_key.fee,
+                    tickSpacing: pool_key.tickSpacing,
+                    hooks:       pool_key.hooks
+                }
+            }
         ))
+    }
+
+    async fn historical_liquidity_changes(
+        &self,
+        start_block: Option<u64>,
+        end_block: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
+        let all_pool_ids = self
+            .all_pool_keys(end_block, chain)
+            .await?
+            .into_iter()
+            .map(|pool_key| PoolId::from(pool_key))
+            .collect::<HashSet<_>>();
+
+        let filters = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
+
+        let logs = futures::future::try_join_all(
+            filters
+                .into_iter()
+                .map(async move |filter| self.get_logs(&filter).await)
+        )
+        .await?;
+
+        Ok(logs
+            .into_iter()
+            .flatten()
+            .flat_map(|log| {
+                PoolManager::ModifyLiquidity::decode_log(&log.inner)
+                    .ok()
+                    .and_then(|inner_log| {
+                        all_pool_ids.contains(&inner_log.id).then(|| {
+                            WithEthMeta::new(
+                                log.block_number,
+                                log.transaction_hash,
+                                log.transaction_index,
+                                inner_log.data
+                            )
+                        })
+                    })
+            })
+            .collect())
     }
 
     async fn slot0_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: Option<u64>
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
     ) -> eyre::Result<UnpackedSlot0> {
         Ok(pool_manager_pool_slot0(
             self.root(),
-            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            chain.constants().uniswap_constants().pool_manager(),
             pool_id,
             block_number
         )
         .await?)
     }
 
-    async fn fee_configuration_by_tokens(
+    async fn fee_configuration_by_pool_id(
         &self,
-        token0: Address,
-        token1: Address,
-        bundle_fee: Option<U24>,
-        block_number: Option<u64>
+        pool_id: PoolId,
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
     ) -> eyre::Result<FeeConfiguration> {
-        const UNLOCKED_FEES_SLOT: u64 = 2;
-
-        let pool_partial_key = AngstromPoolConfigStore::derive_store_key(token0, token1);
-
-        let mut preimage = [0u8; 64];
-        let key_bytes: &[u8; 27] = pool_partial_key.deref();
-        preimage[..27].copy_from_slice(key_bytes);
-        preimage[32..].copy_from_slice(&U256::from(UNLOCKED_FEES_SLOT).to_be_bytes::<32>());
-        let slot = keccak256(preimage);
-
-        let bundle_fee = if let Some(f) = bundle_fee {
-            f
-        } else {
-            self.pool_key_by_tokens(token0, token1, block_number)
-                .await?
-                .pool_fee_in_e6
-        };
-
-        let raw = alloy_view_call(
-            &self,
-            block_number,
-            *ANGSTROM_ADDRESS.get().unwrap(),
-            Angstrom::extsloadCall { slot: U256::from_be_bytes(*slot) }
-        )
-        .await??;
-
-        let bytes = raw.to_be_bytes::<32>();
-        let unlocked_fee = U24::from_be_bytes([bytes[29], bytes[30], bytes[31]]);
-        let protocol_fee = U24::from_be_bytes([bytes[26], bytes[27], bytes[28]]);
-
-        Ok(FeeConfiguration {
-            bundle_fee:   bundle_fee.to::<u32>(),
-            swap_fee:     unlocked_fee.to::<u32>(),
-            protocol_fee: protocol_fee.to::<u32>()
-        })
+        todo!();
+        // Ok(FeeConfiguration { bundle_fee: 0, swap_fee: 0, protocol_fee: 0 })
     }
 }
 
 #[async_trait::async_trait]
-impl<P: Provider + Clone> AngstromL2UserApi for P {
+impl<P: Provider<N> + Clone, N: Network> AngstromL2UserApi<N> for P {
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
     ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
-            *POSITION_MANAGER_ADDRESS.get().unwrap(),
+            chain.constants().uniswap_constants().position_manager(),
             block_number,
             position_token_id
         )
@@ -328,11 +270,13 @@ impl<P: Provider + Clone> AngstromL2UserApi for P {
     async fn position_liquidity(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
     ) -> eyre::Result<u128> {
+        let consts = chain.constants();
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
-            *POSITION_MANAGER_ADDRESS.get().unwrap(),
+            consts.uniswap_constants().position_manager(),
             block_number,
             position_token_id
         )
@@ -340,8 +284,8 @@ impl<P: Provider + Clone> AngstromL2UserApi for P {
 
         let liquidity = pool_manager_position_state_liquidity(
             self.root(),
-            *POOL_MANAGER_ADDRESS.get().unwrap(),
-            *POSITION_MANAGER_ADDRESS.get().unwrap(),
+            consts.uniswap_constants().pool_manager(),
+            consts.uniswap_constants().position_manager(),
             pool_key.into(),
             position_token_id,
             position_info.tick_lower,
@@ -360,11 +304,23 @@ impl<P: Provider + Clone> AngstromL2UserApi for P {
         mut end_token_id: U256,
         pool_id: Option<PoolId>,
         max_results: Option<usize>,
-        block_number: Option<u64>
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
     ) -> eyre::Result<Vec<V4UserLiquidityPosition>> {
-        let position_manager_address = *POSITION_MANAGER_ADDRESS.get().unwrap();
-        let pool_manager_address = *POOL_MANAGER_ADDRESS.get().unwrap();
-        let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
+        let consts = chain.constants();
+
+        let position_manager_address = consts.uniswap_constants().position_manager();
+        let pool_manager_address = consts.uniswap_constants().pool_manager();
+
+        let all_angstrom_hooks = if pool_id.is_none() {
+            self.all_pool_keys(block_number, chain)
+                .await?
+                .into_iter()
+                .map(|key| key.hooks)
+                .collect::<HashSet<_>>()
+        } else {
+            HashSet::new()
+        };
 
         let root = self.root();
 
@@ -401,7 +357,7 @@ impl<P: Provider + Clone> AngstromL2UserApi for P {
             )
             .await?;
 
-            if pool_key.hooks != angstrom_address
+            if !all_angstrom_hooks.contains(&pool_key.hooks)
                 || pool_id
                     .map(|id| id != B256::from(pool_key))
                     .unwrap_or_default()
@@ -445,21 +401,25 @@ impl<P: Provider + Clone> AngstromL2UserApi for P {
     async fn user_position_fees(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
     ) -> eyre::Result<LiquidityPositionFees> {
+        let consts = chain.constants();
+
         let ((pool_key, position_info), position_liquidity) = tokio::try_join!(
-            self.position_and_pool_info(position_token_id, block_number),
-            self.position_liquidity(position_token_id, block_number),
+            self.position_and_pool_info(position_token_id, block_number, chain),
+            self.position_liquidity(position_token_id, block_number, chain),
         )?;
 
+        let hook = pool_key.hooks;
         let pool_id = pool_key.into();
-        let slot0 = self.slot0_by_pool_id(pool_id, block_number).await?;
+        let slot0 = self.slot0_by_pool_id(pool_id, block_number, chain).await?;
 
         Ok(position_fees(
             self.root(),
-            *POOL_MANAGER_ADDRESS.get().unwrap(),
-            *ANGSTROM_ADDRESS.get().unwrap(),
-            *POSITION_MANAGER_ADDRESS.get().unwrap(),
+            consts.uniswap_constants().pool_manager(),
+            hook,
+            consts.uniswap_constants().position_manager(),
             block_number,
             pool_id,
             slot0.tick,
@@ -471,6 +431,8 @@ impl<P: Provider + Clone> AngstromL2UserApi for P {
         .await?)
     }
 }
+
+/*
 
 #[cfg(test)]
 mod data_api_tests {
