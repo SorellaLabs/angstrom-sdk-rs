@@ -1,26 +1,23 @@
 use alloy_primitives::{
-    Address, TxHash, U256, address,
+    Address, U256, address,
     aliases::{I24, U24},
     b256
 };
 use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager,
-    primitive::{
-        ANGSTROM_ADDRESS, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS,
-        PoolId, try_init_with_chain_id
-    }
+    primitive::{PoolId, try_init_with_chain_id}
 };
-#[cfg(feature = "local-reth")]
-use lib_reth::EthereumNode;
 use uniswap_storage::v4::UnpackedPositionInfo;
 
-use crate::l1::test_utils::{USDC, WETH};
+use crate::l2::{
+    constants::{ANGSTROM_L2_CONSTANTS_BASE_MAINNET, AngstromL2Chain},
+    test_utils::{BASE_USDC, BASE_WETH}
+};
 
 pub struct ValidPositionTestParameters {
     pub angstrom_address: Address,
     pub pool_manager_address: Address,
     pub position_manager_address: Address,
-    pub controller_v1_address: Address,
     pub owner: Address,
     pub pool_id: PoolId,
     pub pool_key: PoolManager::PoolKey,
@@ -30,46 +27,38 @@ pub struct ValidPositionTestParameters {
     pub tick_lower: I24,
     pub tick_upper: I24,
     pub position_liquidity: u128,
-    pub bundle_tx_hash: TxHash,
     pub block_number: u64,
     pub block_for_liquidity_add: u64,
-    pub valid_block_after_swaps: u64
+    pub valid_block_after_swaps: u64,
+    pub chain: AngstromL2Chain
 }
 
-#[cfg(not(feature = "local-reth"))]
+#[cfg(feature = "local-reth")]
 pub async fn init_valid_position_params_with_provider()
--> (alloy_provider::RootProvider, ValidPositionTestParameters) {
-    use alloy_provider::Provider;
-
+-> (alloy_provider::RootProvider<op_alloy_network::Optimism>, ValidPositionTestParameters) {
     let params = init_valid_position_params();
-    let provider = crate::l1::test_utils::spawn_angstrom_api()
-        .await
-        .unwrap()
-        .eth_provider()
-        .clone()
-        .root()
-        .clone();
+    let provider = crate::l2::test_utils::eth_provider().await.unwrap();
 
     (provider, params)
 }
 
-#[cfg(feature = "local-reth")]
+#[cfg(not(feature = "local-reth"))]
 pub async fn init_valid_position_params_with_provider() -> (
-    std::sync::Arc<crate::types::providers::RethDbProviderWrapper<EthereumNode>>,
+    std::sync::Arc<crate::types::providers::RethDbProviderWrapper<op_reth::OpNode>>,
     ValidPositionTestParameters
 ) {
     use std::sync::Arc;
 
-    use lib_reth::{MAINNET, reth_libmdbx::RethNodeClientBuilder};
+    use lib_reth::{op_reth::BASE_MAINNET, reth_libmdbx::RethNodeClientBuilder};
 
-    use crate::{l1::test_utils::eth_ws_url, types::providers::RethDbProviderWrapper};
+    use crate::{l2::test_utils::eth_ws_url, types::providers::RethDbProviderWrapper};
 
     let params = init_valid_position_params();
     let provider = Arc::new(RethDbProviderWrapper::new(Arc::new(
         RethNodeClientBuilder::new(
-            "/var/lib/eth/mainnet/reth/",
+            "/var/lib/eth/base-mainnet/reth/",
             1000,
-            MAINNET.clone(),
+            BASE_MAINNET.clone(),
             Some(eth_ws_url())
         )
         .build()
@@ -80,7 +69,8 @@ pub async fn init_valid_position_params_with_provider() -> (
 }
 
 pub fn init_valid_position_params() -> ValidPositionTestParameters {
-    let _ = try_init_with_chain_id(1);
+    let chain_consts = ANGSTROM_L2_CONSTANTS_BASE_MAINNET;
+    let _ = try_init_with_chain_id(chain_consts.chain_id());
 
     let owner = address!("0xe344c3d419B7788006ab5aF4355E03b04CE75579");
     let pool_id = b256!("0xe500210c7ea6bfd9f69dce044b09ef384ec2b34832f132baec3b418208e3a657");
@@ -93,10 +83,10 @@ pub fn init_valid_position_params() -> ValidPositionTestParameters {
         241, 50, 186, 236
     ];
 
-    let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
+    let angstrom_address = Address::random();
     let pool_key = PoolManager::PoolKey {
-        currency0:   USDC,
-        currency1:   WETH,
+        currency0:   BASE_USDC,
+        currency1:   BASE_WETH,
         fee:         U24::from(0x800000),
         tickSpacing: I24::unchecked_from(10),
         hooks:       angstrom_address
@@ -116,10 +106,9 @@ pub fn init_valid_position_params() -> ValidPositionTestParameters {
         angstrom_address,
         block_for_liquidity_add: 23871281,
         valid_block_after_swaps: 23870004,
-        pool_manager_address: *POOL_MANAGER_ADDRESS.get().unwrap(),
-        position_manager_address: *POSITION_MANAGER_ADDRESS.get().unwrap(),
-        controller_v1_address: *CONTROLLER_V1_ADDRESS.get().unwrap(),
-        bundle_tx_hash: b256!("0x0e154cbadc0af7195c7cd7fbb7110e68c79d1e453d2c6e315b3f6c4225f0dc79")
+        pool_manager_address: chain_consts.uniswap_constants().pool_manager(),
+        position_manager_address: chain_consts.uniswap_constants().position_manager(),
+        chain: AngstromL2Chain::Base
     }
 }
 
