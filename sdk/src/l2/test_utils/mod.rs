@@ -19,7 +19,7 @@ pub fn base_eth_ws_url() -> String {
 }
 
 pub async fn eth_provider() -> eyre::Result<RootProvider<Optimism>> {
-    let _ = try_init_with_chain_id(BaseMainnetExt::CHAIN_ID);
+    let _ = try_init_with_chain_id(BaseMainnetExt::<()>::CHAIN_ID);
     Ok(RootProvider::builder()
         .connect_ws(WsConnect::new(base_eth_ws_url()))
         .await?)

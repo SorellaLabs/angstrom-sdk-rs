@@ -177,13 +177,12 @@ mod tests {
     use testing_tools::order_generator::GeneratedPoolOrders;
 
     use super::*;
-    use crate::{
+    use crate::l1::{
         apis::data_api::AngstromL1DataApi,
         providers::backend::AngstromProvider,
         test_utils::{
             AngstromOrderApiClientClone, filler_orders::make_order_generator, spawn_angstrom_api
-        },
-        types::errors::AngstromSdkError
+        }
     };
 
     fn get_flash_order(orders: &[GeneratedPoolOrders]) -> AllOrders {
