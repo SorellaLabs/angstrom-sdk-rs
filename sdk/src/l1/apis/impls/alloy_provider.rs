@@ -35,14 +35,18 @@ use uni_v4::{
     loaders::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
     pool_data_loader::{PoolData, PoolDataV4}
 };
-use uniswap_storage::v4::{
-    UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
-    pool_manager::{
-        pool_state::pool_manager_pool_slot0, position_state::pool_manager_position_state_liquidity
-    },
-    position_manager::{
-        position_manager_next_token_id, position_manager_owner_of,
-        position_manager_pool_key_and_info
+use uniswap_storage::{
+    angstrom::mainnet::{angstrom_growth_inside, angstrom_last_growth_inside},
+    v4::{
+        UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
+        pool_manager::{
+            pool_state::pool_manager_pool_slot0,
+            position_state::pool_manager_position_state_liquidity
+        },
+        position_manager::{
+            position_manager_next_token_id, position_manager_owner_of,
+            position_manager_pool_key_and_info
+        }
     }
 };
 
@@ -50,7 +54,7 @@ use crate::{
     l1::apis::{AngstromL1DataApi, AngstromL1UserApi},
     types::{
         common::*,
-        fees::{LiquidityPositionFees, position_fees},
+        fees::{LiquidityPositionFees, uniswap_fee_deltas},
         pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader},
         providers::{alloy_view_call, alloy_view_deploy},
         utils::{
@@ -644,20 +648,68 @@ impl<P: Provider + Clone> AngstromL1UserApi for P {
         let pool_id = pool_key.into();
         let slot0 = self.slot0_by_pool_id(pool_id, block_number).await?;
 
-        Ok(position_fees(
-            self.root(),
-            *POOL_MANAGER_ADDRESS.get().unwrap(),
-            *ANGSTROM_ADDRESS.get().unwrap(),
-            *POSITION_MANAGER_ADDRESS.get().unwrap(),
-            block_number,
-            pool_id,
-            slot0.tick,
-            position_token_id,
-            position_info.tick_lower,
-            position_info.tick_upper,
-            position_liquidity
-        )
-        .await?)
+        let (angstrom_fee_delta, (uniswap_token0_fee_delta, uniswap_token1_fee_delta)) = tokio::try_join!(
+            self.angstrom_fees(
+                pool_id,
+                slot0.tick,
+                position_token_id,
+                position_info.tick_lower,
+                position_info.tick_upper,
+                block_number,
+            ),
+            uniswap_fee_deltas(
+                self.root(),
+                *POOL_MANAGER_ADDRESS.get().unwrap(),
+                *POSITION_MANAGER_ADDRESS.get().unwrap(),
+                block_number,
+                pool_id,
+                slot0.tick,
+                position_token_id,
+                position_info.tick_lower,
+                position_info.tick_upper,
+            )
+        )?;
+
+        Ok(LiquidityPositionFees::new(
+            position_liquidity,
+            angstrom_fee_delta,
+            uniswap_token0_fee_delta,
+            uniswap_token1_fee_delta
+        ))
+    }
+
+    async fn angstrom_fees(
+        &self,
+        pool_id: PoolId,
+        current_pool_tick: I24,
+        position_token_id: U256,
+        tick_lower: I24,
+        tick_upper: I24,
+        block_number: Option<u64>
+    ) -> eyre::Result<U256> {
+        let (growth_inside, last_growth_inside) = tokio::try_join!(
+            angstrom_growth_inside(
+                self.root(),
+                *ANGSTROM_ADDRESS.get().unwrap(),
+                pool_id,
+                current_pool_tick,
+                tick_lower,
+                tick_upper,
+                block_number,
+            ),
+            angstrom_last_growth_inside(
+                self.root(),
+                *ANGSTROM_ADDRESS.get().unwrap(),
+                *POSITION_MANAGER_ADDRESS.get().unwrap(),
+                pool_id,
+                position_token_id,
+                tick_lower,
+                tick_upper,
+                block_number,
+            ),
+        )?;
+
+        Ok(growth_inside - last_growth_inside)
     }
 }
 
@@ -1089,5 +1141,26 @@ mod user_api_tests {
                 uniswap_token1_fees:  U256::from(837588354352_u128)
             }
         );
+    }
+
+    #[tokio::test]
+    async fn test_angstrom_fees() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.block_number;
+
+        let results = provider
+            .angstrom_fees(
+                pos_info.pool_id,
+                pos_info.current_pool_tick,
+                pos_info.position_token_id,
+                pos_info.tick_lower,
+                pos_info.tick_upper,
+                Some(block_number)
+            )
+            .await
+            .unwrap();
+
+        let expected = U256::from(90224992210989852552811100631246_u128);
+        assert_eq!(results, expected);
     }
 }

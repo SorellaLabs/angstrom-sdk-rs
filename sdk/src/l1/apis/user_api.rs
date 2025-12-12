@@ -1,4 +1,4 @@
-use alloy_primitives::{Address, U256};
+use alloy_primitives::{Address, U256, aliases::I24};
 use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager::PoolKey, primitive::PoolId
 };
@@ -36,4 +36,14 @@ pub trait AngstromL1UserApi: AngstromL1DataApi {
         position_token_id: U256,
         block_number: Option<u64>
     ) -> eyre::Result<LiquidityPositionFees>;
+
+    async fn angstrom_fees(
+        &self,
+        pool_id: PoolId,
+        current_pool_tick: I24,
+        position_token_id: U256,
+        tick_lower: I24,
+        tick_upper: I24,
+        block_number: Option<u64>
+    ) -> eyre::Result<U256>;
 }

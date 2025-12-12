@@ -27,8 +27,9 @@ use angstrom_types_primitives::{
         PoolId
     }
 };
+use eth_network_exts::AllExtensions;
 use futures::StreamExt;
-use lib_reth::{EthApiServer, EthereumNode, traits::EthStream};
+use lib_reth::{EthApiServer, traits::EthStream};
 use pade::PadeDecode;
 use uni_v4::{
     BaselinePoolState, FeeConfiguration, PoolKey as UniPoolKey,
@@ -37,22 +38,27 @@ use uni_v4::{
     loaders::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
     pool_data_loader::{PoolData, PoolDataV4}
 };
-use uniswap_storage::v4::{
-    UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
-    pool_manager::{
-        pool_state::pool_manager_pool_slot0, position_state::pool_manager_position_state_liquidity
-    },
-    position_manager::{
-        position_manager_next_token_id, position_manager_owner_of,
-        position_manager_pool_key_and_info
+use uniswap_storage::{
+    angstrom::mainnet::{angstrom_growth_inside, angstrom_last_growth_inside},
+    v4::{
+        UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
+        pool_manager::{
+            pool_state::pool_manager_pool_slot0,
+            position_state::pool_manager_position_state_liquidity
+        },
+        position_manager::{
+            position_manager_next_token_id, position_manager_owner_of,
+            position_manager_pool_key_and_info
+        }
     }
 };
 
 use crate::{
     l1::apis::{AngstromL1DataApi, AngstromL1UserApi},
     types::{
+        MainnetExtWrapper,
         common::*,
-        fees::{LiquidityPositionFees, position_fees},
+        fees::{LiquidityPositionFees, uniswap_fee_deltas},
         pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader},
         providers::{RethDbProviderWrapper, reth_db_deploy_call, reth_db_view_call},
         utils::{
@@ -62,7 +68,7 @@ use crate::{
 };
 
 #[async_trait::async_trait]
-impl AngstromL1DataApi for RethDbProviderWrapper<EthereumNode> {
+impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExtWrapper<T>> {
     async fn tokens_by_partial_pool_key(
         &self,
         pool_partial_key: AngstromPoolPartialKey,
@@ -513,7 +519,7 @@ impl AngstromL1DataApi for RethDbProviderWrapper<EthereumNode> {
 }
 
 #[async_trait::async_trait]
-impl AngstromL1UserApi for RethDbProviderWrapper<EthereumNode> {
+impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExtWrapper<T>> {
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,
@@ -670,20 +676,68 @@ impl AngstromL1UserApi for RethDbProviderWrapper<EthereumNode> {
         let pool_id = pool_key.into();
         let slot0 = self.slot0_by_pool_id(pool_id, block_number).await?;
 
-        Ok(position_fees(
-            self.provider_ref(),
-            *POOL_MANAGER_ADDRESS.get().unwrap(),
-            *ANGSTROM_ADDRESS.get().unwrap(),
-            *POSITION_MANAGER_ADDRESS.get().unwrap(),
-            block_number,
-            pool_id,
-            slot0.tick,
-            position_token_id,
-            position_info.tick_lower,
-            position_info.tick_upper,
-            position_liquidity
-        )
-        .await?)
+        let (angstrom_fee_delta, (uniswap_token0_fee_delta, uniswap_token1_fee_delta)) = tokio::try_join!(
+            self.angstrom_fees(
+                pool_id,
+                slot0.tick,
+                position_token_id,
+                position_info.tick_lower,
+                position_info.tick_upper,
+                block_number,
+            ),
+            uniswap_fee_deltas(
+                self.provider_ref(),
+                *POOL_MANAGER_ADDRESS.get().unwrap(),
+                *POSITION_MANAGER_ADDRESS.get().unwrap(),
+                block_number,
+                pool_id,
+                slot0.tick,
+                position_token_id,
+                position_info.tick_lower,
+                position_info.tick_upper,
+            )
+        )?;
+
+        Ok(LiquidityPositionFees::new(
+            position_liquidity,
+            angstrom_fee_delta,
+            uniswap_token0_fee_delta,
+            uniswap_token1_fee_delta
+        ))
+    }
+
+    async fn angstrom_fees(
+        &self,
+        pool_id: PoolId,
+        current_pool_tick: I24,
+        position_token_id: U256,
+        tick_lower: I24,
+        tick_upper: I24,
+        block_number: Option<u64>
+    ) -> eyre::Result<U256> {
+        let (growth_inside, last_growth_inside) = tokio::try_join!(
+            angstrom_growth_inside(
+                self.provider_ref(),
+                *ANGSTROM_ADDRESS.get().unwrap(),
+                pool_id,
+                current_pool_tick,
+                tick_lower,
+                tick_upper,
+                block_number,
+            ),
+            angstrom_last_growth_inside(
+                self.provider_ref(),
+                *ANGSTROM_ADDRESS.get().unwrap(),
+                *POSITION_MANAGER_ADDRESS.get().unwrap(),
+                pool_id,
+                position_token_id,
+                tick_lower,
+                tick_upper,
+                block_number,
+            ),
+        )?;
+
+        Ok(growth_inside - last_growth_inside)
     }
 }
 

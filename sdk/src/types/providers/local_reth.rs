@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use alloy_primitives::{Address, Bytes, TxKind};
 use alloy_sol_types::{SolCall, SolType};
+use eth_network_exts::EthNetworkExt;
 use lib_reth::{
     ExecuteEvm,
     reth_libmdbx::{NodeClientSpec, RethNodeClient},
@@ -11,11 +12,19 @@ use reth_provider::BlockNumReader;
 use revm::context::TxEnv;
 
 #[derive(Clone)]
-pub struct RethDbProviderWrapper<N: NodeClientSpec> {
+pub struct RethDbProviderWrapper<N>
+where
+    N: EthNetworkExt,
+    N::RethNode: NodeClientSpec
+{
     provider: Arc<RethNodeClient<N>>
 }
 
-impl<N: NodeClientSpec> RethDbProviderWrapper<N> {
+impl<N> RethDbProviderWrapper<N>
+where
+    N: EthNetworkExt,
+    N::RethNode: NodeClientSpec
+{
     pub fn new(provider: Arc<RethNodeClient<N>>) -> Self {
         Self { provider }
     }
@@ -36,7 +45,8 @@ pub(crate) fn reth_db_view_call<Node, IC>(
     call: IC
 ) -> eyre::Result<Result<IC::Return, alloy_sol_types::Error>>
 where
-    Node: NodeClientSpec,
+    Node: EthNetworkExt,
+    Node::RethNode: NodeClientSpec,
     IC: SolCall + Send
 {
     let tx = TxEnv {
@@ -64,7 +74,8 @@ pub(crate) fn reth_db_deploy_call<Node, IC>(
     call_data: Bytes
 ) -> eyre::Result<Result<IC::RustType, alloy_sol_types::Error>>
 where
-    Node: NodeClientSpec,
+    Node: EthNetworkExt,
+    Node::RethNode: NodeClientSpec,
     IC: SolType + Send
 {
     let tx = TxEnv { kind: TxKind::Create, data: call_data, ..Default::default() };

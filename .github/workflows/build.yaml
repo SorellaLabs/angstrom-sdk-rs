@@ -1,8 +1,10 @@
 name: Check Rust
 on:
   pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
 
-# stop in-progress on new push
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true

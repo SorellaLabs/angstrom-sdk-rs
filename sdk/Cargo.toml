@@ -26,6 +26,7 @@ angstrom-types-primitives.workspace = true
 async-trait.workspace = true
 auto_impl.workspace = true
 dotenv.workspace = true
+eth-network-exts.workspace = true
 eyre.workspace = true
 futures.workspace = true
 itertools.workspace = true
@@ -33,9 +34,14 @@ jsonrpsee-core.workspace = true
 jsonrpsee-http-client.workspace = true
 jsonrpsee-ws-client.workspace = true
 lazy_static.workspace = true
+lib-reth = { workspace = true, optional = true }
 op-alloy-network = { workspace = true, optional = true }
 pade.workspace = true
+paste.workspace = true
 rand.workspace = true
+reth-provider = { workspace = true, optional = true }
+revm = { workspace = true, optional = true }
+revm-database = { workspace = true, features = ["alloydb"] }
 rust-utils.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -44,11 +50,6 @@ thiserror.workspace = true
 tokio.workspace = true
 uni-v4.workspace = true
 uniswap-storage.workspace = true
-
-lib-reth = { workspace = true, optional = true }
-reth-provider = { workspace = true, optional = true }
-revm = { workspace = true, optional = true }
-revm-database = { workspace = true, features = ["alloydb"] }
 uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git", optional = true }
 
 [dev-dependencies]

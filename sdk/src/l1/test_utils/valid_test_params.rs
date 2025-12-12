@@ -10,17 +10,13 @@ use angstrom_types_primitives::{
         PoolId, try_init_with_chain_id
     }
 };
-#[cfg(feature = "local-reth")]
-use lib_reth::EthereumNode;
 use uniswap_storage::v4::UnpackedPositionInfo;
 
 use crate::l1::test_utils::{USDC, WETH};
+#[cfg(feature = "local-reth")]
+use crate::types::{MainnetExtWrapper, providers::RethDbProviderWrapper};
 
 pub struct ValidPositionTestParameters {
-    pub angstrom_address: Address,
-    pub pool_manager_address: Address,
-    pub position_manager_address: Address,
-    pub controller_v1_address: Address,
     pub owner: Address,
     pub pool_id: PoolId,
     pub pool_key: PoolManager::PoolKey,
@@ -54,10 +50,8 @@ pub async fn init_valid_position_params_with_provider()
 }
 
 #[cfg(feature = "local-reth")]
-pub async fn init_valid_position_params_with_provider() -> (
-    std::sync::Arc<crate::types::providers::RethDbProviderWrapper<EthereumNode>>,
-    ValidPositionTestParameters
-) {
+pub async fn init_valid_position_params_with_provider()
+-> (std::sync::Arc<RethDbProviderWrapper<MainnetExtWrapper>>, ValidPositionTestParameters) {
     use std::sync::Arc;
 
     use lib_reth::{MAINNET, reth_libmdbx::RethNodeClientBuilder};
@@ -70,7 +64,7 @@ pub async fn init_valid_position_params_with_provider() -> (
             "/var/lib/eth/mainnet/reth/",
             1000,
             MAINNET.clone(),
-            Some(eth_ws_url())
+            Some(&eth_ws_url())
         )
         .build()
         .unwrap()
@@ -113,12 +107,8 @@ pub fn init_valid_position_params() -> ValidPositionTestParameters {
         position_manager_pool_map_key,
         owner,
         pool_key,
-        angstrom_address,
         block_for_liquidity_add: 23871281,
         valid_block_after_swaps: 23870004,
-        pool_manager_address: *POOL_MANAGER_ADDRESS.get().unwrap(),
-        position_manager_address: *POSITION_MANAGER_ADDRESS.get().unwrap(),
-        controller_v1_address: *CONTROLLER_V1_ADDRESS.get().unwrap(),
         bundle_tx_hash: b256!("0x0e154cbadc0af7195c7cd7fbb7110e68c79d1e453d2c6e315b3f6c4225f0dc79")
     }
 }

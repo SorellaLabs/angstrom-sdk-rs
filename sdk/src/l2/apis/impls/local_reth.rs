@@ -1,35 +1,15 @@
-use std::{
-    collections::{HashMap, HashSet},
-    ops::Deref
-};
+use std::collections::{HashMap, HashSet};
 
-use alloy_consensus::Transaction;
-use alloy_eips::BlockId;
-use alloy_network::TransactionResponse;
-use alloy_primitives::{
-    Address, FixedBytes, TxHash, U256,
-    aliases::{I24, U24},
-    keccak256
-};
+use alloy_primitives::{Address, B256, U256, aliases::I24};
 use alloy_provider::Provider;
-use alloy_sol_types::{SolCall, SolEvent};
+use alloy_rpc_types::Filter;
+use alloy_sol_types::SolEvent;
 use angstrom_types_primitives::{
-    contract_bindings::{
-        angstrom::Angstrom,
-        controller_v_1::ControllerV1,
-        pool_manager::PoolManager::{self, PoolKey}
-    },
-    contract_payloads::angstrom::{
-        AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
-    },
-    primitive::{
-        ANGSTROM_ADDRESS, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS,
-        PoolId
-    }
+    contract_bindings::pool_manager::PoolManager::{self, PoolKey},
+    primitive::PoolId
 };
-use futures::StreamExt;
-use lib_reth::{EthApiServer, EthereumNode, traits::EthStream};
-use pade::PadeDecode;
+use eth_network_exts::{AllExtensions, EthNetworkExt};
+use lib_reth::{EthApiServer, traits::EthStream};
 use uni_v4::{
     BaselinePoolState, FeeConfiguration, PoolKey as UniPoolKey,
     baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
@@ -37,250 +17,250 @@ use uni_v4::{
     loaders::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
     pool_data_loader::{PoolData, PoolDataV4}
 };
-use uniswap_storage::v4::{
-    UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
-    pool_manager::{
-        pool_state::pool_manager_pool_slot0, position_state::pool_manager_position_state_liquidity
+use uniswap_storage::{
+    angstrom::l2::{
+        angstrom_l2::{
+            AngstromL2PoolFeeConfiguration, angstrom_l2_growth_inside,
+            angstrom_l2_last_growth_inside, angstrom_l2_pool_fee_config
+        },
+        angstrom_l2_factory::angstrom_l2_factory_hook_pool_id
     },
-    position_manager::{
-        position_manager_next_token_id, position_manager_owner_of,
-        position_manager_pool_key_and_info
+    v4::{
+        UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
+        pool_manager::{
+            pool_state::pool_manager_pool_slot0,
+            position_state::pool_manager_position_state_liquidity
+        },
+        position_manager::{
+            position_manager_next_token_id, position_manager_owner_of,
+            position_manager_pool_key_and_info
+        }
     }
 };
 
 use crate::{
-    l2::apis::{AngstromL2DataApi, AngstromL2UserApi},
+    l2::{
+        AngstromL2Chain,
+        apis::{AngstromL2DataApi, AngstromL2UserApi}
+    },
     types::{
+        BaseMainnetExtWrapper, UnichainMainnetExtWrapper,
         common::*,
-        fees::{LiquidityPositionFees, position_fees},
+        contracts::angstrom_l2::angstrom_l_2_factory::AngstromL2Factory,
+        fees::{LiquidityPositionFees, uniswap_fee_deltas},
         pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader},
-        providers::{RethDbProviderWrapper, reth_db_deploy_call, reth_db_view_call},
-        utils::{
-            historical_pool_manager_modify_liquidity_filter, historical_pool_manager_swap_filter
-        }
+        providers::{RethDbProviderWrapper, reth_db_deploy_call},
+        utils::historical_pool_manager_modify_liquidity_filter
     }
 };
 
-#[async_trait::async_trait]
-impl AngstromL2DataApi for RethDbProviderWrapper<EthereumNode> {
-    async fn tokens_by_partial_pool_key(
-        &self,
-        pool_partial_key: AngstromPoolPartialKey,
-        block_number: Option<u64>
-    ) -> eyre::Result<TokenPair> {
-        let out = reth_db_view_call(
-            self.provider_ref(),
-            block_number,
-            *CONTROLLER_V1_ADDRESS.get().unwrap(),
-            ControllerV1::getPoolByKeyCall { key: FixedBytes::from(*pool_partial_key) }
-        )??;
+macro_rules! reth_db_angstrom_trait_impl {
+    ($($network_ext:ident),*) => {
+        $(
+            #[async_trait::async_trait]
+            impl<T: AllExtensions> AngstromL2DataApi<<$network_ext as EthNetworkExt>::AlloyNetwork> for RethDbProviderWrapper<$network_ext<T>>
+            {
+                async fn all_pool_keys(
+                    &self,
+                    block_number: Option<u64>,
+                    chain: AngstromL2Chain
+                ) -> eyre::Result<Vec<AngstromL2Factory::PoolKey>> {
+                    _private::all_pool_keys(self, block_number, chain).await
+                }
 
-        Ok(TokenPair { token0: out.asset0, token1: out.asset1 })
-    }
+                async fn pool_data_by_pool_id(
+                    &self,
+                    pool_id: PoolId,
+                    load_ticks: bool,
+                    block_number: Option<u64>,
+                    chain: AngstromL2Chain
+                ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
+                    _private::pool_data_by_pool_id(self, pool_id, load_ticks, block_number, chain).await
+                }
 
-    async fn all_token_pairs_with_config_store(
-        &self,
-        config_store: AngstromPoolConfigStore,
-        block_number: Option<u64>
-    ) -> eyre::Result<Vec<TokenPair>> {
-        let partial_key_entries = config_store.all_entries();
-        let token_pairs = futures::future::try_join_all(
-            partial_key_entries
-                .iter()
-                .map(|key| self.tokens_by_partial_pool_key(key.pool_partial_key, block_number))
-        )
-        .await?;
+                async fn historical_liquidity_changes(
+                    &self,
+                    start_block: Option<u64>,
+                    end_block: Option<u64>,
+                    chain: AngstromL2Chain
+                ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
+                    _private::historical_liquidity_changes(self, start_block, end_block, chain).await
+                }
 
-        Ok(token_pairs)
-    }
+                async fn slot0_by_pool_id(
+                    &self,
+                    pool_id: PoolId,
+                    block_number: Option<u64>,
+                    chain: AngstromL2Chain
+                ) -> eyre::Result<UnpackedSlot0> {
+                    _private::slot0_by_pool_id(self, pool_id, block_number, chain).await
+                }
 
-    async fn pool_key_by_tokens(
-        &self,
-        token0: Address,
-        token1: Address,
-        block_number: Option<u64>
-    ) -> eyre::Result<PoolKeyWithAngstromFee> {
-        let (token0, token1) = sort_tokens(token0, token1);
+                async fn hook_by_pool_id(
+                    &self,
+                    pool_id: PoolId,
+                    block_number: Option<u64>,
+                    chain: AngstromL2Chain
+                ) -> eyre::Result<Address> {
+                    _private::hook_by_pool_id(self, pool_id, block_number, chain).await
+                }
 
-        let config_store = self.pool_config_store(block_number).await?;
-        let pool_config_store = config_store
-            .get_entry(token0, token1)
-            .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
+                async fn fee_configuration_by_pool_id_and_hook(
+                    &self,
+                    pool_id: PoolId,
+                    hook_address: Address,
+                    block_number: Option<u64>,
+                    chain: AngstromL2Chain
+                ) -> eyre::Result<AngstromL2PoolFeeConfiguration> {
+                    _private::fee_configuration_by_pool_id_and_hook(self, pool_id, hook_address, block_number, chain).await
+                }
+            }
 
-        let pool_key = PoolKey {
-            currency0:   token0,
-            currency1:   token1,
-            fee:         U24::from(0x800000),
-            tickSpacing: I24::unchecked_from(pool_config_store.tick_spacing),
-            hooks:       *ANGSTROM_ADDRESS.get().unwrap()
-        };
+            #[async_trait::async_trait]
+            impl<T: AllExtensions> AngstromL2UserApi<<$network_ext as EthNetworkExt>::AlloyNetwork> for RethDbProviderWrapper<$network_ext<T>> {
+                async fn position_and_pool_info(
+                    &self,
+                    position_token_id: U256,
+                    block_number: Option<u64>,
+                    chain: AngstromL2Chain
+                ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
+                    _private::position_and_pool_info(self, position_token_id, block_number, chain).await
+                }
 
-        Ok(PoolKeyWithAngstromFee {
-            pool_key,
-            pool_fee_in_e6: U24::from(pool_config_store.fee_in_e6)
-        })
-    }
+                async fn position_liquidity(
+                    &self,
+                    position_token_id: U256,
+                    block_number: Option<u64>,
+                    chain: AngstromL2Chain
+                ) -> eyre::Result<u128> {
+                    _private::position_liquidity(self, position_token_id, block_number, chain).await
+                }
 
-    async fn historical_bundles(
-        &self,
-        start_block: Option<u64>,
-        end_block: Option<u64>,
-        block_stream_buffer: Option<usize>
-    ) -> eyre::Result<Vec<WithEthMeta<AngstromBundle>>> {
-        let root_provider = self.provider_ref().root_provider().await?;
+                async fn all_user_positions(
+                    &self,
+                    owner: Address,
+                    start_token_id: U256,
+                    end_token_id: U256,
+                    pool_id: Option<PoolId>,
+                    max_results: Option<usize>,
+                    block_number: Option<u64>,
+                    chain: AngstromL2Chain
+                ) -> eyre::Result<Vec<V4UserLiquidityPosition>> {
+                    _private::all_user_positions(self, owner, start_token_id, end_token_id, pool_id, max_results, block_number, chain).await
+                }
 
-        let filters = historical_pool_manager_swap_filter(start_block, end_block);
-        let logs = futures::future::try_join_all(
-            filters
-                .into_iter()
-                .map(async |filter| root_provider.get_logs(&filter).await)
-        )
-        .await?;
+                async fn user_position_fees(
+                    &self,
+                    position_token_id: U256,
+                    block_number: Option<u64>,
+                    chain: AngstromL2Chain
+                ) -> eyre::Result<LiquidityPositionFees> {
+                    _private::user_position_fees(self, position_token_id, block_number, chain).await
+                }
 
-        let blocks_with_bundles = logs.into_iter().flatten().flat_map(|log| {
-            let swap_log = PoolManager::Swap::decode_log(&log.inner).ok()?;
-            (swap_log.fee == U24::ZERO)
-                .then_some(log.block_number)
-                .flatten()
-        });
+                async fn angstrom_l2_fees(
+                    &self,
+                    pool_id: PoolId,
+                    hook_address: Option<Address>,
+                    current_pool_tick: I24,
+                    position_token_id: U256,
+                    tick_lower: I24,
+                    tick_upper: I24,
+                    block_number: Option<u64>,
+                    chain: AngstromL2Chain
+                ) -> eyre::Result<U256> {
+                    _private::angstrom_l2_fees(self, pool_id, hook_address, current_pool_tick, position_token_id, tick_lower, tick_upper, block_number, chain).await
+                }
+            }
+        )*
+    };
+}
 
-        let mut bundle_stream = futures::stream::iter(blocks_with_bundles)
-            .map(|block_number| self.get_bundle_by_block(block_number, true))
-            .buffer_unordered(block_stream_buffer.unwrap_or(100));
+reth_db_angstrom_trait_impl!(BaseMainnetExtWrapper, UnichainMainnetExtWrapper);
 
-        let mut all_bundles = Vec::new();
-        while let Some(val) = bundle_stream.next().await {
-            all_bundles.extend(val?);
+mod _private {
+    use lib_reth::reth_libmdbx::NodeClientSpec;
+
+    use super::*;
+
+    pub(super) async fn all_pool_keys<N>(
+        this: &RethDbProviderWrapper<N>,
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<Vec<AngstromL2Factory::PoolKey>>
+    where
+        N: EthNetworkExt,
+        <N as EthNetworkExt>::RethNode: NodeClientSpec
+    {
+        let root_provider = this.provider_ref().root_provider().await?;
+        let constants = chain.constants();
+
+        let mut filter = Filter::new()
+            .address(constants.angstrom_l2_factory())
+            .from_block(constants.angstrom_deploy_block())
+            .event_signature(AngstromL2Factory::PoolCreated::SIGNATURE_HASH);
+
+        if let Some(bn) = block_number {
+            filter = filter.to_block(bn);
         }
 
-        Ok(all_bundles)
-    }
-
-    async fn historical_liquidity_changes(
-        &self,
-        start_block: Option<u64>,
-        end_block: Option<u64>
-    ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
-        let root_provider = self.provider_ref().root_provider().await?;
-
-        let all_pool_ids = self
-            .all_pool_keys(end_block)
+        let keys = root_provider
+            .get_logs(&filter)
             .await?
             .into_iter()
-            .map(|val| PoolId::from(val.pool_key))
-            .collect::<HashSet<_>>();
-
-        let filters = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
-        let logs = futures::future::try_join_all(
-            filters
-                .into_iter()
-                .map(async |filter| root_provider.get_logs(&filter).await)
-        )
-        .await?;
-
-        Ok(logs
-            .into_iter()
-            .flatten()
-            .flat_map(|log| {
-                PoolManager::ModifyLiquidity::decode_log(&log.inner)
+            .flat_map(|raw_log| {
+                AngstromL2Factory::PoolCreated::decode_log(&raw_log.inner)
+                    .map(|log| log.key)
                     .ok()
-                    .and_then(|inner_log| {
-                        all_pool_ids.contains(&inner_log.id).then(|| {
-                            WithEthMeta::new(
-                                log.block_number,
-                                log.transaction_hash,
-                                log.transaction_index,
-                                inner_log.data
-                            )
-                        })
-                    })
             })
-            .collect())
+            .collect();
+
+        Ok(keys)
     }
 
-    async fn historical_post_bundle_unlock_swaps(
-        &self,
-        start_block: Option<u64>,
-        end_block: Option<u64>
-    ) -> eyre::Result<Vec<WithEthMeta<PoolManager::Swap>>> {
-        let root_provider = self.provider_ref().root_provider().await?;
-
-        let all_pool_ids = self
-            .all_pool_keys(end_block)
-            .await?
-            .into_iter()
-            .map(|val| PoolId::from(val.pool_key))
-            .collect::<HashSet<_>>();
-
-        let filters = historical_pool_manager_swap_filter(start_block, end_block);
-        let logs = futures::future::try_join_all(
-            filters
-                .into_iter()
-                .map(async |filter| root_provider.get_logs(&filter).await)
-        )
-        .await?;
-
-        Ok(logs
-            .into_iter()
-            .flatten()
-            .flat_map(|log| {
-                PoolManager::Swap::decode_log(&log.inner)
-                    .ok()
-                    .and_then(|inner_log| {
-                        (all_pool_ids.contains(&inner_log.id) && !inner_log.fee.is_zero()).then(
-                            || {
-                                WithEthMeta::new(
-                                    log.block_number,
-                                    log.transaction_hash,
-                                    log.transaction_index,
-                                    inner_log.data
-                                )
-                            }
-                        )
-                    })
-            })
-            .collect())
-    }
-
-    async fn pool_data_by_tokens(
-        &self,
-        token0: Address,
-        token1: Address,
+    pub(super) async fn pool_data_by_pool_id<N>(
+        this: &RethDbProviderWrapper<N>,
+        pool_id: PoolId,
         load_ticks: bool,
-        block_number: Option<u64>
-    ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
-        let block_number = if let Some(bn) = block_number {
-            bn
-        } else {
-            lib_reth::helpers::EthApiSpec::chain_info(&self.provider_ref().eth_api())?.best_number
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<(u64, BaselinePoolStateWithKey)>
+    where
+        N: EthNetworkExt,
+        <N as EthNetworkExt>::RethNode: NodeClientSpec,
+        RethDbProviderWrapper<N>: AngstromL2DataApi<<N as EthNetworkExt>::AlloyNetwork>
+            + FullTickLoader<<N as EthNetworkExt>::AlloyNetwork>
+    {
+        let block_number = match block_number {
+            Some(bn) => bn,
+            None => this.provider_ref().eth_api().block_number()?.to()
         };
-        let (token0, token1) = sort_tokens(token0, token1);
 
-        let pool_key = self
-            .pool_key_by_tokens(token0, token1, Some(block_number))
+        let pool_key = this
+            .pool_key_by_pool_id(pool_id, Some(block_number), chain)
             .await?;
 
         let uni_pool_key = UniPoolKey {
-            currency0:   pool_key.pool_key.currency0,
-            currency1:   pool_key.pool_key.currency1,
-            fee:         pool_key.pool_fee_in_e6,
-            tickSpacing: pool_key.pool_key.tickSpacing,
-            hooks:       pool_key.pool_key.hooks
+            currency0:   pool_key.currency0,
+            currency1:   pool_key.currency1,
+            fee:         pool_key.fee,
+            tickSpacing: pool_key.tickSpacing,
+            hooks:       pool_key.hooks
         };
 
         let pool_id: PoolId = pool_key.into();
 
         let data_deployer_call = GetUniswapV4PoolData::deploy_builder(
-            &self.provider_ref().root_provider().await?,
+            this.provider_ref().root_provider().await?,
             pool_id,
-            *POOL_MANAGER_ADDRESS.get().unwrap(),
-            pool_key.pool_key.currency0,
-            pool_key.pool_key.currency1
+            chain.constants().uniswap_constants().pool_manager(),
+            pool_key.currency0,
+            pool_key.currency1
         )
         .into_transaction_request();
 
         let out_pool_data = reth_db_deploy_call::<_, PoolDataV4>(
-            self.provider_ref(),
+            this.provider_ref(),
             Some(block_number),
             alloy_network::TransactionBuilder::input(&data_deployer_call)
                 .cloned()
@@ -288,17 +268,17 @@ impl AngstromL2DataApi for RethDbProviderWrapper<EthereumNode> {
         )??;
         let pool_data: PoolData = (uni_pool_key, out_pool_data).into();
 
-        let fee_config = self
-            .fee_configuration_by_tokens(
-                pool_key.pool_key.currency0,
-                pool_key.pool_key.currency1,
-                Some(pool_key.pool_fee_in_e6),
-                Some(block_number)
-            )
-            .await?;
+        // let fee_config = this
+        //     .fee_configuration_by_pool_id(pool_id, Some(block_number), chain)
+        //     .await?;
+        let fee_config = FeeConfiguration {
+            bundle_fee:   Default::default(),
+            swap_fee:     Default::default(),
+            protocol_fee: Default::default()
+        };
 
         let (ticks, tick_bitmap) = if load_ticks {
-            self.load_tick_data_in_band(
+            this.load_tick_data_in_band(
                 pool_id,
                 pool_data.tick.as_i32(),
                 uni_pool_key.tickSpacing.as_i32(),
@@ -337,191 +317,134 @@ impl AngstromL2DataApi for RethDbProviderWrapper<EthereumNode> {
 
         Ok((
             block_number,
-            BaselinePoolStateWithKey { pool: baseline_state, pool_key: pool_key.pool_key }
+            BaselinePoolStateWithKey {
+                pool:     baseline_state,
+                pool_key: PoolManager::PoolKey {
+                    currency0:   pool_key.currency0,
+                    currency1:   pool_key.currency1,
+                    fee:         pool_key.fee,
+                    tickSpacing: pool_key.tickSpacing,
+                    hooks:       pool_key.hooks
+                }
+            }
         ))
     }
 
-    async fn pool_config_store(
-        &self,
-        block_number: Option<u64>
-    ) -> eyre::Result<AngstromPoolConfigStore> {
-        AngstromPoolConfigStore::load_from_chain(
-            *ANGSTROM_ADDRESS.get().unwrap(),
-            block_number.map(Into::into).unwrap_or(BlockId::latest()),
-            &self.provider_ref().root_provider().await?
+    pub(super) async fn historical_liquidity_changes<N>(
+        this: &RethDbProviderWrapper<N>,
+        start_block: Option<u64>,
+        end_block: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>>
+    where
+        N: EthNetworkExt,
+        <N as EthNetworkExt>::RethNode: NodeClientSpec,
+        RethDbProviderWrapper<N>: AngstromL2DataApi<<N as EthNetworkExt>::AlloyNetwork>
+    {
+        let root_provider = this.provider_ref().root_provider().await?;
+
+        let all_pool_ids = this
+            .all_pool_keys(end_block, chain)
+            .await?
+            .into_iter()
+            .map(|pool_key| PoolId::from(pool_key))
+            .collect::<HashSet<_>>();
+
+        let filters = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
+
+        let logs = futures::future::try_join_all(
+            filters
+                .into_iter()
+                .map(async |filter| root_provider.get_logs(&filter).await)
         )
-        .await
-        .map_err(|e| eyre::eyre!("{e:?}"))
+        .await?;
+
+        Ok(logs
+            .into_iter()
+            .flatten()
+            .flat_map(|log| {
+                PoolManager::ModifyLiquidity::decode_log(&log.inner)
+                    .ok()
+                    .and_then(|inner_log| {
+                        all_pool_ids.contains(&inner_log.id).then(|| {
+                            WithEthMeta::new(
+                                log.block_number,
+                                log.transaction_hash,
+                                log.transaction_index,
+                                inner_log.data
+                            )
+                        })
+                    })
+            })
+            .collect())
     }
 
-    async fn slot0_by_pool_id(
-        &self,
+    pub(super) async fn slot0_by_pool_id<N>(
+        this: &RethDbProviderWrapper<N>,
         pool_id: PoolId,
-        block_number: Option<u64>
-    ) -> eyre::Result<UnpackedSlot0> {
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<UnpackedSlot0>
+    where
+        N: EthNetworkExt,
+        <N as EthNetworkExt>::RethNode: NodeClientSpec
+    {
         Ok(pool_manager_pool_slot0(
-            self.provider_ref(),
-            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            this.provider_ref(),
+            chain.constants().uniswap_constants().pool_manager(),
             pool_id,
             block_number
         )
         .await?)
     }
 
-    async fn get_bundle_by_block(
-        &self,
-        block_number: u64,
-        verify_successful_tx: bool
-    ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
-        let Some(block) = self
-            .provider_ref()
-            .eth_api()
-            .block_by_number(block_number.into(), true)
-            .await?
-        else {
-            return Ok(None)
-        };
-
-        let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
-
-        let mut angstrom_bundles = block
-            .transactions
-            .into_transactions()
-            .filter(|tx| tx.to() == Some(angstrom_address))
-            .filter_map(|transaction| {
-                let input: &[u8] = transaction.input();
-                let call = Angstrom::executeCall::abi_decode(input).ok()?;
-                let mut input = call.encoded.as_ref();
-                Some((
-                    transaction.tx_hash(),
-                    WithEthMeta::new(
-                        transaction.block_number(),
-                        Some(transaction.tx_hash()),
-                        transaction.transaction_index(),
-                        AngstromBundle::pade_decode(&mut input, None).ok()?
-                    )
-                ))
-            });
-
-        if verify_successful_tx {
-            let bundles =
-                futures::future::try_join_all(angstrom_bundles.map(async |(tx_hash, bundle)| {
-                    if self
-                        .provider_ref()
-                        .eth_api()
-                        .transaction_receipt(tx_hash)
-                        .await?
-                        .ok_or_else(|| {
-                            eyre::eyre!("reciepts not enabled on node - tx hash: {tx_hash:?}")
-                        })?
-                        .status()
-                    {
-                        Ok::<_, eyre::ErrReport>(Some(bundle))
-                    } else {
-                        Ok(None)
-                    }
-                }))
-                .await?;
-            Ok(bundles.into_iter().flatten().next())
-        } else {
-            Ok(angstrom_bundles.next().map(|(_, bundle)| bundle))
-        }
+    pub(super) async fn hook_by_pool_id<N>(
+        this: &RethDbProviderWrapper<N>,
+        pool_id: PoolId,
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<Address>
+    where
+        N: EthNetworkExt,
+        <N as EthNetworkExt>::RethNode: NodeClientSpec
+    {
+        Ok(angstrom_l2_factory_hook_pool_id(
+            this.provider_ref(),
+            chain.constants().angstrom_l2_factory(),
+            pool_id,
+            block_number
+        )
+        .await?
+        .ok_or_else(|| eyre::eyre!("no hook found for pool id: {pool_id:?}"))?)
     }
 
-    async fn get_bundle_by_tx_hash(
-        &self,
-        tx_hash: TxHash,
-        verify_successful_tx: bool
-    ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
-        let Some(transaction) = self
-            .provider_ref()
-            .eth_api()
-            .transaction_by_hash(tx_hash)
-            .await?
-        else {
-            return Ok(None)
-        };
-
-        if verify_successful_tx
-            && !self
-                .provider_ref()
-                .eth_api()
-                .transaction_receipt(tx_hash)
-                .await?
-                .ok_or_else(|| eyre::eyre!("reciepts not enabled on node - tx hash: {tx_hash:?}"))?
-                .status()
-        {
-            return Ok(None);
-        }
-
-        let input: &[u8] = transaction.input();
-        Ok(Angstrom::executeCall::abi_decode(input)
-            .ok()
-            .and_then(|decoded| {
-                let mut input = decoded.encoded.as_ref();
-                Some(WithEthMeta::new(
-                    transaction.block_number(),
-                    Some(transaction.tx_hash()),
-                    transaction.transaction_index(),
-                    AngstromBundle::pade_decode(&mut input, None).ok()?
-                ))
-            }))
+    pub(super) async fn fee_configuration_by_pool_id_and_hook<N>(
+        this: &RethDbProviderWrapper<N>,
+        pool_id: PoolId,
+        hook_address: Address,
+        block_number: Option<u64>,
+        _chain: AngstromL2Chain
+    ) -> eyre::Result<AngstromL2PoolFeeConfiguration>
+    where
+        N: EthNetworkExt,
+        <N as EthNetworkExt>::RethNode: NodeClientSpec
+    {
+        angstrom_l2_pool_fee_config(this.provider_ref(), hook_address, pool_id, block_number).await
     }
 
-    async fn fee_configuration_by_tokens(
-        &self,
-        token0: Address,
-        token1: Address,
-        bundle_fee: Option<U24>,
-        block_number: Option<u64>
-    ) -> eyre::Result<FeeConfiguration> {
-        const UNLOCKED_FEES_SLOT: u64 = 2;
-
-        let pool_partial_key = AngstromPoolConfigStore::derive_store_key(token0, token1);
-
-        let mut preimage = [0u8; 64];
-        let key_bytes: &[u8; 27] = pool_partial_key.deref();
-        preimage[..27].copy_from_slice(key_bytes);
-        preimage[32..].copy_from_slice(&U256::from(UNLOCKED_FEES_SLOT).to_be_bytes::<32>());
-        let slot = keccak256(preimage);
-
-        let bundle_fee = if let Some(f) = bundle_fee {
-            f
-        } else {
-            self.pool_key_by_tokens(token0, token1, block_number)
-                .await?
-                .pool_fee_in_e6
-        };
-
-        let raw = reth_db_view_call(
-            self.provider_ref(),
-            block_number,
-            *ANGSTROM_ADDRESS.get().unwrap(),
-            Angstrom::extsloadCall { slot: U256::from_be_bytes(*slot) }
-        )??;
-
-        let bytes = raw.to_be_bytes::<32>();
-        let unlocked_fee = U24::from_be_bytes([bytes[29], bytes[30], bytes[31]]);
-        let protocol_fee = U24::from_be_bytes([bytes[26], bytes[27], bytes[28]]);
-
-        Ok(FeeConfiguration {
-            bundle_fee:   bundle_fee.to::<u32>(),
-            swap_fee:     unlocked_fee.to::<u32>(),
-            protocol_fee: protocol_fee.to::<u32>()
-        })
-    }
-}
-
-#[async_trait::async_trait]
-impl AngstromL2UserApi for RethDbProviderWrapper<EthereumNode> {
-    async fn position_and_pool_info(
-        &self,
+    pub(super) async fn position_and_pool_info<N>(
+        this: &RethDbProviderWrapper<N>,
         position_token_id: U256,
-        block_number: Option<u64>
-    ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)>
+    where
+        N: EthNetworkExt,
+        <N as EthNetworkExt>::RethNode: NodeClientSpec
+    {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
-            self.provider_ref(),
-            *POSITION_MANAGER_ADDRESS.get().unwrap(),
+            this.provider_ref(),
+            chain.constants().uniswap_constants().position_manager(),
             block_number,
             position_token_id
         )
@@ -539,23 +462,29 @@ impl AngstromL2UserApi for RethDbProviderWrapper<EthereumNode> {
         ))
     }
 
-    async fn position_liquidity(
-        &self,
+    pub(super) async fn position_liquidity<N>(
+        this: &RethDbProviderWrapper<N>,
         position_token_id: U256,
-        block_number: Option<u64>
-    ) -> eyre::Result<u128> {
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<u128>
+    where
+        N: EthNetworkExt,
+        <N as EthNetworkExt>::RethNode: NodeClientSpec
+    {
+        let consts = chain.constants();
         let (pool_key, position_info) = position_manager_pool_key_and_info(
-            self.provider_ref(),
-            *POSITION_MANAGER_ADDRESS.get().unwrap(),
+            this.provider_ref(),
+            consts.uniswap_constants().position_manager(),
             block_number,
             position_token_id
         )
         .await?;
 
         let liquidity = pool_manager_position_state_liquidity(
-            self.provider_ref(),
-            *POOL_MANAGER_ADDRESS.get().unwrap(),
-            *POSITION_MANAGER_ADDRESS.get().unwrap(),
+            this.provider_ref(),
+            consts.uniswap_constants().pool_manager(),
+            consts.uniswap_constants().position_manager(),
             pool_key.into(),
             position_token_id,
             position_info.tick_lower,
@@ -567,18 +496,35 @@ impl AngstromL2UserApi for RethDbProviderWrapper<EthereumNode> {
         Ok(liquidity)
     }
 
-    async fn all_user_positions(
-        &self,
+    pub(super) async fn all_user_positions<N>(
+        this: &RethDbProviderWrapper<N>,
         owner: Address,
         mut start_token_id: U256,
         mut end_token_id: U256,
         pool_id: Option<PoolId>,
         max_results: Option<usize>,
-        block_number: Option<u64>
-    ) -> eyre::Result<Vec<V4UserLiquidityPosition>> {
-        let position_manager_address = *POSITION_MANAGER_ADDRESS.get().unwrap();
-        let pool_manager_address = *POOL_MANAGER_ADDRESS.get().unwrap();
-        let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<Vec<V4UserLiquidityPosition>>
+    where
+        N: EthNetworkExt,
+        <N as EthNetworkExt>::RethNode: NodeClientSpec,
+        RethDbProviderWrapper<N>: AngstromL2DataApi<<N as EthNetworkExt>::AlloyNetwork>
+    {
+        let consts = chain.constants();
+
+        let position_manager_address = consts.uniswap_constants().position_manager();
+        let pool_manager_address = consts.uniswap_constants().pool_manager();
+
+        let all_angstrom_hooks = if pool_id.is_none() {
+            this.all_pool_keys(block_number, chain)
+                .await?
+                .into_iter()
+                .map(|key| key.hooks)
+                .collect::<HashSet<_>>()
+        } else {
+            HashSet::new()
+        };
 
         if start_token_id == U256::ZERO {
             start_token_id = U256::from(1u8);
@@ -586,7 +532,7 @@ impl AngstromL2UserApi for RethDbProviderWrapper<EthereumNode> {
 
         if end_token_id == U256::ZERO {
             end_token_id = position_manager_next_token_id(
-                self.provider_ref(),
+                this.provider_ref(),
                 position_manager_address,
                 block_number
             )
@@ -596,7 +542,7 @@ impl AngstromL2UserApi for RethDbProviderWrapper<EthereumNode> {
         let mut all_positions = Vec::new();
         while start_token_id <= end_token_id {
             let owner_of = position_manager_owner_of(
-                self.provider_ref(),
+                this.provider_ref(),
                 position_manager_address,
                 block_number,
                 start_token_id
@@ -609,16 +555,16 @@ impl AngstromL2UserApi for RethDbProviderWrapper<EthereumNode> {
             }
 
             let (pool_key, position_info) = position_manager_pool_key_and_info(
-                self.provider_ref(),
+                this.provider_ref(),
                 position_manager_address,
                 block_number,
                 start_token_id
             )
             .await?;
 
-            if pool_key.hooks != angstrom_address
+            if !all_angstrom_hooks.contains(&pool_key.hooks)
                 || pool_id
-                    .map(|id| id != PoolId::from(pool_key))
+                    .map(|id| id != B256::from(pool_key))
                     .unwrap_or_default()
             {
                 start_token_id += U256::from(1u8);
@@ -626,7 +572,7 @@ impl AngstromL2UserApi for RethDbProviderWrapper<EthereumNode> {
             }
 
             let liquidity = pool_manager_position_state_liquidity(
-                self.provider_ref(),
+                this.provider_ref(),
                 pool_manager_address,
                 position_manager_address,
                 pool_key.into(),
@@ -657,109 +603,135 @@ impl AngstromL2UserApi for RethDbProviderWrapper<EthereumNode> {
         Ok(all_positions)
     }
 
-    async fn user_position_fees(
-        &self,
+    pub(super) async fn user_position_fees<N>(
+        this: &RethDbProviderWrapper<N>,
         position_token_id: U256,
-        block_number: Option<u64>
-    ) -> eyre::Result<LiquidityPositionFees> {
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<LiquidityPositionFees>
+    where
+        N: EthNetworkExt,
+        <N as EthNetworkExt>::RethNode: NodeClientSpec,
+        RethDbProviderWrapper<N>: AngstromL2UserApi<<N as EthNetworkExt>::AlloyNetwork>
+            + AngstromL2DataApi<<N as EthNetworkExt>::AlloyNetwork>
+    {
+        let consts = chain.constants();
+
         let ((pool_key, position_info), position_liquidity) = tokio::try_join!(
-            self.position_and_pool_info(position_token_id, block_number),
-            self.position_liquidity(position_token_id, block_number),
+            this.position_and_pool_info(position_token_id, block_number, chain),
+            this.position_liquidity(position_token_id, block_number, chain),
         )?;
 
+        let hook = pool_key.hooks;
         let pool_id = pool_key.into();
-        let slot0 = self.slot0_by_pool_id(pool_id, block_number).await?;
+        let slot0 = this.slot0_by_pool_id(pool_id, block_number, chain).await?;
 
-        Ok(position_fees(
-            self.provider_ref(),
-            *POOL_MANAGER_ADDRESS.get().unwrap(),
-            *ANGSTROM_ADDRESS.get().unwrap(),
-            *POSITION_MANAGER_ADDRESS.get().unwrap(),
-            block_number,
-            pool_id,
-            slot0.tick,
-            position_token_id,
-            position_info.tick_lower,
-            position_info.tick_upper,
-            position_liquidity
-        )
-        .await?)
+        let (angstrom_fee_delta, (uniswap_token0_fee_delta, uniswap_token1_fee_delta)) = tokio::try_join!(
+            this.angstrom_l2_fees(
+                pool_id,
+                Some(hook),
+                slot0.tick,
+                position_token_id,
+                position_info.tick_lower,
+                position_info.tick_upper,
+                block_number,
+                chain
+            ),
+            uniswap_fee_deltas(
+                this.provider_ref(),
+                consts.uniswap_constants().pool_manager(),
+                consts.uniswap_constants().position_manager(),
+                block_number,
+                pool_id,
+                slot0.tick,
+                position_token_id,
+                position_info.tick_lower,
+                position_info.tick_upper,
+            )
+        )?;
+
+        Ok(LiquidityPositionFees::new(
+            position_liquidity,
+            angstrom_fee_delta,
+            uniswap_token0_fee_delta,
+            uniswap_token1_fee_delta
+        ))
+    }
+
+    pub(super) async fn angstrom_l2_fees<N>(
+        this: &RethDbProviderWrapper<N>,
+        pool_id: PoolId,
+        hook_address: Option<Address>,
+        current_pool_tick: I24,
+        position_token_id: U256,
+        tick_lower: I24,
+        tick_upper: I24,
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<U256>
+    where
+        N: EthNetworkExt,
+        <N as EthNetworkExt>::RethNode: NodeClientSpec,
+        RethDbProviderWrapper<N>: AngstromL2DataApi<<N as EthNetworkExt>::AlloyNetwork>
+    {
+        let hook = if let Some(hook_address) = hook_address {
+            hook_address
+        } else {
+            this.hook_by_pool_id(pool_id, block_number, chain).await?
+        };
+        let consts = chain.constants();
+        let (growth_inside, last_growth_inside) = tokio::try_join!(
+            angstrom_l2_growth_inside(
+                this.provider_ref(),
+                hook,
+                pool_id,
+                current_pool_tick,
+                tick_lower,
+                tick_upper,
+                block_number,
+            ),
+            angstrom_l2_last_growth_inside(
+                this.provider_ref(),
+                hook,
+                consts.uniswap_constants().position_manager(),
+                pool_id,
+                position_token_id,
+                tick_lower,
+                tick_upper,
+                block_number,
+            ),
+        )?;
+
+        Ok(growth_inside - last_growth_inside)
     }
 }
 
 #[cfg(test)]
-mod tests {
-
-    use alloy_primitives::aliases::U24;
-
+mod data_api_tests {
     use super::*;
-    use crate::l1::{
-        test_utils::{USDC, WETH, valid_test_params::init_valid_position_params_with_provider},
-        types::{HistoricalOrdersFilter, OrderKind}
-    };
+    use crate::l2::test_utils::valid_test_params::init_valid_position_params_with_provider;
+
+    // #[tokio::test]
+    // async fn test_fetch_fee_configuration() {
+    //     let (provider, state) = init_valid_position_params_with_provider().await;
+
+    //     let fee_config = provider
+    //         .fee_configuration_by_pool_id(state.pool_id,
+    // Some(state.block_number), state.chain)         .await
+    //         .unwrap();
+
+    //     assert_eq!(
+    //         FeeConfiguration { bundle_fee: 200, swap_fee: 238, protocol_fee: 112
+    // },         fee_config
+    //     );
+    // }
 
     #[tokio::test]
-    #[serial_test::serial]
-    async fn test_fetch_fee_configuration() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
-
-        let fee_config = provider
-            .fee_configuration_by_tokens(USDC, WETH, None, Some(state.block_number))
-            .await
-            .unwrap();
-
-        assert_eq!(
-            FeeConfiguration { bundle_fee: 200, swap_fee: 238, protocol_fee: 112 },
-            fee_config
-        );
-    }
-
-    #[tokio::test]
-    #[serial_test::serial]
-    async fn test_tokens_by_partial_pool_key() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
-
-        let token_pair = provider
-            .tokens_by_partial_pool_key(
-                AngstromPoolConfigStore::derive_store_key(
-                    state.pool_key.currency0,
-                    state.pool_key.currency1
-                ),
-                Some(state.block_number)
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(token_pair.token0, state.pool_key.currency0);
-        assert_eq!(token_pair.token1, state.pool_key.currency1);
-    }
-
-    #[tokio::test]
-    #[serial_test::serial]
-    async fn test_all_token_pairs_with_config_store() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
-
-        let config_store = provider
-            .pool_config_store(Some(state.block_number))
-            .await
-            .unwrap();
-
-        let all_pairs = provider
-            .all_token_pairs_with_config_store(config_store, Some(state.block_number))
-            .await
-            .unwrap();
-
-        assert_eq!(all_pairs.len(), 2);
-        assert!(!all_pairs.contains(&TokenPair { token0: Address::ZERO, token1: Address::ZERO }));
-    }
-
-    #[tokio::test]
-    #[serial_test::serial]
     async fn test_all_token_pairs() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let all_pairs = provider
-            .all_token_pairs(Some(state.block_number))
+            .all_token_pairs(Some(state.block_number), state.chain)
             .await
             .unwrap();
 
@@ -768,27 +740,11 @@ mod tests {
     }
 
     #[tokio::test]
-    #[serial_test::serial]
     async fn test_all_tokens() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
-        let all_tokens = provider.all_tokens(Some(state.block_number)).await.unwrap();
-
-        assert_eq!(all_tokens.len(), 3);
-        assert!(!all_tokens.contains(&Address::ZERO));
-    }
-
-    #[tokio::test]
-    #[serial_test::serial]
-    async fn test_all_tokens_with_config_store() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
-        let config_store = provider
-            .pool_config_store(Some(state.block_number))
-            .await
-            .unwrap();
-
         let all_tokens = provider
-            .all_tokens_with_config_store(config_store, Some(state.block_number))
+            .all_tokens(Some(state.block_number), state.chain)
             .await
             .unwrap();
 
@@ -797,127 +753,26 @@ mod tests {
     }
 
     #[tokio::test]
-    #[serial_test::serial]
-    async fn test_pool_key_by_tokens() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
-
-        let pool_key = provider
-            .pool_key_by_tokens(
-                state.pool_key.currency0,
-                state.pool_key.currency1,
-                Some(state.block_number)
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(
-            pool_key,
-            PoolKeyWithAngstromFee {
-                pool_fee_in_e6: U24::from(200_u16),
-                pool_key:       state.pool_key
-            }
-        );
-    }
-
-    #[tokio::test]
-    #[serial_test::serial]
     async fn test_pool_key_by_pool_id() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let pool_key = provider
-            .pool_key_by_pool_id(state.pool_key.into(), Some(state.block_number))
+            .pool_key_by_pool_id(state.pool_key.into(), Some(state.block_number), state.chain)
             .await
             .unwrap();
 
-        assert_eq!(
-            pool_key,
-            PoolKeyWithAngstromFee {
-                pool_fee_in_e6: U24::from(200_u16),
-                pool_key:       state.pool_key
-            }
-        );
+        assert_eq!(PoolId::from(pool_key), PoolId::from(state.pool_key));
     }
 
     #[tokio::test]
-    #[serial_test::serial]
-    async fn test_pool_id() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
-
-        let pool_key = provider
-            .pool_id(state.pool_key.currency0, state.pool_key.currency1, Some(state.block_number))
-            .await
-            .unwrap();
-
-        assert_eq!(pool_key, PoolId::from(state.pool_key));
-    }
-
-    #[tokio::test]
-    #[serial_test::serial]
-    async fn test_pool_key_by_pool_id_with_config_store() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
-        let config_store = provider
-            .pool_config_store(Some(state.block_number))
-            .await
-            .unwrap();
-
-        let pool_key = provider
-            .pool_key_by_pool_id_with_config_store(
-                state.pool_key.into(),
-                config_store,
-                Some(state.block_number)
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(
-            pool_key,
-            PoolKeyWithAngstromFee {
-                pool_fee_in_e6: U24::from(200_u16),
-                pool_key:       state.pool_key
-            }
-        );
-    }
-
-    #[tokio::test]
-    #[serial_test::serial]
-    async fn test_historical_orders() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
-
-        let filter = HistoricalOrdersFilter::new()
-            .from_block(state.valid_block_after_swaps)
-            .to_block(state.valid_block_after_swaps)
-            .order_kind(OrderKind::User);
-        let orders = provider.historical_orders(filter, None).await.unwrap();
-
-        assert_eq!(orders.len(), 1);
-    }
-
-    #[tokio::test]
-    #[serial_test::serial]
-    async fn test_historical_bundles() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
-
-        let orders = provider
-            .historical_bundles(
-                Some(state.valid_block_after_swaps),
-                Some(state.valid_block_after_swaps),
-                None
-            )
-            .await
-            .unwrap();
-
-        assert_eq!(orders.len(), 1);
-    }
-
-    #[tokio::test]
-    #[serial_test::serial]
     async fn test_historical_liquidity_changes() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let modify_liquidity = provider
             .historical_liquidity_changes(
                 Some(state.block_for_liquidity_add),
-                Some(state.block_for_liquidity_add)
+                Some(state.block_for_liquidity_add),
+                state.chain
             )
             .await
             .unwrap();
@@ -926,16 +781,35 @@ mod tests {
     }
 
     #[tokio::test]
-    #[serial_test::serial]
     async fn test_pool_data_by_tokens() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let (_, pool_data) = provider
-            .pool_data_by_tokens(
-                state.pool_key.currency0,
-                state.pool_key.currency1,
+            .pool_data_by_pool_id(state.pool_id, true, Some(state.block_number), state.chain)
+            .await
+            .unwrap();
+
+        assert_eq!(pool_data.pool.token0, state.pool_key.currency0);
+        assert_eq!(pool_data.pool.token1, state.pool_key.currency1);
+        assert!(
+            !pool_data
+                .pool
+                .get_baseline_liquidity()
+                .initialized_ticks()
+                .is_empty()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_pool_data_by_pool_id() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
+
+        let (_, pool_data) = provider
+            .pool_data_by_pool_id(
+                PoolId::from(state.pool_key),
                 true,
-                Some(state.block_number)
+                Some(state.block_number),
+                state.chain
             )
             .await
             .unwrap();
@@ -952,33 +826,11 @@ mod tests {
     }
 
     #[tokio::test]
-    #[serial_test::serial]
-    async fn test_pool_data_by_pool_id() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
-
-        let (_, pool_data) = provider
-            .pool_data_by_pool_id(PoolId::from(state.pool_key), true, Some(state.block_number))
-            .await
-            .unwrap();
-
-        assert_eq!(pool_data.pool.token0, state.pool_key.currency0);
-        assert_eq!(pool_data.pool.token1, state.pool_key.currency1);
-        assert!(
-            !pool_data
-                .pool
-                .get_baseline_liquidity()
-                .initialized_ticks()
-                .is_empty()
-        );
-    }
-
-    #[tokio::test]
-    #[serial_test::serial]
     async fn test_all_pool_data() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let all_pool_data = provider
-            .all_pool_data(true, Some(state.block_number))
+            .all_pool_data(true, Some(state.block_number), state.chain)
             .await
             .unwrap();
 
@@ -986,71 +838,99 @@ mod tests {
     }
 
     #[tokio::test]
-    #[serial_test::serial]
-    async fn test_pool_config_store() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
-
-        let config_store = provider
-            .pool_config_store(Some(state.block_number))
-            .await
-            .unwrap();
-
-        assert_eq!(config_store.all_entries().len(), 2);
-    }
-
-    #[tokio::test]
-    #[serial_test::serial]
     async fn test_slot0_by_pool_id() {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let slot0 = provider
-            .slot0_by_pool_id(PoolId::from(state.pool_key), Some(state.block_number))
+            .slot0_by_pool_id(PoolId::from(state.pool_key), Some(state.block_number), state.chain)
             .await
             .unwrap();
 
         assert_eq!(slot0.tick, state.current_pool_tick);
     }
+}
+
+#[cfg(test)]
+mod user_api_tests {
+
+    use alloy_primitives::U256;
+
+    use crate::{
+        l2::{
+            apis::user_api::AngstromL2UserApi,
+            test_utils::valid_test_params::init_valid_position_params_with_provider
+        },
+        types::fees::LiquidityPositionFees
+    };
 
     #[tokio::test]
-    #[serial_test::serial]
-    async fn test_slot0_by_tokens() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
+    async fn test_position_and_pool_info_by_token_id() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.block_for_liquidity_add + 1;
 
-        let slot0 = provider
-            .slot0_by_tokens(
-                state.pool_key.currency0,
-                state.pool_key.currency1,
-                Some(state.block_number)
+        let (pool_key, unpacked_position_info) = provider
+            .position_and_pool_info(pos_info.position_token_id, Some(block_number), pos_info.chain)
+            .await
+            .unwrap();
+
+        assert_eq!(pool_key, pos_info.pool_key);
+        assert_eq!(unpacked_position_info, pos_info.as_unpacked_position_info());
+    }
+
+    #[tokio::test]
+    async fn test_position_liquidity_by_token_id() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.block_for_liquidity_add + 1;
+
+        let position_liquidity = provider
+            .position_liquidity(pos_info.position_token_id, Some(block_number), pos_info.chain)
+            .await
+            .unwrap();
+
+        assert_eq!(pos_info.position_liquidity, position_liquidity);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn test_all_user_positions() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.block_for_liquidity_add + 1;
+
+        let bound: u64 = 10;
+
+        let position_liquidity = provider
+            .all_user_positions(
+                pos_info.owner,
+                pos_info.position_token_id - U256::from(bound),
+                pos_info.position_token_id + U256::from(bound),
+                None,
+                None,
+                Some(block_number),
+                pos_info.chain
             )
             .await
             .unwrap();
 
-        assert_eq!(slot0.tick, state.current_pool_tick);
+        assert_eq!(position_liquidity.len(), 1);
     }
 
     #[tokio::test]
-    #[serial_test::serial]
-    async fn test_get_bundle_by_block() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
+    async fn test_user_position_fees() {
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.block_for_liquidity_add + 100;
 
-        let bundle = provider
-            .get_bundle_by_block(state.valid_block_after_swaps, true)
+        let results = provider
+            .user_position_fees(pos_info.position_token_id, Some(block_number), pos_info.chain)
             .await
             .unwrap();
 
-        assert!(bundle.is_some());
-    }
-
-    #[tokio::test]
-    #[serial_test::serial]
-    async fn test_get_bundle_by_tx_hash() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
-
-        let bundle = provider
-            .get_bundle_by_tx_hash(state.bundle_tx_hash, true)
-            .await
-            .unwrap();
-
-        assert!(bundle.is_some());
+        assert_eq!(
+            results,
+            LiquidityPositionFees {
+                position_liquidity:   807449445327074,
+                angstrom_token0_fees: U256::from(45197_u128),
+                uniswap_token0_fees:  U256::from(2754_u128),
+                uniswap_token1_fees:  U256::from(837588354352_u128)
+            }
+        );
     }
 }

@@ -54,10 +54,46 @@ mod tests {
     use angstrom_types_primitives::primitive::{POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS};
 
     use super::*;
-    use crate::l1::test_utils::valid_test_params::init_valid_position_params_with_provider;
 
+    #[cfg(feature = "l1")]
     #[tokio::test]
-    async fn test_uniswap_fee_deltas() {
+    async fn test_uniswap_fee_deltas_l1() {
+        use crate::l1::test_utils::valid_test_params::init_valid_position_params_with_provider;
+        let (provider, pos_info) = init_valid_position_params_with_provider().await;
+        let block_number = pos_info.block_number;
+
+        #[cfg(feature = "local-reth")]
+        let provider = provider.provider_ref();
+        #[cfg(not(feature = "local-reth"))]
+        let provider = &provider;
+
+        let results = uniswap_fee_deltas(
+            provider,
+            *POOL_MANAGER_ADDRESS.get().unwrap(),
+            *POSITION_MANAGER_ADDRESS.get().unwrap(),
+            Some(block_number),
+            pos_info.pool_id,
+            pos_info.current_pool_tick,
+            pos_info.position_token_id,
+            pos_info.tick_lower,
+            pos_info.tick_upper
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(
+            results,
+            (
+                U256::from(4004676340914304001936429601015_u128),
+                U256::from_str_radix("1565824208245443875813344119471164423504", 10).unwrap()
+            )
+        );
+    }
+
+    #[cfg(feature = "l2")]
+    #[tokio::test]
+    async fn test_uniswap_fee_deltas_l2() {
+        use crate::l2::test_utils::valid_test_params::init_valid_position_params_with_provider;
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
         let block_number = pos_info.block_number;
 

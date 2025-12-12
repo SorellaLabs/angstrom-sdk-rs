@@ -7,17 +7,18 @@ use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager,
     primitive::{PoolId, try_init_with_chain_id}
 };
+#[cfg(feature = "local-reth")]
+use eth_network_exts::base_mainnet::BaseMainnetExt;
 use uniswap_storage::v4::UnpackedPositionInfo;
 
 use crate::l2::{
-    constants::{ANGSTROM_L2_CONSTANTS_BASE_MAINNET, AngstromL2Chain},
+    ANGSTROM_L2_CONSTANTS_BASE_MAINNET, AngstromL2Chain,
     test_utils::{BASE_USDC, BASE_WETH}
 };
+#[cfg(feature = "local-reth")]
+use crate::types::BaseMainnetExtWrapper;
 
 pub struct ValidPositionTestParameters {
-    pub angstrom_address: Address,
-    pub pool_manager_address: Address,
-    pub position_manager_address: Address,
     pub owner: Address,
     pub pool_id: PoolId,
     pub pool_key: PoolManager::PoolKey,
@@ -29,11 +30,10 @@ pub struct ValidPositionTestParameters {
     pub position_liquidity: u128,
     pub block_number: u64,
     pub block_for_liquidity_add: u64,
-    pub valid_block_after_swaps: u64,
     pub chain: AngstromL2Chain
 }
 
-#[cfg(feature = "local-reth")]
+#[cfg(not(feature = "local-reth"))]
 pub async fn init_valid_position_params_with_provider()
 -> (alloy_provider::RootProvider<op_alloy_network::Optimism>, ValidPositionTestParameters) {
     let params = init_valid_position_params();
@@ -42,16 +42,16 @@ pub async fn init_valid_position_params_with_provider()
     (provider, params)
 }
 
-#[cfg(not(feature = "local-reth"))]
+#[cfg(feature = "local-reth")]
 pub async fn init_valid_position_params_with_provider() -> (
-    std::sync::Arc<crate::types::providers::RethDbProviderWrapper<op_reth::OpNode>>,
+    std::sync::Arc<crate::types::providers::RethDbProviderWrapper<BaseMainnetExtWrapper>>,
     ValidPositionTestParameters
 ) {
     use std::sync::Arc;
 
     use lib_reth::{op_reth::BASE_MAINNET, reth_libmdbx::RethNodeClientBuilder};
 
-    use crate::{l2::test_utils::eth_ws_url, types::providers::RethDbProviderWrapper};
+    use crate::{l2::test_utils::base_eth_ws_url, types::providers::RethDbProviderWrapper};
 
     let params = init_valid_position_params();
     let provider = Arc::new(RethDbProviderWrapper::new(Arc::new(
@@ -59,7 +59,7 @@ pub async fn init_valid_position_params_with_provider() -> (
             "/var/lib/eth/base-mainnet/reth/",
             1000,
             BASE_MAINNET.clone(),
-            Some(eth_ws_url())
+            Some(&base_eth_ws_url())
         )
         .build()
         .unwrap()
@@ -103,11 +103,7 @@ pub fn init_valid_position_params() -> ValidPositionTestParameters {
         position_manager_pool_map_key,
         owner,
         pool_key,
-        angstrom_address,
         block_for_liquidity_add: 23871281,
-        valid_block_after_swaps: 23870004,
-        pool_manager_address: chain_consts.uniswap_constants().pool_manager(),
-        position_manager_address: chain_consts.uniswap_constants().position_manager(),
         chain: AngstromL2Chain::Base
     }
 }

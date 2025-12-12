@@ -1,11 +1,12 @@
 use alloy_network::Network;
 use alloy_primitives::Address;
 use angstrom_types_primitives::{contract_bindings::pool_manager::PoolManager, primitive::PoolId};
-use uni_v4::FeeConfiguration;
-use uniswap_storage::v4::UnpackedSlot0;
+use uniswap_storage::{
+    angstrom::l2::angstrom_l2::AngstromL2PoolFeeConfiguration, v4::UnpackedSlot0
+};
 
 use crate::{
-    l2::constants::AngstromL2Chain,
+    l2::AngstromL2Chain,
     types::{
         common::*, contracts::angstrom_l2::angstrom_l_2_factory::AngstromL2Factory,
         pool_tick_loaders::PoolTickDataLoader
@@ -119,10 +120,30 @@ pub trait AngstromL2DataApi<N: Network>: PoolTickDataLoader<N> + Send + Sized {
         chain: AngstromL2Chain
     ) -> eyre::Result<UnpackedSlot0>;
 
+    async fn hook_by_pool_id(
+        &self,
+        pool_id: PoolId,
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<Address>;
+
     async fn fee_configuration_by_pool_id(
         &self,
         pool_id: PoolId,
         block_number: Option<u64>,
         chain: AngstromL2Chain
-    ) -> eyre::Result<FeeConfiguration>;
+    ) -> eyre::Result<AngstromL2PoolFeeConfiguration> {
+        let hook = self.hook_by_pool_id(pool_id, block_number, chain).await?;
+        Ok(self
+            .fee_configuration_by_pool_id_and_hook(pool_id, hook, block_number, chain)
+            .await?)
+    }
+
+    async fn fee_configuration_by_pool_id_and_hook(
+        &self,
+        pool_id: PoolId,
+        hook_address: Address,
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<AngstromL2PoolFeeConfiguration>;
 }

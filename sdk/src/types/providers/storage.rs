@@ -1,13 +1,18 @@
 #[cfg(feature = "local-reth")]
 mod reth_db_impls {
     use alloy_primitives::{Address, StorageKey, StorageValue};
-    use lib_reth::EthereumNode;
+    use eth_network_exts::EthNetworkExt;
+    use lib_reth::reth_libmdbx::NodeClientSpec;
     use uniswap_storage::StorageSlotFetcher;
 
     use crate::types::providers::RethDbProviderWrapper;
 
     #[async_trait::async_trait]
-    impl StorageSlotFetcher for RethDbProviderWrapper<EthereumNode> {
+    impl<N> StorageSlotFetcher for RethDbProviderWrapper<N>
+    where
+        N: EthNetworkExt,
+        N::RethNode: NodeClientSpec
+    {
         async fn storage_at(
             &self,
             address: Address,

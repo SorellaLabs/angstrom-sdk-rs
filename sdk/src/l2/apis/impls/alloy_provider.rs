@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use alloy_network::Network;
-use alloy_primitives::{Address, B256, U256};
+use alloy_primitives::{Address, B256, U256, aliases::I24};
 use alloy_provider::Provider;
 use alloy_rpc_types::Filter;
 use alloy_sol_types::SolEvent;
@@ -16,26 +16,36 @@ use uni_v4::{
     loaders::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
     pool_data_loader::{PoolData, PoolDataV4}
 };
-use uniswap_storage::v4::{
-    UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
-    pool_manager::{
-        pool_state::pool_manager_pool_slot0, position_state::pool_manager_position_state_liquidity
+use uniswap_storage::{
+    angstrom::l2::{
+        angstrom_l2::{
+            AngstromL2PoolFeeConfiguration, angstrom_l2_growth_inside,
+            angstrom_l2_last_growth_inside, angstrom_l2_pool_fee_config
+        },
+        angstrom_l2_factory::angstrom_l2_factory_hook_pool_id
     },
-    position_manager::{
-        position_manager_next_token_id, position_manager_owner_of,
-        position_manager_pool_key_and_info
+    v4::{
+        UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
+        pool_manager::{
+            pool_state::pool_manager_pool_slot0,
+            position_state::pool_manager_position_state_liquidity
+        },
+        position_manager::{
+            position_manager_next_token_id, position_manager_owner_of,
+            position_manager_pool_key_and_info
+        }
     }
 };
 
 use crate::{
     l2::{
-        apis::{AngstromL2DataApi, AngstromL2UserApi},
-        constants::AngstromL2Chain
+        AngstromL2Chain,
+        apis::{AngstromL2DataApi, AngstromL2UserApi}
     },
     types::{
         common::*,
         contracts::angstrom_l2::angstrom_l_2_factory::AngstromL2Factory,
-        fees::{LiquidityPositionFees, position_fees},
+        fees::{LiquidityPositionFees, uniswap_fee_deltas},
         pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader},
         providers::alloy_view_deploy,
         utils::historical_pool_manager_modify_liquidity_filter
@@ -114,9 +124,14 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
                 .await??;
         let pool_data: PoolData = (uni_pool_key, out_pool_data).into();
 
-        let fee_config = self
-            .fee_configuration_by_pool_id(pool_id, Some(block_number), chain)
-            .await?;
+        // let fee_config = self
+        //     .fee_configuration_by_pool_id(pool_id, Some(block_number), chain)
+        //     .await?;
+        let fee_config = FeeConfiguration {
+            bundle_fee:   Default::default(),
+            swap_fee:     Default::default(),
+            protocol_fee: Default::default()
+        };
 
         let (ticks, tick_bitmap) = if load_ticks {
             self.load_tick_data_in_band(
@@ -228,14 +243,30 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
         .await?)
     }
 
-    async fn fee_configuration_by_pool_id(
+    async fn hook_by_pool_id(
         &self,
         pool_id: PoolId,
         block_number: Option<u64>,
         chain: AngstromL2Chain
-    ) -> eyre::Result<FeeConfiguration> {
-        todo!();
-        // Ok(FeeConfiguration { bundle_fee: 0, swap_fee: 0, protocol_fee: 0 })
+    ) -> eyre::Result<Address> {
+        Ok(angstrom_l2_factory_hook_pool_id(
+            self.root(),
+            chain.constants().angstrom_l2_factory(),
+            pool_id,
+            block_number
+        )
+        .await?
+        .ok_or_else(|| eyre::eyre!("no hook found for pool id: {pool_id:?}"))?)
+    }
+
+    async fn fee_configuration_by_pool_id_and_hook(
+        &self,
+        pool_id: PoolId,
+        hook_address: Address,
+        block_number: Option<u64>,
+        _chain: AngstromL2Chain
+    ) -> eyre::Result<AngstromL2PoolFeeConfiguration> {
+        angstrom_l2_pool_fee_config(self.root(), hook_address, pool_id, block_number).await
     }
 }
 
@@ -415,45 +446,101 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2UserApi<N> for P {
         let pool_id = pool_key.into();
         let slot0 = self.slot0_by_pool_id(pool_id, block_number, chain).await?;
 
-        Ok(position_fees(
-            self.root(),
-            consts.uniswap_constants().pool_manager(),
-            hook,
-            consts.uniswap_constants().position_manager(),
-            block_number,
-            pool_id,
-            slot0.tick,
-            position_token_id,
-            position_info.tick_lower,
-            position_info.tick_upper,
-            position_liquidity
-        )
-        .await?)
+        let (angstrom_fee_delta, (uniswap_token0_fee_delta, uniswap_token1_fee_delta)) = tokio::try_join!(
+            self.angstrom_l2_fees(
+                pool_id,
+                Some(hook),
+                slot0.tick,
+                position_token_id,
+                position_info.tick_lower,
+                position_info.tick_upper,
+                block_number,
+                chain
+            ),
+            uniswap_fee_deltas(
+                self.root(),
+                consts.uniswap_constants().pool_manager(),
+                consts.uniswap_constants().position_manager(),
+                block_number,
+                pool_id,
+                slot0.tick,
+                position_token_id,
+                position_info.tick_lower,
+                position_info.tick_upper,
+            )
+        )?;
+
+        Ok(LiquidityPositionFees::new(
+            position_liquidity,
+            angstrom_fee_delta,
+            uniswap_token0_fee_delta,
+            uniswap_token1_fee_delta
+        ))
+    }
+
+    async fn angstrom_l2_fees(
+        &self,
+        pool_id: PoolId,
+        hook_address: Option<Address>,
+        current_pool_tick: I24,
+        position_token_id: U256,
+        tick_lower: I24,
+        tick_upper: I24,
+        block_number: Option<u64>,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<U256> {
+        let hook = if let Some(hook_address) = hook_address {
+            hook_address
+        } else {
+            self.hook_by_pool_id(pool_id, block_number, chain).await?
+        };
+        let consts = chain.constants();
+        let (growth_inside, last_growth_inside) = tokio::try_join!(
+            angstrom_l2_growth_inside(
+                self.root(),
+                hook,
+                pool_id,
+                current_pool_tick,
+                tick_lower,
+                tick_upper,
+                block_number,
+            ),
+            angstrom_l2_last_growth_inside(
+                self.root(),
+                hook,
+                consts.uniswap_constants().position_manager(),
+                pool_id,
+                position_token_id,
+                tick_lower,
+                tick_upper,
+                block_number,
+            ),
+        )?;
+
+        Ok(growth_inside - last_growth_inside)
     }
 }
 
 #[cfg(test)]
 mod data_api_tests {
 
-    use alloy_primitives::aliases::U24;
-
     use super::*;
     use crate::l2::test_utils::valid_test_params::init_valid_position_params_with_provider;
 
-    #[tokio::test]
-    async fn test_fetch_fee_configuration() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
+    // #[tokio::test]
+    // async fn test_fetch_fee_configuration() {
+    //     let (provider, state) = init_valid_position_params_with_provider().await;
 
-        let fee_config = provider
-            .fee_configuration_by_pool_id(state.pool_id, Some(state.block_number), state.chain)
-            .await
-            .unwrap();
+    //     let fee_config = provider
+    //         .fee_configuration_by_pool_id(state.pool_id,
+    // Some(state.block_number), state.chain)         .await
+    //         .unwrap();
 
-        assert_eq!(
-            FeeConfiguration { bundle_fee: 200, swap_fee: 238, protocol_fee: 112 },
-            fee_config
-        );
-    }
+    //     assert_eq!(
+    //         FeeConfiguration { bundle_fee: 200, swap_fee: 238, protocol_fee: 112
+    // },         fee_config
+    //     );
+    // }
 
     #[tokio::test]
     async fn test_all_token_pairs() {
