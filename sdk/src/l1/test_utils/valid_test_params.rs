@@ -5,12 +5,9 @@ use alloy_primitives::{
 };
 use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager,
-    primitive::{
-        ANGSTROM_ADDRESS, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS,
-        PoolId, try_init_with_chain_id
-    }
+    primitive::{PoolId, try_init_with_chain_id}
 };
-use uniswap_storage::v4::UnpackedPositionInfo;
+use uniswap_storage::{angstrom::mainnet::ANGSTROM_L1_CONSTANTS_MAINNET, v4::UnpackedPositionInfo};
 
 use crate::l1::test_utils::{USDC, WETH};
 #[cfg(feature = "local-reth")]
@@ -87,13 +84,12 @@ pub fn init_valid_position_params() -> ValidPositionTestParameters {
         241, 50, 186, 236
     ];
 
-    let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
     let pool_key = PoolManager::PoolKey {
         currency0:   USDC,
         currency1:   WETH,
         fee:         U24::from(0x800000),
         tickSpacing: I24::unchecked_from(10),
-        hooks:       angstrom_address
+        hooks:       ANGSTROM_L1_CONSTANTS_MAINNET.angstrom_address()
     };
 
     ValidPositionTestParameters {
