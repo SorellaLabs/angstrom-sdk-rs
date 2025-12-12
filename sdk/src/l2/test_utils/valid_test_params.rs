@@ -7,8 +7,6 @@ use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager,
     primitive::{PoolId, try_init_with_chain_id}
 };
-#[cfg(feature = "local-reth")]
-use eth_network_exts::base_mainnet::BaseMainnetExt;
 use uniswap_storage::v4::UnpackedPositionInfo;
 
 use crate::l2::{
