@@ -22,7 +22,11 @@ use revm::{
     primitives::hardfork::SpecId
 };
 use revm_database::{AlloyDB, CacheDB, EmptyDBTyped, WrapDatabaseAsync};
+#[cfg(feature = "example-utils")]
+use testing_tools::order_generator::OrderGenerator;
 use tokio::runtime::Handle;
+#[cfg(feature = "example-utils")]
+use uniswap_v4::uniswap::pool_manager::TickRangeToLoad;
 
 #[cfg(feature = "example-utils")]
 use crate::l1::test_utils::AngstromOrderApiClientClone;
@@ -31,21 +35,24 @@ use crate::l1::{providers::backend::AngstromProvider, test_utils::AlloyRpcProvid
 #[cfg(feature = "example-utils")]
 pub async fn make_order_generator<P, T>(
     provider: &AngstromProvider<P, T>
-) -> eyre::Result<(OrderGenerator<T>, tokio::sync::mpsc::Receiver<(TickRangeToLoad, Arc<Notify>)>)>
+) -> eyre::Result<(
+    OrderGenerator<T>,
+    tokio::sync::mpsc::Receiver<(TickRangeToLoad, Arc<tokio::sync::Notify>)>
+)>
 where
     P: Provider + Clone,
     T: AngstromOrderApiClientClone
 {
-    use angstrom_types_primitives::{PoolId, primitive::POOL_MANAGER_ADDRESS};
+    use alloy_primitives::aliases::U24;
+    use angstrom_types_primitives::{
+        PoolId,
+        primitive::{POOL_MANAGER_ADDRESS, UniswapPoolRegistry}
+    };
     use futures::future::try_join_all;
     use rust_utils::ToHashMapByKey;
     use testing_tools::order_generator::{InternalBalanceMode, OrderGenerator};
-    use tokio::sync::Notify;
     use uni_v4::baseline_pool_factory::INITIAL_TICKS_PER_SIDE;
-    use uniswap_v4::uniswap::{
-        pool::EnhancedUniswapPool,
-        pool_manager::{SyncedUniswapPools, TickRangeToLoad}
-    };
+    use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_manager::SyncedUniswapPools};
 
     use crate::l1::apis::{AngstromNodeApi, data_api::AngstromL1DataApi};
 
@@ -58,7 +65,7 @@ where
         async move {
             let public_pool_id: PoolId = pool_key.as_angstrom_pool_key_type().into();
             let mut private_pool_key = pool_key.pool_key;
-            private_pool_key.fee = aliases::U24::from(0x800000);
+            private_pool_key.fee = U24::from(0x800000);
             let private_pool_id: PoolId = private_pool_key.into();
             let registry = UniswapPoolRegistry::from(vec![pool_key.as_angstrom_pool_key_type()]);
 

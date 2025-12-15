@@ -28,7 +28,10 @@ pub const WETH: Address = address!("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2")
 
 #[cfg(feature = "example-utils")]
 #[auto_impl::auto_impl(&, Box, Arc)]
-pub trait AngstromOrderApiClientClone: crate::apis::AngstromOrderApiClient + Clone + Sync {}
+pub trait AngstromOrderApiClientClone:
+    crate::l1::apis::AngstromOrderApiClient + Clone + Sync
+{
+}
 #[cfg(feature = "example-utils")]
 impl AngstromOrderApiClientClone for HttpClient {}
 
