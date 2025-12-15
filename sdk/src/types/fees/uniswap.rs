@@ -1,7 +1,7 @@
 use alloy_primitives::{Address, U256, aliases::I24};
 use angstrom_types_primitives::primitive::PoolId;
 use uniswap_storage::{
-    StorageSlotFetcher,
+    self, StorageSlotFetcher,
     v4::pool_manager::position_state::{
         pool_manager_position_fee_growth_inside, pool_manager_position_state_last_fee_growth_inside
     }
@@ -62,7 +62,7 @@ mod tests {
         let block_number = pos_info.block_number;
 
         #[cfg(feature = "local-reth")]
-        let provider = provider.provider();
+        let provider = provider.provider_ref();
         #[cfg(not(feature = "local-reth"))]
         let provider = &provider;
 

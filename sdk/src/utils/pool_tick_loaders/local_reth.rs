@@ -1,7 +1,8 @@
 use alloy_network::TransactionBuilder;
 use alloy_primitives::{BlockNumber, U256, aliases::I24};
 use angstrom_types_primitives::{POOL_MANAGER_ADDRESS, PoolId};
-use lib_reth::{EthereumNode, traits::EthStream};
+use eth_network_exts::mainnet::MainnetExt;
+use lib_reth::traits::EthStream;
 use uni_v4::{
     loaders::get_uniswap_v_4_tick_data::GetUniswapV4TickData,
     pool_data_loader::{TickData, TicksWithBlock}
@@ -34,7 +35,7 @@ impl PoolTickDataLoader for RethDbProviderWrapper {
         )
         .into_transaction_request();
 
-        let out_tick_data = reth_db_deploy_call::<EthereumNode, TicksWithBlock>(
+        let out_tick_data = reth_db_deploy_call::<MainnetExt, TicksWithBlock>(
             self.provider_ref(),
             block_number,
             TransactionBuilder::input(&deployer_tx)

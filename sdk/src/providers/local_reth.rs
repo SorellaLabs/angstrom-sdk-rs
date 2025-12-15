@@ -28,9 +28,10 @@ use angstrom_types_primitives::{
         PoolId
     }
 };
+use eth_network_exts::{EthNetworkExt, mainnet::MainnetExt};
 use futures::StreamExt;
 use lib_reth::{
-    EthApiServer, EthereumNode,
+    EthApiServer,
     reth_libmdbx::{NodeClientSpec, RethNodeClient},
     traits::{EthRevm, EthStream}
 };
@@ -71,19 +72,19 @@ use crate::{
 
 #[derive(Clone)]
 pub struct RethDbProviderWrapper {
-    provider: Arc<RethNodeClient<EthereumNode>>
+    provider: Arc<RethNodeClient<MainnetExt>>
 }
 
 impl RethDbProviderWrapper {
-    pub fn new(provider: Arc<RethNodeClient<EthereumNode>>) -> Self {
+    pub fn new(provider: Arc<RethNodeClient<MainnetExt>>) -> Self {
         Self { provider }
     }
 
-    pub fn provider(&self) -> Arc<RethNodeClient<EthereumNode>> {
+    pub fn provider(&self) -> Arc<RethNodeClient<MainnetExt>> {
         self.provider.clone()
     }
 
-    pub fn provider_ref(&self) -> &RethNodeClient<EthereumNode> {
+    pub fn provider_ref(&self) -> &RethNodeClient<MainnetExt> {
         &self.provider
     }
 }
@@ -721,8 +722,9 @@ pub(crate) fn reth_db_view_call<Node, IC>(
     call: IC
 ) -> eyre::Result<Result<IC::Return, alloy_sol_types::Error>>
 where
-    Node: NodeClientSpec,
-    IC: SolCall + Send
+    Node: EthNetworkExt,
+    IC: SolCall + Send,
+    <Node as EthNetworkExt>::RethNode: NodeClientSpec
 {
     let tx = TxEnv {
         kind: TxKind::Call(contract),
@@ -749,8 +751,9 @@ pub(crate) fn reth_db_deploy_call<Node, IC>(
     call_data: Bytes
 ) -> eyre::Result<Result<IC::RustType, alloy_sol_types::Error>>
 where
-    Node: NodeClientSpec,
-    IC: SolType + Send
+    Node: EthNetworkExt,
+    IC: SolType + Send,
+    <Node as EthNetworkExt>::RethNode: NodeClientSpec
 {
     let tx = TxEnv { kind: TxKind::Create, data: call_data, ..Default::default() };
 

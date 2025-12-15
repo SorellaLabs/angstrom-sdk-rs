@@ -2,7 +2,7 @@ use alloy_primitives::{Address, U256, aliases::I24};
 use angstrom_types_primitives::primitive::PoolId;
 use uniswap_storage::{
     StorageSlotFetcher,
-    angstrom::{angstrom_growth_inside, angstrom_last_growth_inside}
+    angstrom::mainnet::{angstrom_growth_inside, angstrom_last_growth_inside} /* angstrom::{angstrom_growth_inside, angstrom_last_growth_inside} */
 };
 
 pub async fn angstrom_fee_delta_x128<F: StorageSlotFetcher>(
@@ -54,7 +54,7 @@ mod tests {
         let block_number = pos_info.block_number;
 
         #[cfg(feature = "local-reth")]
-        let provider = provider.provider();
+        let provider = provider.provider_ref();
         #[cfg(not(feature = "local-reth"))]
         let provider = &provider;
 

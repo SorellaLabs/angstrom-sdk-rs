@@ -95,7 +95,7 @@ mod tests {
         let block_number = pos_info.block_number;
 
         #[cfg(feature = "local-reth")]
-        let provider = provider.provider();
+        let provider = provider.provider_ref();
         #[cfg(not(feature = "local-reth"))]
         let provider = &provider;
 

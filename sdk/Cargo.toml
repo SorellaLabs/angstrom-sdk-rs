@@ -28,6 +28,7 @@ angstrom-types-primitives.workspace = true
 async-trait.workspace = true
 auto_impl.workspace = true
 dotenv.workspace = true
+eth-network-exts.workspace = true
 eyre.workspace = true
 futures.workspace = true
 itertools.workspace = true

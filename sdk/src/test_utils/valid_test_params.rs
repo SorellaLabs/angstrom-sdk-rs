@@ -68,7 +68,7 @@ pub async fn init_valid_position_params_with_provider() -> (
             "/var/lib/eth/mainnet/reth/",
             1000,
             MAINNET.clone(),
-            Some(eth_ws_url())
+            Some(&eth_ws_url())
         )
         .build()
         .unwrap()
