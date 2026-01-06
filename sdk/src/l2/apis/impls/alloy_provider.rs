@@ -18,11 +18,11 @@ use uni_v4::{
 };
 use uniswap_storage::{
     angstrom::l2::{
+        AngstromL2PoolFeeConfiguration,
         angstrom_l2::{
-            AngstromL2PoolFeeConfiguration, angstrom_l2_growth_inside,
-            angstrom_l2_last_growth_inside, angstrom_l2_pool_fee_config
+            angstrom_l2_growth_inside, angstrom_l2_last_growth_inside, angstrom_l2_pool_fee_config
         },
-        angstrom_l2_factory::angstrom_l2_factory_hook_pool_id
+        angstrom_l2_factory::angstrom_l2_factory_hook_address_for_pool_id
     },
     v4::{
         UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
@@ -249,7 +249,7 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
         block_number: Option<u64>,
         chain: AngstromL2Chain
     ) -> eyre::Result<Address> {
-        Ok(angstrom_l2_factory_hook_pool_id(
+        Ok(angstrom_l2_factory_hook_address_for_pool_id(
             self.root(),
             chain.constants().angstrom_l2_factory(),
             pool_id,

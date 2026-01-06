@@ -3758,7 +3758,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d162beedaa69905488a8da94f5ac3edb4dd4788b732fadb7bd120b2625c1976"
 dependencies = [
  "data-encoding",
- "syn 2.0.104",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -4282,7 +4282,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "778e2ac28f6c47af28e4907f13ffd1e1ddbd400980a9abd7c8df189bf578a5ad"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -4319,7 +4319,7 @@ dependencies = [
 [[package]]
 name = "eth-network-exts"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#f490dcdbffcabd1fbf6612adc9c8617e6aa9265f"
+source = "git+https://github.com/jnoorchashm37/lib-reth?branch=l2#9fea75e167142f6974bd0957376e8c8ec95f0354"
 dependencies = [
  "alloy-network",
  "op-alloy-network",
@@ -4382,7 +4382,7 @@ dependencies = [
 [[package]]
 name = "exe-runners"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#f490dcdbffcabd1fbf6612adc9c8617e6aa9265f"
+source = "git+https://github.com/jnoorchashm37/lib-reth?branch=l2#9fea75e167142f6974bd0957376e8c8ec95f0354"
 dependencies = [
  "auto_impl",
  "dyn-clone",
@@ -6059,7 +6059,7 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 [[package]]
 name = "lib-reth"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#f490dcdbffcabd1fbf6612adc9c8617e6aa9265f"
+source = "git+https://github.com/jnoorchashm37/lib-reth?branch=l2#9fea75e167142f6974bd0957376e8c8ec95f0354"
 dependencies = [
  "alloy-network",
  "alloy-primitives",
@@ -6132,7 +6132,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07033963ba89ebaf1584d767badaa2e8fcec21aedea6b8c0346d487d49c28667"
 dependencies = [
  "cfg-if",
- "windows-targets 0.53.2",
+ "windows-targets 0.48.5",
 ]
 
 [[package]]
@@ -8083,7 +8083,7 @@ dependencies = [
  "once_cell",
  "socket2 0.5.10",
  "tracing",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -12373,7 +12373,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.4.15",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -12386,7 +12386,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.9.4",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -12478,7 +12478,7 @@ dependencies = [
  "security-framework 3.2.0",
  "security-framework-sys",
  "webpki-root-certs 0.26.11",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -13467,7 +13467,7 @@ dependencies = [
  "getrandom 0.3.3",
  "once_cell",
  "rustix 1.0.7",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -14335,7 +14335,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "uniswap-storage"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#f490dcdbffcabd1fbf6612adc9c8617e6aa9265f"
+source = "git+https://github.com/jnoorchashm37/lib-reth?branch=l2#9fea75e167142f6974bd0957376e8c8ec95f0354"
 dependencies = [
  "alloy-eips",
  "alloy-network",
@@ -14818,7 +14818,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]

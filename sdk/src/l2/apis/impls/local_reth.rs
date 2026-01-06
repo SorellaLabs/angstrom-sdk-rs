@@ -19,11 +19,11 @@ use uni_v4::{
 };
 use uniswap_storage::{
     angstrom::l2::{
+        AngstromL2PoolFeeConfiguration,
         angstrom_l2::{
-            AngstromL2PoolFeeConfiguration, angstrom_l2_growth_inside,
-            angstrom_l2_last_growth_inside, angstrom_l2_pool_fee_config
+            angstrom_l2_growth_inside, angstrom_l2_last_growth_inside, angstrom_l2_pool_fee_config
         },
-        angstrom_l2_factory::angstrom_l2_factory_hook_pool_id
+        angstrom_l2_factory::angstrom_l2_factory_hook_address_for_pool_id
     },
     v4::{
         UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
@@ -408,7 +408,7 @@ mod _private {
         N: EthNetworkExt,
         <N as EthNetworkExt>::RethNode: NodeClientSpec
     {
-        Ok(angstrom_l2_factory_hook_pool_id(
+        Ok(angstrom_l2_factory_hook_address_for_pool_id(
             this.provider_ref(),
             chain.constants().angstrom_l2_factory(),
             pool_id,

@@ -1,9 +1,7 @@
 use alloy_network::Network;
 use alloy_primitives::Address;
 use angstrom_types_primitives::{contract_bindings::pool_manager::PoolManager, primitive::PoolId};
-use uniswap_storage::{
-    angstrom::l2::angstrom_l2::AngstromL2PoolFeeConfiguration, v4::UnpackedSlot0
-};
+use uniswap_storage::{angstrom::l2::AngstromL2PoolFeeConfiguration, v4::UnpackedSlot0};
 
 use crate::{
     l2::AngstromL2Chain,
