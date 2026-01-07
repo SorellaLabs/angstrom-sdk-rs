@@ -4319,7 +4319,7 @@ dependencies = [
 [[package]]
 name = "eth-network-exts"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#9fea75e167142f6974bd0957376e8c8ec95f0354"
+source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#91abbbb719758c24bce125f117e4c8141f1a34b5"
 dependencies = [
  "alloy-network",
  "op-alloy-network",
@@ -4382,7 +4382,7 @@ dependencies = [
 [[package]]
 name = "exe-runners"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#9fea75e167142f6974bd0957376e8c8ec95f0354"
+source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#91abbbb719758c24bce125f117e4c8141f1a34b5"
 dependencies = [
  "auto_impl",
  "dyn-clone",
@@ -6059,7 +6059,7 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 [[package]]
 name = "lib-reth"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#9fea75e167142f6974bd0957376e8c8ec95f0354"
+source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#91abbbb719758c24bce125f117e4c8141f1a34b5"
 dependencies = [
  "alloy-network",
  "alloy-primitives",
@@ -14335,7 +14335,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "uniswap-storage"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#9fea75e167142f6974bd0957376e8c8ec95f0354"
+source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#91abbbb719758c24bce125f117e4c8141f1a34b5"
 dependencies = [
  "alloy-eips",
  "alloy-network",
