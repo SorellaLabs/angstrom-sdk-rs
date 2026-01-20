@@ -15,7 +15,7 @@ macro_rules! l2_network_ext_wrapper {
     ($($network_ext:ident),*) => {
         $(
             paste::paste!{
-                pub(crate) struct [<$network_ext Wrapper>]<T = ()>(T);
+                pub struct [<$network_ext Wrapper>]<T = ()>(T);
 
                 impl<T: AllExtensions> EthNetworkExt for [<$network_ext Wrapper>]<T> {
                     type AlloyNetwork = <$network_ext<T> as EthNetworkExt>::AlloyNetwork;
