@@ -1,21 +1,25 @@
-use alloy_network::TxSigner;
-use alloy_primitives::{Address, FixedBytes, Signature};
+use alloy_network::{Ethereum, TxSigner};
+use alloy_primitives::{Address, BlockNumber, FixedBytes, Signature, U256, aliases::I24};
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
-use angstrom_types_primitives::sol_bindings::grouped_orders::AllOrders;
+use angstrom_types_primitives::{PoolId, sol_bindings::grouped_orders::AllOrders};
 use jsonrpsee_http_client::HttpClient;
 use jsonrpsee_ws_client::WsClient;
+use uni_v4::pool_data_loader::TickData;
 
-use crate::l1::{
-    apis::node_api::{AngstromNodeApi, AngstromOrderApiClient},
-    providers::backend::{AlloyWalletRpcProvider, AngstromProvider},
-    types::{
-        errors::AngstromSdkError,
-        fillers::{
-            AngstromFillProvider, AngstromFiller, AngstromSignerFiller, FillWrapper,
-            NonceGeneratorFiller, TokenBalanceCheckFiller
+use crate::{
+    l1::{
+        apis::node_api::{AngstromNodeApi, AngstromOrderApiClient},
+        providers::backend::{AlloyWalletRpcProvider, AngstromProvider},
+        types::{
+            errors::AngstromSdkError,
+            fillers::{
+                AngstromFillProvider, AngstromFiller, AngstromSignerFiller, FillWrapper,
+                NonceGeneratorFiller, TokenBalanceCheckFiller
+            }
         }
-    }
+    },
+    types::{pool_tick_loaders::PoolTickDataLoader, providers::AlloyProviderWrapper}
 };
 
 #[derive(Clone)]
@@ -67,7 +71,9 @@ where
     F: AngstromFiller,
     T: AngstromOrderApiClient
 {
-    pub fn eth_provider(&self) -> &P {
+    /// Returns the wrapped Ethereum provider.
+    /// This wrapper implements both `Provider` and the SDK data APIs.
+    pub fn eth_provider(&self) -> &AlloyProviderWrapper<P> {
         self.provider.eth_provider()
     }
 
@@ -189,6 +195,28 @@ where
 {
     fn root(&self) -> &alloy_provider::RootProvider<alloy_network::Ethereum> {
         self.eth_provider().root()
+    }
+}
+
+#[async_trait::async_trait]
+impl<P, T, F> PoolTickDataLoader<Ethereum> for AngstromApi<P, T, F>
+where
+    P: Provider + Clone + Sync,
+    T: AngstromOrderApiClient + Sync,
+    F: AngstromFiller + Sync
+{
+    async fn load_tick_data(
+        &self,
+        pool_id: PoolId,
+        current_tick: I24,
+        zero_for_one: bool,
+        num_ticks: u16,
+        tick_spacing: I24,
+        block_number: Option<BlockNumber>
+    ) -> eyre::Result<(Vec<TickData>, U256)> {
+        self.provider
+            .load_tick_data(pool_id, current_tick, zero_for_one, num_ticks, tick_spacing, block_number)
+            .await
     }
 }
 

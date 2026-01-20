@@ -1,11 +1,9 @@
 use alloy_network::TransactionBuilder;
 use alloy_primitives::{BlockNumber, U256, aliases::I24};
 use angstrom_types_primitives::{POOL_MANAGER_ADDRESS, PoolId};
-use eth_network_exts::AllExtensions;
-#[cfg(feature = "l1")]
-use eth_network_exts::EthNetworkExt;
 #[cfg(feature = "l1")]
 use eth_network_exts::mainnet::MainnetExt;
+use eth_network_exts::{AllExtensions, EthNetworkExt};
 #[cfg(feature = "l2")]
 use eth_network_exts::{base_mainnet::BaseMainnetExt, unichain_mainnet::UnichainMainnetExt};
 use lib_reth::{reth_libmdbx::NodeClientSpec, traits::EthStream};
