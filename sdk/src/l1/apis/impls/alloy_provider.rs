@@ -5,6 +5,7 @@ use std::{
 
 use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
+use alloy_network::Ethereum;
 use alloy_primitives::{
     Address, B256, FixedBytes, TxHash, U256,
     aliases::{I24, U24},
@@ -56,7 +57,7 @@ use crate::{
         common::*,
         fees::{LiquidityPositionFees, uniswap_fee_deltas},
         pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader},
-        providers::{alloy_view_call, alloy_view_deploy},
+        providers::{AlloyProviderWrapper, alloy_view_call, alloy_view_deploy},
         utils::{
             historical_pool_manager_modify_liquidity_filter, historical_pool_manager_swap_filter
         }
@@ -64,7 +65,10 @@ use crate::{
 };
 
 #[async_trait::async_trait]
-impl<P: Provider + Clone> AngstromL1DataApi for P {
+impl<P> AngstromL1DataApi for AlloyProviderWrapper<P>
+where
+    P: Provider + Clone + Sync
+{
     async fn tokens_by_partial_pool_key(
         &self,
         pool_partial_key: AngstromPoolPartialKey,
@@ -492,7 +496,10 @@ impl<P: Provider + Clone> AngstromL1DataApi for P {
 }
 
 #[async_trait::async_trait]
-impl<P: Provider + Clone> AngstromL1UserApi for P {
+impl<P> AngstromL1UserApi for AlloyProviderWrapper<P, Ethereum>
+where
+    P: Provider<Ethereum> + Clone + Sync
+{
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,

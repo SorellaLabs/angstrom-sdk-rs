@@ -14,7 +14,7 @@ use crate::l2::{
     test_utils::{BASE_USDC, BASE_WETH}
 };
 #[cfg(feature = "local-reth")]
-use crate::types::BaseMainnetExtWrapper;
+use crate::types::BaseMainnetExt;
 
 pub struct ValidPositionTestParameters {
     pub owner: Address,
@@ -42,7 +42,7 @@ pub async fn init_valid_position_params_with_provider()
 
 #[cfg(feature = "local-reth")]
 pub async fn init_valid_position_params_with_provider() -> (
-    std::sync::Arc<crate::types::providers::RethDbProviderWrapper<BaseMainnetExtWrapper>>,
+    std::sync::Arc<crate::types::providers::RethDbProviderWrapper<BaseMainnetExt>>,
     ValidPositionTestParameters
 ) {
     use std::sync::Arc;

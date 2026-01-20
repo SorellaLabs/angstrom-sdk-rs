@@ -44,7 +44,7 @@ use crate::{
         apis::{AngstromL2DataApi, AngstromL2UserApi}
     },
     types::{
-        BaseMainnetExtWrapper, UnichainMainnetExtWrapper,
+        BaseMainnetExt, UnichainMainnetExt,
         common::*,
         contracts::angstrom_l2::angstrom_l_2_factory::AngstromL2Factory,
         fees::{LiquidityPositionFees, uniswap_fee_deltas},
@@ -176,7 +176,7 @@ macro_rules! reth_db_angstrom_trait_impl {
     };
 }
 
-reth_db_angstrom_trait_impl!(BaseMainnetExtWrapper, UnichainMainnetExtWrapper);
+reth_db_angstrom_trait_impl!(BaseMainnetExt, UnichainMainnetExt);
 
 mod _private {
     use lib_reth::reth_libmdbx::NodeClientSpec;

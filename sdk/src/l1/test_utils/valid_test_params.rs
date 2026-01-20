@@ -11,7 +11,7 @@ use uniswap_storage::{angstrom::mainnet::ANGSTROM_L1_CONSTANTS_MAINNET, v4::Unpa
 
 use crate::l1::test_utils::{USDC, WETH};
 #[cfg(feature = "local-reth")]
-use crate::types::{MainnetExtWrapper, providers::RethDbProviderWrapper};
+use crate::types::{MainnetExt, providers::RethDbProviderWrapper};
 
 pub struct ValidPositionTestParameters {
     pub owner: Address,
@@ -48,7 +48,7 @@ pub async fn init_valid_position_params_with_provider()
 
 #[cfg(feature = "local-reth")]
 pub async fn init_valid_position_params_with_provider()
--> (std::sync::Arc<RethDbProviderWrapper<MainnetExtWrapper>>, ValidPositionTestParameters) {
+-> (std::sync::Arc<RethDbProviderWrapper<MainnetExt>>, ValidPositionTestParameters) {
     use std::sync::Arc;
 
     use lib_reth::{MAINNET, reth_libmdbx::RethNodeClientBuilder};

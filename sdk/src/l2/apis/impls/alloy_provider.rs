@@ -47,13 +47,17 @@ use crate::{
         contracts::angstrom_l2::angstrom_l_2_factory::AngstromL2Factory,
         fees::{LiquidityPositionFees, uniswap_fee_deltas},
         pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader},
-        providers::alloy_view_deploy,
+        providers::{AlloyProviderWrapper, alloy_view_deploy},
         utils::historical_pool_manager_modify_liquidity_filter
     }
 };
 
 #[async_trait::async_trait]
-impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
+impl<P, N> AngstromL2DataApi<N> for AlloyProviderWrapper<P, N>
+where
+    P: Provider<N> + Clone + Sync,
+    N: Network
+{
     async fn all_pool_keys(
         &self,
         block_number: Option<u64>,
@@ -71,6 +75,7 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
         }
 
         let keys = self
+            .provider()
             .get_logs(&filter)
             .await?
             .into_iter()
@@ -93,7 +98,7 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
     ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
         let block_number = match block_number {
             Some(bn) => bn,
-            None => self.get_block_number().await?
+            None => self.provider().get_block_number().await?
         };
 
         let pool_key = self
@@ -111,7 +116,7 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
         let pool_id: PoolId = pool_key.into();
 
         let data_deployer_call = GetUniswapV4PoolData::deploy_builder(
-            &self,
+            self.provider(),
             pool_id,
             chain.constants().uniswap_constants().pool_manager(),
             pool_key.currency0,
@@ -119,9 +124,12 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
         )
         .into_transaction_request();
 
-        let out_pool_data =
-            alloy_view_deploy::<_, _, PoolDataV4>(&self, Some(block_number), data_deployer_call)
-                .await??;
+        let out_pool_data = alloy_view_deploy::<_, _, PoolDataV4>(
+            self.provider(),
+            Some(block_number),
+            data_deployer_call
+        )
+        .await??;
         let pool_data: PoolData = (uni_pool_key, out_pool_data).into();
 
         // let fee_config = self
@@ -200,11 +208,12 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
             .collect::<HashSet<_>>();
 
         let filters = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
+        let provider = self.provider();
 
         let logs = futures::future::try_join_all(
             filters
                 .into_iter()
-                .map(async move |filter| self.get_logs(&filter).await)
+                .map(async move |filter| provider.get_logs(&filter).await)
         )
         .await?;
 
@@ -271,7 +280,11 @@ impl<P: Provider<N> + Clone, N: Network> AngstromL2DataApi<N> for P {
 }
 
 #[async_trait::async_trait]
-impl<P: Provider<N> + Clone, N: Network> AngstromL2UserApi<N> for P {
+impl<P, N> AngstromL2UserApi<N> for AlloyProviderWrapper<P, N>
+where
+    P: Provider<N> + Clone + Sync,
+    N: Network
+{
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,

@@ -56,7 +56,7 @@ use uniswap_storage::{
 use crate::{
     l1::apis::{AngstromL1DataApi, AngstromL1UserApi},
     types::{
-        MainnetExtWrapper,
+        MainnetExt,
         common::*,
         fees::{LiquidityPositionFees, uniswap_fee_deltas},
         pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader},
@@ -68,7 +68,7 @@ use crate::{
 };
 
 #[async_trait::async_trait]
-impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExtWrapper<T>> {
+impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>> {
     async fn tokens_by_partial_pool_key(
         &self,
         pool_partial_key: AngstromPoolPartialKey,
@@ -519,7 +519,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExtWra
 }
 
 #[async_trait::async_trait]
-impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExtWrapper<T>> {
+impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>> {
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,

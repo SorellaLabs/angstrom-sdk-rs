@@ -7,12 +7,15 @@ use uni_v4::{
     pool_data_loader::{TickData, TicksWithBlock}
 };
 
-use crate::types::{pool_tick_loaders::PoolTickDataLoader, providers::alloy_view_deploy};
+use crate::types::{
+    pool_tick_loaders::PoolTickDataLoader,
+    providers::{AlloyProviderWrapper, alloy_view_deploy}
+};
 
 #[async_trait::async_trait]
-impl<P, N> PoolTickDataLoader<N> for P
+impl<P, N> PoolTickDataLoader<N> for AlloyProviderWrapper<P, N>
 where
-    P: Provider<N> + Clone,
+    P: Provider<N> + Sync,
     N: Network
 {
     async fn load_tick_data(
@@ -25,7 +28,7 @@ where
         block_number: Option<BlockNumber>
     ) -> eyre::Result<(Vec<TickData>, U256)> {
         let deployer_tx = GetUniswapV4TickData::deploy_builder(
-            self,
+            self.provider(),
             pool_id,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             zero_for_one,
@@ -36,7 +39,8 @@ where
         .into_transaction_request();
 
         let out_tick_data =
-            alloy_view_deploy::<_, _, TicksWithBlock>(&self, block_number, deployer_tx).await??;
+            alloy_view_deploy::<_, _, TicksWithBlock>(self.provider(), block_number, deployer_tx)
+                .await??;
 
         Ok((
             out_tick_data

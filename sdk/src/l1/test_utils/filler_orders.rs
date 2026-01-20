@@ -58,7 +58,7 @@ where
 
     let block_number = provider.eth_provider().get_block_number().await?;
 
-    let pools = provider.all_pool_keys(Some(block_number)).await?;
+    let pools = provider.eth_provider().all_pool_keys(Some(block_number)).await?;
 
     let enhanced_pools = try_join_all(pools.into_iter().map(|pool_key| {
         let provider = provider.eth_provider().clone();
