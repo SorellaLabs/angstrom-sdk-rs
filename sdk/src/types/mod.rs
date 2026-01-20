@@ -15,7 +15,6 @@ macro_rules! l2_network_ext_wrapper {
     ($($network_ext:ident),*) => {
         $(
             paste::paste!{
-                #[derive(Clone)]
                 pub struct [<$network_ext Wrapper>]<T = ()>(T);
 
                 impl<T: AllExtensions> EthNetworkExt for [<$network_ext Wrapper>]<T> {
