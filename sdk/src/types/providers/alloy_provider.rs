@@ -3,7 +3,7 @@ use std::{fmt::Debug, marker::PhantomData, ops::Deref};
 use alloy_eips::BlockId;
 use alloy_json_rpc::RpcError;
 use alloy_network::{Ethereum, Network};
-use alloy_primitives::{Address, TxKind};
+use alloy_primitives::{Address, StorageKey, StorageValue, TxKind};
 use alloy_provider::{Provider, RootProvider};
 use alloy_rpc_types::{TransactionInput, TransactionRequest};
 use alloy_sol_types::{SolCall, SolType};
@@ -102,7 +102,7 @@ where
 }
 
 #[async_trait::async_trait]
-impl<P: Provider<N>, N: Network> StorageSlotFetcher for AlloyProviderWrapper<P, N: Network> {
+impl<P: Provider<N>, N: Network> StorageSlotFetcher for AlloyProviderWrapper<P, N> {
     async fn storage_at(
         &self,
         address: Address,
