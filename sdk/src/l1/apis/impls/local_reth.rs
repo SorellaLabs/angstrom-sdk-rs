@@ -1,6 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
-    ops::Deref
+    ops::Deref,
 };
 
 use alloy_consensus::Transaction;
@@ -9,7 +9,7 @@ use alloy_network::TransactionResponse;
 use alloy_primitives::{
     Address, FixedBytes, TxHash, U256,
     aliases::{I24, U24},
-    keccak256
+    keccak256,
 };
 use alloy_provider::Provider;
 use alloy_sol_types::{SolCall, SolEvent};
@@ -17,15 +17,15 @@ use angstrom_types_primitives::{
     contract_bindings::{
         angstrom::Angstrom,
         controller_v_1::ControllerV1,
-        pool_manager::PoolManager::{self, PoolKey}
+        pool_manager::PoolManager::{self, PoolKey},
     },
     contract_payloads::angstrom::{
-        AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
+        AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey,
     },
     primitive::{
         ANGSTROM_ADDRESS, CONTROLLER_V1_ADDRESS, POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS,
-        PoolId
-    }
+        PoolId,
+    },
 };
 use eth_network_exts::AllExtensions;
 use futures::StreamExt;
@@ -36,7 +36,7 @@ use uni_v4::{
     baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
     liquidity_base::BaselineLiquidity,
     loaders::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
-    pool_data_loader::{PoolData, PoolDataV4}
+    pool_data_loader::{PoolData, PoolDataV4},
 };
 use uniswap_storage::{
     angstrom::mainnet::{angstrom_growth_inside, angstrom_last_growth_inside},
@@ -44,13 +44,13 @@ use uniswap_storage::{
         UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
         pool_manager::{
             pool_state::pool_manager_pool_slot0,
-            position_state::pool_manager_position_state_liquidity
+            position_state::pool_manager_position_state_liquidity,
         },
         position_manager::{
             position_manager_next_token_id, position_manager_owner_of,
-            position_manager_pool_key_and_info
-        }
-    }
+            position_manager_pool_key_and_info,
+        },
+    },
 };
 
 use crate::{
@@ -62,9 +62,9 @@ use crate::{
         pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader},
         providers::{RethDbProviderWrapper, reth_db_deploy_call, reth_db_view_call},
         utils::{
-            historical_pool_manager_modify_liquidity_filter, historical_pool_manager_swap_filter
-        }
-    }
+            historical_pool_manager_modify_liquidity_filter, historical_pool_manager_swap_filter,
+        },
+    },
 };
 
 #[async_trait::async_trait]
@@ -72,13 +72,13 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
     async fn tokens_by_partial_pool_key(
         &self,
         pool_partial_key: AngstromPoolPartialKey,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<TokenPair> {
         let out = reth_db_view_call(
             self.provider_ref(),
             block_number,
             *CONTROLLER_V1_ADDRESS.get().unwrap(),
-            ControllerV1::getPoolByKeyCall { key: FixedBytes::from(*pool_partial_key) }
+            ControllerV1::getPoolByKeyCall { key: FixedBytes::from(*pool_partial_key) },
         )??;
 
         Ok(TokenPair { token0: out.asset0, token1: out.asset1 })
@@ -87,13 +87,13 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
     async fn all_token_pairs_with_config_store(
         &self,
         config_store: AngstromPoolConfigStore,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<Vec<TokenPair>> {
         let partial_key_entries = config_store.all_entries();
         let token_pairs = futures::future::try_join_all(
             partial_key_entries
                 .iter()
-                .map(|key| self.tokens_by_partial_pool_key(key.pool_partial_key, block_number))
+                .map(|key| self.tokens_by_partial_pool_key(key.pool_partial_key, block_number)),
         )
         .await?;
 
@@ -104,7 +104,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
         &self,
         token0: Address,
         token1: Address,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<PoolKeyWithAngstromFee> {
         let (token0, token1) = sort_tokens(token0, token1);
 
@@ -114,16 +114,16 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
             .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
 
         let pool_key = PoolKey {
-            currency0:   token0,
-            currency1:   token1,
-            fee:         U24::from(0x800000),
+            currency0: token0,
+            currency1: token1,
+            fee: U24::from(0x800000),
             tickSpacing: I24::unchecked_from(pool_config_store.tick_spacing),
-            hooks:       *ANGSTROM_ADDRESS.get().unwrap()
+            hooks: *ANGSTROM_ADDRESS.get().unwrap(),
         };
 
         Ok(PoolKeyWithAngstromFee {
             pool_key,
-            pool_fee_in_e6: U24::from(pool_config_store.fee_in_e6)
+            pool_fee_in_e6: U24::from(pool_config_store.fee_in_e6),
         })
     }
 
@@ -131,7 +131,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
         &self,
         start_block: Option<u64>,
         end_block: Option<u64>,
-        block_stream_buffer: Option<usize>
+        block_stream_buffer: Option<usize>,
     ) -> eyre::Result<Vec<WithEthMeta<AngstromBundle>>> {
         let root_provider = self.provider_ref().root_provider().await?;
 
@@ -139,7 +139,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
         let logs = futures::future::try_join_all(
             filters
                 .into_iter()
-                .map(async |filter| root_provider.get_logs(&filter).await)
+                .map(async |filter| root_provider.get_logs(&filter).await),
         )
         .await?;
 
@@ -165,7 +165,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
     async fn historical_liquidity_changes(
         &self,
         start_block: Option<u64>,
-        end_block: Option<u64>
+        end_block: Option<u64>,
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
         let root_provider = self.provider_ref().root_provider().await?;
 
@@ -180,7 +180,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
         let logs = futures::future::try_join_all(
             filters
                 .into_iter()
-                .map(async |filter| root_provider.get_logs(&filter).await)
+                .map(async |filter| root_provider.get_logs(&filter).await),
         )
         .await?;
 
@@ -196,7 +196,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
                                 log.block_number,
                                 log.transaction_hash,
                                 log.transaction_index,
-                                inner_log.data
+                                inner_log.data,
                             )
                         })
                     })
@@ -207,7 +207,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
     async fn historical_post_bundle_unlock_swaps(
         &self,
         start_block: Option<u64>,
-        end_block: Option<u64>
+        end_block: Option<u64>,
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::Swap>>> {
         let root_provider = self.provider_ref().root_provider().await?;
 
@@ -222,7 +222,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
         let logs = futures::future::try_join_all(
             filters
                 .into_iter()
-                .map(async |filter| root_provider.get_logs(&filter).await)
+                .map(async |filter| root_provider.get_logs(&filter).await),
         )
         .await?;
 
@@ -239,9 +239,9 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
                                     log.block_number,
                                     log.transaction_hash,
                                     log.transaction_index,
-                                    inner_log.data
+                                    inner_log.data,
                                 )
-                            }
+                            },
                         )
                     })
             })
@@ -253,7 +253,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
         token0: Address,
         token1: Address,
         load_ticks: bool,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
         let block_number = if let Some(bn) = block_number {
             bn
@@ -267,11 +267,11 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
             .await?;
 
         let uni_pool_key = UniPoolKey {
-            currency0:   pool_key.pool_key.currency0,
-            currency1:   pool_key.pool_key.currency1,
-            fee:         pool_key.pool_fee_in_e6,
+            currency0: pool_key.pool_key.currency0,
+            currency1: pool_key.pool_key.currency1,
+            fee: pool_key.pool_fee_in_e6,
             tickSpacing: pool_key.pool_key.tickSpacing,
-            hooks:       pool_key.pool_key.hooks
+            hooks: pool_key.pool_key.hooks,
         };
 
         let pool_id: PoolId = pool_key.into();
@@ -281,7 +281,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
             pool_id,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             pool_key.pool_key.currency0,
-            pool_key.pool_key.currency1
+            pool_key.pool_key.currency1,
         )
         .into_transaction_request();
 
@@ -290,7 +290,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
             Some(block_number),
             alloy_network::TransactionBuilder::input(&data_deployer_call)
                 .cloned()
-                .unwrap_or_default()
+                .unwrap_or_default(),
         )??;
         let pool_data: PoolData = (uni_pool_key, out_pool_data).into();
 
@@ -299,7 +299,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
                 pool_key.pool_key.currency0,
                 pool_key.pool_key.currency1,
                 Some(pool_key.pool_fee_in_e6),
-                Some(block_number)
+                Some(block_number),
             )
             .await?;
 
@@ -310,7 +310,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
                 uni_pool_key.tickSpacing.as_i32(),
                 Some(block_number),
                 INITIAL_TICKS_PER_SIDE,
-                DEFAULT_TICKS_PER_BATCH
+                DEFAULT_TICKS_PER_BATCH,
             )
             .await?
         } else {
@@ -328,7 +328,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
             sqrt_price_x96,
             liquidity,
             ticks,
-            tick_bitmap
+            tick_bitmap,
         );
 
         let baseline_state = BaselinePoolState::new(
@@ -338,23 +338,23 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
             pool_data.tokenA,
             pool_data.tokenB,
             pool_data.tokenADecimals,
-            pool_data.tokenBDecimals
+            pool_data.tokenBDecimals,
         );
 
         Ok((
             block_number,
-            BaselinePoolStateWithKey { pool: baseline_state, pool_key: pool_key.pool_key }
+            BaselinePoolStateWithKey { pool: baseline_state, pool_key: pool_key.pool_key },
         ))
     }
 
     async fn pool_config_store(
         &self,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<AngstromPoolConfigStore> {
         AngstromPoolConfigStore::load_from_chain(
             *ANGSTROM_ADDRESS.get().unwrap(),
             block_number.map(Into::into).unwrap_or(BlockId::latest()),
-            &self.provider_ref().root_provider().await?
+            &self.provider_ref().root_provider().await?,
         )
         .await
         .map_err(|e| eyre::eyre!("{e:?}"))
@@ -363,13 +363,13 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
     async fn slot0_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<UnpackedSlot0> {
         Ok(pool_manager_pool_slot0(
-            self.provider_ref(),
+            self,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             pool_id,
-            block_number
+            block_number,
         )
         .await?)
     }
@@ -377,7 +377,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
     async fn get_bundle_by_block(
         &self,
         block_number: u64,
-        verify_successful_tx: bool
+        verify_successful_tx: bool,
     ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
         let Some(block) = self
             .provider_ref()
@@ -385,7 +385,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
             .block_by_number(block_number.into(), true)
             .await?
         else {
-            return Ok(None)
+            return Ok(None);
         };
 
         let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
@@ -404,8 +404,8 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
                         transaction.block_number(),
                         Some(transaction.tx_hash()),
                         transaction.transaction_index(),
-                        AngstromBundle::pade_decode(&mut input, None).ok()?
-                    )
+                        AngstromBundle::pade_decode(&mut input, None).ok()?,
+                    ),
                 ))
             });
 
@@ -437,7 +437,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
     async fn get_bundle_by_tx_hash(
         &self,
         tx_hash: TxHash,
-        verify_successful_tx: bool
+        verify_successful_tx: bool,
     ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
         let Some(transaction) = self
             .provider_ref()
@@ -445,7 +445,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
             .transaction_by_hash(tx_hash)
             .await?
         else {
-            return Ok(None)
+            return Ok(None);
         };
 
         if verify_successful_tx
@@ -469,7 +469,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
                     transaction.block_number(),
                     Some(transaction.tx_hash()),
                     transaction.transaction_index(),
-                    AngstromBundle::pade_decode(&mut input, None).ok()?
+                    AngstromBundle::pade_decode(&mut input, None).ok()?,
                 ))
             }))
     }
@@ -479,7 +479,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
         token0: Address,
         token1: Address,
         bundle_fee: Option<U24>,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<FeeConfiguration> {
         const UNLOCKED_FEES_SLOT: u64 = 2;
 
@@ -503,7 +503,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
             self.provider_ref(),
             block_number,
             *ANGSTROM_ADDRESS.get().unwrap(),
-            Angstrom::extsloadCall { slot: U256::from_be_bytes(*slot) }
+            Angstrom::extsloadCall { slot: U256::from_be_bytes(*slot) },
         )??;
 
         let bytes = raw.to_be_bytes::<32>();
@@ -511,9 +511,9 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
         let protocol_fee = U24::from_be_bytes([bytes[26], bytes[27], bytes[28]]);
 
         Ok(FeeConfiguration {
-            bundle_fee:   bundle_fee.to::<u32>(),
-            swap_fee:     unlocked_fee.to::<u32>(),
-            protocol_fee: protocol_fee.to::<u32>()
+            bundle_fee: bundle_fee.to::<u32>(),
+            swap_fee: unlocked_fee.to::<u32>(),
+            protocol_fee: protocol_fee.to::<u32>(),
         })
     }
 }
@@ -523,50 +523,50 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
-            self.provider_ref(),
+            self,
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             block_number,
-            position_token_id
+            position_token_id,
         )
         .await?;
 
         Ok((
             PoolKey {
-                currency0:   pool_key.currency0,
-                currency1:   pool_key.currency1,
-                fee:         pool_key.fee,
+                currency0: pool_key.currency0,
+                currency1: pool_key.currency1,
+                fee: pool_key.fee,
                 tickSpacing: pool_key.tickSpacing,
-                hooks:       pool_key.hooks
+                hooks: pool_key.hooks,
             },
-            position_info
+            position_info,
         ))
     }
 
     async fn position_liquidity(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<u128> {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
-            self.provider_ref(),
+            self,
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             block_number,
-            position_token_id
+            position_token_id,
         )
         .await?;
 
         let liquidity = pool_manager_position_state_liquidity(
-            self.provider_ref(),
+            self,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
             pool_key.into(),
             position_token_id,
             position_info.tick_lower,
             position_info.tick_upper,
-            block_number
+            block_number,
         )
         .await?;
 
@@ -580,7 +580,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
         mut end_token_id: U256,
         pool_id: Option<PoolId>,
         max_results: Option<usize>,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<Vec<V4UserLiquidityPosition>> {
         let position_manager_address = *POSITION_MANAGER_ADDRESS.get().unwrap();
         let pool_manager_address = *POOL_MANAGER_ADDRESS.get().unwrap();
@@ -592,9 +592,9 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
 
         if end_token_id == U256::ZERO {
             end_token_id = position_manager_next_token_id(
-                self.provider_ref(),
+                self,
                 position_manager_address,
-                block_number
+                block_number,
             )
             .await?;
         }
@@ -602,10 +602,10 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
         let mut all_positions = Vec::new();
         while start_token_id <= end_token_id {
             let owner_of = position_manager_owner_of(
-                self.provider_ref(),
+                self,
                 position_manager_address,
                 block_number,
-                start_token_id
+                start_token_id,
             )
             .await?;
 
@@ -615,10 +615,10 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
             }
 
             let (pool_key, position_info) = position_manager_pool_key_and_info(
-                self.provider_ref(),
+                self,
                 position_manager_address,
                 block_number,
-                start_token_id
+                start_token_id,
             )
             .await?;
 
@@ -632,14 +632,14 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
             }
 
             let liquidity = pool_manager_position_state_liquidity(
-                self.provider_ref(),
+                self,
                 pool_manager_address,
                 position_manager_address,
                 pool_key.into(),
                 start_token_id,
                 position_info.tick_lower,
                 position_info.tick_upper,
-                block_number
+                block_number,
             )
             .await?;
 
@@ -648,7 +648,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
                 tick_lower: position_info.tick_lower,
                 tick_upper: position_info.tick_upper,
                 liquidity,
-                pool_key
+                pool_key,
             });
 
             if let Some(max_res) = max_results {
@@ -666,7 +666,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
     async fn user_position_fees(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<LiquidityPositionFees> {
         let ((pool_key, position_info), position_liquidity) = tokio::try_join!(
             self.position_and_pool_info(position_token_id, block_number),
@@ -686,7 +686,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
                 block_number,
             ),
             uniswap_fee_deltas(
-                self.provider_ref(),
+                self,
                 *POOL_MANAGER_ADDRESS.get().unwrap(),
                 *POSITION_MANAGER_ADDRESS.get().unwrap(),
                 block_number,
@@ -702,7 +702,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
             position_liquidity,
             angstrom_fee_delta,
             uniswap_token0_fee_delta,
-            uniswap_token1_fee_delta
+            uniswap_token1_fee_delta,
         ))
     }
 
@@ -713,11 +713,11 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
         position_token_id: U256,
         tick_lower: I24,
         tick_upper: I24,
-        block_number: Option<u64>
+        block_number: Option<u64>,
     ) -> eyre::Result<U256> {
         let (growth_inside, last_growth_inside) = tokio::try_join!(
             angstrom_growth_inside(
-                self.provider_ref(),
+                self,
                 *ANGSTROM_ADDRESS.get().unwrap(),
                 pool_id,
                 current_pool_tick,
@@ -726,7 +726,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
                 block_number,
             ),
             angstrom_last_growth_inside(
-                self.provider_ref(),
+                self,
                 *ANGSTROM_ADDRESS.get().unwrap(),
                 *POSITION_MANAGER_ADDRESS.get().unwrap(),
                 pool_id,
@@ -749,7 +749,7 @@ mod tests {
     use super::*;
     use crate::l1::{
         test_utils::{USDC, WETH, valid_test_params::init_valid_position_params_with_provider},
-        types::{HistoricalOrdersFilter, OrderKind}
+        types::{HistoricalOrdersFilter, OrderKind},
     };
 
     #[tokio::test]
@@ -777,9 +777,9 @@ mod tests {
             .tokens_by_partial_pool_key(
                 AngstromPoolConfigStore::derive_store_key(
                     state.pool_key.currency0,
-                    state.pool_key.currency1
+                    state.pool_key.currency1,
                 ),
-                Some(state.block_number)
+                Some(state.block_number),
             )
             .await
             .unwrap();
@@ -859,17 +859,14 @@ mod tests {
             .pool_key_by_tokens(
                 state.pool_key.currency0,
                 state.pool_key.currency1,
-                Some(state.block_number)
+                Some(state.block_number),
             )
             .await
             .unwrap();
 
         assert_eq!(
             pool_key,
-            PoolKeyWithAngstromFee {
-                pool_fee_in_e6: U24::from(200_u16),
-                pool_key:       state.pool_key
-            }
+            PoolKeyWithAngstromFee { pool_fee_in_e6: U24::from(200_u16), pool_key: state.pool_key }
         );
     }
 
@@ -885,10 +882,7 @@ mod tests {
 
         assert_eq!(
             pool_key,
-            PoolKeyWithAngstromFee {
-                pool_fee_in_e6: U24::from(200_u16),
-                pool_key:       state.pool_key
-            }
+            PoolKeyWithAngstromFee { pool_fee_in_e6: U24::from(200_u16), pool_key: state.pool_key }
         );
     }
 
@@ -918,17 +912,14 @@ mod tests {
             .pool_key_by_pool_id_with_config_store(
                 state.pool_key.into(),
                 config_store,
-                Some(state.block_number)
+                Some(state.block_number),
             )
             .await
             .unwrap();
 
         assert_eq!(
             pool_key,
-            PoolKeyWithAngstromFee {
-                pool_fee_in_e6: U24::from(200_u16),
-                pool_key:       state.pool_key
-            }
+            PoolKeyWithAngstromFee { pool_fee_in_e6: U24::from(200_u16), pool_key: state.pool_key }
         );
     }
 
@@ -955,7 +946,7 @@ mod tests {
             .historical_bundles(
                 Some(state.valid_block_after_swaps),
                 Some(state.valid_block_after_swaps),
-                None
+                None,
             )
             .await
             .unwrap();
@@ -971,7 +962,7 @@ mod tests {
         let modify_liquidity = provider
             .historical_liquidity_changes(
                 Some(state.block_for_liquidity_add),
-                Some(state.block_for_liquidity_add)
+                Some(state.block_for_liquidity_add),
             )
             .await
             .unwrap();
@@ -989,7 +980,7 @@ mod tests {
                 state.pool_key.currency0,
                 state.pool_key.currency1,
                 true,
-                Some(state.block_number)
+                Some(state.block_number),
             )
             .await
             .unwrap();
@@ -1074,7 +1065,7 @@ mod tests {
             .slot0_by_tokens(
                 state.pool_key.currency0,
                 state.pool_key.currency1,
-                Some(state.block_number)
+                Some(state.block_number),
             )
             .await
             .unwrap();

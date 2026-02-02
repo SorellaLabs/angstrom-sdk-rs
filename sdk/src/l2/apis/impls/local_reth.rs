@@ -390,7 +390,7 @@ mod _private {
         <N as EthNetworkExt>::RethNode: NodeClientSpec
     {
         Ok(pool_manager_pool_slot0(
-            this.provider_ref(),
+            this,
             chain.constants().uniswap_constants().pool_manager(),
             pool_id,
             block_number
@@ -409,7 +409,7 @@ mod _private {
         <N as EthNetworkExt>::RethNode: NodeClientSpec
     {
         Ok(angstrom_l2_factory_hook_address_for_pool_id(
-            this.provider_ref(),
+            this,
             chain.constants().angstrom_l2_factory(),
             pool_id,
             block_number
@@ -429,7 +429,7 @@ mod _private {
         N: EthNetworkExt,
         <N as EthNetworkExt>::RethNode: NodeClientSpec
     {
-        angstrom_l2_pool_fee_config(this.provider_ref(), hook_address, pool_id, block_number).await
+        angstrom_l2_pool_fee_config(this, hook_address, pool_id, block_number).await
     }
 
     pub(super) async fn position_and_pool_info<N>(
@@ -443,7 +443,7 @@ mod _private {
         <N as EthNetworkExt>::RethNode: NodeClientSpec
     {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
-            this.provider_ref(),
+            this,
             chain.constants().uniswap_constants().position_manager(),
             block_number,
             position_token_id
@@ -474,7 +474,7 @@ mod _private {
     {
         let consts = chain.constants();
         let (pool_key, position_info) = position_manager_pool_key_and_info(
-            this.provider_ref(),
+            this,
             consts.uniswap_constants().position_manager(),
             block_number,
             position_token_id
@@ -482,7 +482,7 @@ mod _private {
         .await?;
 
         let liquidity = pool_manager_position_state_liquidity(
-            this.provider_ref(),
+            this,
             consts.uniswap_constants().pool_manager(),
             consts.uniswap_constants().position_manager(),
             pool_key.into(),
@@ -532,7 +532,7 @@ mod _private {
 
         if end_token_id == U256::ZERO {
             end_token_id = position_manager_next_token_id(
-                this.provider_ref(),
+                this,
                 position_manager_address,
                 block_number
             )
@@ -542,7 +542,7 @@ mod _private {
         let mut all_positions = Vec::new();
         while start_token_id <= end_token_id {
             let owner_of = position_manager_owner_of(
-                this.provider_ref(),
+                this,
                 position_manager_address,
                 block_number,
                 start_token_id
@@ -555,7 +555,7 @@ mod _private {
             }
 
             let (pool_key, position_info) = position_manager_pool_key_and_info(
-                this.provider_ref(),
+                this,
                 position_manager_address,
                 block_number,
                 start_token_id
@@ -572,7 +572,7 @@ mod _private {
             }
 
             let liquidity = pool_manager_position_state_liquidity(
-                this.provider_ref(),
+                this,
                 pool_manager_address,
                 position_manager_address,
                 pool_key.into(),
@@ -638,7 +638,7 @@ mod _private {
                 chain
             ),
             uniswap_fee_deltas(
-                this.provider_ref(),
+                this,
                 consts.uniswap_constants().pool_manager(),
                 consts.uniswap_constants().position_manager(),
                 block_number,
@@ -682,7 +682,7 @@ mod _private {
         let consts = chain.constants();
         let (growth_inside, last_growth_inside) = tokio::try_join!(
             angstrom_l2_growth_inside(
-                this.provider_ref(),
+                this,
                 hook,
                 pool_id,
                 current_pool_tick,
@@ -691,7 +691,7 @@ mod _private {
                 block_number,
             ),
             angstrom_l2_last_growth_inside(
-                this.provider_ref(),
+                this,
                 hook,
                 consts.uniswap_constants().position_manager(),
                 pool_id,
