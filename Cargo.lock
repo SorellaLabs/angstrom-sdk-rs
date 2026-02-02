@@ -14415,6 +14415,9 @@ dependencies = [
  "eyre",
  "futures",
  "itertools 0.14.0",
+ "reth-provider",
+ "reth-rpc",
+ "reth-rpc-convert",
  "revm-database 10.0.0",
  "serde",
 ]

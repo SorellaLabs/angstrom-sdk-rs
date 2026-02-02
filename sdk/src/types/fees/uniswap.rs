@@ -98,7 +98,7 @@ mod tests {
         let block_number = pos_info.block_number;
 
         #[cfg(feature = "local-reth")]
-        let provider = provider.provider_ref();
+        let provider = &provider.provider_ref().eth_api();
         #[cfg(not(feature = "local-reth"))]
         let provider = &provider;
 
