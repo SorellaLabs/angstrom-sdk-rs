@@ -64,7 +64,7 @@ convert_case = "0"
 itertools.workspace = true
 
 [features]
-default = ["ipc", "ws", "full", "example-utils"]
+default = ["ipc", "ws", "full"]
 full = ["ipc", "ws", "local-reth", "l1", "l2"]
 local-reth = ["dep:lib-reth", "dep:revm", "dep:reth-provider", "uniswap-storage/local-reth"]
 
