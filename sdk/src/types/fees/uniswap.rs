@@ -1,3 +1,4 @@
+use alloy_eips::BlockId;
 use alloy_primitives::{Address, U256, aliases::I24};
 use angstrom_types_primitives::primitive::PoolId;
 use uniswap_storage::{
@@ -11,7 +12,7 @@ pub async fn uniswap_fee_deltas<F: StorageSlotFetcher>(
     slot_fetcher: &F,
     pool_manager_address: Address,
     position_manager_address: Address,
-    block_number: Option<u64>,
+    block_id: Option<BlockId>,
     pool_id: PoolId,
     current_pool_tick: I24,
     position_token_id: U256,
@@ -29,7 +30,7 @@ pub async fn uniswap_fee_deltas<F: StorageSlotFetcher>(
             current_pool_tick,
             tick_lower,
             tick_upper,
-            block_number,
+            block_id,
         ),
         pool_manager_position_state_last_fee_growth_inside(
             slot_fetcher,
@@ -39,7 +40,7 @@ pub async fn uniswap_fee_deltas<F: StorageSlotFetcher>(
             position_token_id,
             tick_lower,
             tick_upper,
-            block_number,
+            block_id,
         ),
     )?;
 
@@ -71,7 +72,7 @@ mod tests {
             provider,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
-            Some(block_number),
+            Some(block_number.into()),
             pos_info.pool_id,
             pos_info.current_pool_tick,
             pos_info.position_token_id,
@@ -106,7 +107,7 @@ mod tests {
             provider,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
-            Some(block_number),
+            Some(block_number.into()),
             pos_info.pool_id,
             pos_info.current_pool_tick,
             pos_info.position_token_id,

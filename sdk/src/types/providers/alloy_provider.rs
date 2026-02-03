@@ -107,12 +107,12 @@ impl<P: Provider<N>, N: Network> StorageSlotFetcher for AlloyProviderWrapper<P, 
         &self,
         address: Address,
         key: StorageKey,
-        block_number: Option<u64>,
+        block_id: Option<BlockId>,
     ) -> eyre::Result<StorageValue> {
         Ok(self
             .root()
             .get_storage_at(address, key.into())
-            .block_id(block_number.map(Into::into).unwrap_or(BlockId::latest()))
+            .block_id(block_id.unwrap_or(BlockId::latest()))
             .await?)
     }
 }

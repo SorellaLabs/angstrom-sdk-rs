@@ -369,7 +369,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
             self,
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             pool_id,
-            block_number,
+            block_number.map(Into::into),
         )
         .await?)
     }
@@ -528,7 +528,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self,
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
-            block_number,
+            block_number.map(Into::into),
             position_token_id,
         )
         .await?;
@@ -550,10 +550,11 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
         position_token_id: U256,
         block_number: Option<u64>,
     ) -> eyre::Result<u128> {
+        let block_id = block_number.map(Into::into);
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self,
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
-            block_number,
+            block_id,
             position_token_id,
         )
         .await?;
@@ -566,7 +567,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
             position_token_id,
             position_info.tick_lower,
             position_info.tick_upper,
-            block_number,
+            block_id,
         )
         .await?;
 
@@ -585,6 +586,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
         let position_manager_address = *POSITION_MANAGER_ADDRESS.get().unwrap();
         let pool_manager_address = *POOL_MANAGER_ADDRESS.get().unwrap();
         let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
+        let block_id = block_number.map(Into::into);
 
         if start_token_id == U256::ZERO {
             start_token_id = U256::from(1u8);
@@ -594,7 +596,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
             end_token_id = position_manager_next_token_id(
                 self,
                 position_manager_address,
-                block_number,
+                block_id,
             )
             .await?;
         }
@@ -604,7 +606,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
             let owner_of = position_manager_owner_of(
                 self,
                 position_manager_address,
-                block_number,
+                block_id,
                 start_token_id,
             )
             .await?;
@@ -617,7 +619,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
             let (pool_key, position_info) = position_manager_pool_key_and_info(
                 self,
                 position_manager_address,
-                block_number,
+                block_id,
                 start_token_id,
             )
             .await?;
@@ -639,7 +641,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
                 start_token_id,
                 position_info.tick_lower,
                 position_info.tick_upper,
-                block_number,
+                block_id,
             )
             .await?;
 
@@ -668,6 +670,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
         position_token_id: U256,
         block_number: Option<u64>,
     ) -> eyre::Result<LiquidityPositionFees> {
+        let block_id = block_number.map(Into::into);
         let ((pool_key, position_info), position_liquidity) = tokio::try_join!(
             self.position_and_pool_info(position_token_id, block_number),
             self.position_liquidity(position_token_id, block_number),
@@ -689,7 +692,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
                 self,
                 *POOL_MANAGER_ADDRESS.get().unwrap(),
                 *POSITION_MANAGER_ADDRESS.get().unwrap(),
-                block_number,
+                block_id,
                 pool_id,
                 slot0.tick,
                 position_token_id,
@@ -715,6 +718,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
         tick_upper: I24,
         block_number: Option<u64>,
     ) -> eyre::Result<U256> {
+        let block_id = block_number.map(Into::into);
         let (growth_inside, last_growth_inside) = tokio::try_join!(
             angstrom_growth_inside(
                 self,
@@ -723,7 +727,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
                 current_pool_tick,
                 tick_lower,
                 tick_upper,
-                block_number,
+                block_id,
             ),
             angstrom_last_growth_inside(
                 self,
@@ -733,7 +737,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
                 position_token_id,
                 tick_lower,
                 tick_upper,
-                block_number,
+                block_id,
             ),
         )?;
 

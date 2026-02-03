@@ -393,7 +393,7 @@ mod _private {
             this,
             chain.constants().uniswap_constants().pool_manager(),
             pool_id,
-            block_number
+            block_number.map(Into::into)
         )
         .await?)
     }
@@ -412,7 +412,7 @@ mod _private {
             this,
             chain.constants().angstrom_l2_factory(),
             pool_id,
-            block_number
+            block_number.map(Into::into)
         )
         .await?
         .ok_or_else(|| eyre::eyre!("no hook found for pool id: {pool_id:?}"))?)
@@ -429,7 +429,7 @@ mod _private {
         N: EthNetworkExt,
         <N as EthNetworkExt>::RethNode: NodeClientSpec
     {
-        angstrom_l2_pool_fee_config(this, hook_address, pool_id, block_number).await
+        angstrom_l2_pool_fee_config(this, hook_address, pool_id, block_number.map(Into::into)).await
     }
 
     pub(super) async fn position_and_pool_info<N>(
@@ -445,7 +445,7 @@ mod _private {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             this,
             chain.constants().uniswap_constants().position_manager(),
-            block_number,
+            block_number.map(Into::into),
             position_token_id
         )
         .await?;
@@ -473,10 +473,11 @@ mod _private {
         <N as EthNetworkExt>::RethNode: NodeClientSpec
     {
         let consts = chain.constants();
+        let block_id = block_number.map(Into::into);
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             this,
             consts.uniswap_constants().position_manager(),
-            block_number,
+            block_id,
             position_token_id
         )
         .await?;
@@ -489,7 +490,7 @@ mod _private {
             position_token_id,
             position_info.tick_lower,
             position_info.tick_upper,
-            block_number
+            block_id
         )
         .await?;
 
@@ -515,6 +516,7 @@ mod _private {
 
         let position_manager_address = consts.uniswap_constants().position_manager();
         let pool_manager_address = consts.uniswap_constants().pool_manager();
+        let block_id = block_number.map(Into::into);
 
         let all_angstrom_hooks = if pool_id.is_none() {
             this.all_pool_keys(block_number, chain)
@@ -534,7 +536,7 @@ mod _private {
             end_token_id = position_manager_next_token_id(
                 this,
                 position_manager_address,
-                block_number
+                block_id
             )
             .await?;
         }
@@ -544,7 +546,7 @@ mod _private {
             let owner_of = position_manager_owner_of(
                 this,
                 position_manager_address,
-                block_number,
+                block_id,
                 start_token_id
             )
             .await?;
@@ -557,7 +559,7 @@ mod _private {
             let (pool_key, position_info) = position_manager_pool_key_and_info(
                 this,
                 position_manager_address,
-                block_number,
+                block_id,
                 start_token_id
             )
             .await?;
@@ -579,7 +581,7 @@ mod _private {
                 start_token_id,
                 position_info.tick_lower,
                 position_info.tick_upper,
-                block_number
+                block_id
             )
             .await?;
 
@@ -616,6 +618,7 @@ mod _private {
             + AngstromL2DataApi<<N as EthNetworkExt>::AlloyNetwork>
     {
         let consts = chain.constants();
+        let block_id = block_number.map(Into::into);
 
         let ((pool_key, position_info), position_liquidity) = tokio::try_join!(
             this.position_and_pool_info(position_token_id, block_number, chain),
@@ -641,7 +644,7 @@ mod _private {
                 this,
                 consts.uniswap_constants().pool_manager(),
                 consts.uniswap_constants().position_manager(),
-                block_number,
+                block_id,
                 pool_id,
                 slot0.tick,
                 position_token_id,
@@ -680,6 +683,7 @@ mod _private {
             this.hook_by_pool_id(pool_id, block_number, chain).await?
         };
         let consts = chain.constants();
+        let block_id = block_number.map(Into::into);
         let (growth_inside, last_growth_inside) = tokio::try_join!(
             angstrom_l2_growth_inside(
                 this,
@@ -688,7 +692,7 @@ mod _private {
                 current_pool_tick,
                 tick_lower,
                 tick_upper,
-                block_number,
+                block_id,
             ),
             angstrom_l2_last_growth_inside(
                 this,
@@ -698,7 +702,7 @@ mod _private {
                 position_token_id,
                 tick_lower,
                 tick_upper,
-                block_number,
+                block_id,
             ),
         )?;
 

@@ -361,7 +361,7 @@ where
             self.root(),
             *POOL_MANAGER_ADDRESS.get().unwrap(),
             pool_id,
-            block_number
+            block_number.map(Into::into)
         )
         .await?)
     }
@@ -508,7 +508,7 @@ where
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
-            block_number,
+            block_number.map(Into::into),
             position_token_id
         )
         .await?;
@@ -530,10 +530,11 @@ where
         position_token_id: U256,
         block_number: Option<u64>
     ) -> eyre::Result<u128> {
+        let block_id = block_number.map(Into::into);
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
             *POSITION_MANAGER_ADDRESS.get().unwrap(),
-            block_number,
+            block_id,
             position_token_id
         )
         .await?;
@@ -546,7 +547,7 @@ where
             position_token_id,
             position_info.tick_lower,
             position_info.tick_upper,
-            block_number
+            block_id
         )
         .await?;
 
@@ -565,6 +566,7 @@ where
         let position_manager_address = *POSITION_MANAGER_ADDRESS.get().unwrap();
         let pool_manager_address = *POOL_MANAGER_ADDRESS.get().unwrap();
         let angstrom_address = *ANGSTROM_ADDRESS.get().unwrap();
+        let block_id = block_number.map(Into::into);
 
         let root = self.root();
 
@@ -574,7 +576,7 @@ where
 
         if end_token_id == U256::ZERO {
             end_token_id =
-                position_manager_next_token_id(root, position_manager_address, block_number)
+                position_manager_next_token_id(root, position_manager_address, block_id)
                     .await?;
         }
 
@@ -583,7 +585,7 @@ where
             let owner_of = position_manager_owner_of(
                 root,
                 position_manager_address,
-                block_number,
+                block_id,
                 start_token_id
             )
             .await?;
@@ -596,7 +598,7 @@ where
             let (pool_key, position_info) = position_manager_pool_key_and_info(
                 root,
                 position_manager_address,
-                block_number,
+                block_id,
                 start_token_id
             )
             .await?;
@@ -618,7 +620,7 @@ where
                 start_token_id,
                 position_info.tick_lower,
                 position_info.tick_upper,
-                block_number
+                block_id
             )
             .await?;
 
@@ -647,6 +649,7 @@ where
         position_token_id: U256,
         block_number: Option<u64>
     ) -> eyre::Result<LiquidityPositionFees> {
+        let block_id = block_number.map(Into::into);
         let ((pool_key, position_info), position_liquidity) = tokio::try_join!(
             self.position_and_pool_info(position_token_id, block_number),
             self.position_liquidity(position_token_id, block_number),
@@ -668,7 +671,7 @@ where
                 self.root(),
                 *POOL_MANAGER_ADDRESS.get().unwrap(),
                 *POSITION_MANAGER_ADDRESS.get().unwrap(),
-                block_number,
+                block_id,
                 pool_id,
                 slot0.tick,
                 position_token_id,
@@ -694,6 +697,7 @@ where
         tick_upper: I24,
         block_number: Option<u64>
     ) -> eyre::Result<U256> {
+        let block_id = block_number.map(Into::into);
         let (growth_inside, last_growth_inside) = tokio::try_join!(
             angstrom_growth_inside(
                 self.root(),
@@ -702,7 +706,7 @@ where
                 current_pool_tick,
                 tick_lower,
                 tick_upper,
-                block_number,
+                block_id,
             ),
             angstrom_last_growth_inside(
                 self.root(),
@@ -712,7 +716,7 @@ where
                 position_token_id,
                 tick_lower,
                 tick_upper,
-                block_number,
+                block_id,
             ),
         )?;
 
