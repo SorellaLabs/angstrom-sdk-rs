@@ -15,8 +15,8 @@ use crate::{
     types::{pool_tick_loaders::PoolTickDataLoader, providers::AlloyProviderWrapper}
 };
 
-pub type AlloyWalletRpcProvider<P> =
-    FillProvider<JoinFill<Identity, WalletFiller<EthereumWallet>>, AlloyProviderWrapper<P>>;
+pub type AlloyWalletRpcProvider =
+    FillProvider<JoinFill<Identity, WalletFiller<EthereumWallet>>, AlloyProviderWrapper>;
 
 #[derive(Debug, Clone)]
 pub struct AngstromProvider<P, T>
@@ -53,11 +53,11 @@ impl<P: Provider + Clone, T: AngstromOrderApiClient> AngstromProvider<P, T> {
 
     /// Returns the wrapped Ethereum provider.
     /// This wrapper implements both `Provider` and the SDK data APIs.
-    pub fn eth_provider(&self) -> &AlloyProviderWrapper<P> {
+    pub fn eth_provider(&self) -> &AlloyProviderWrapper {
         &self.eth_provider
     }
 
-    pub fn with_wallet<S>(self, signer: S) -> AngstromProvider<AlloyWalletRpcProvider<P>, T>
+    pub fn with_wallet<S>(self, signer: S) -> AngstromProvider<AlloyWalletRpcProvider, T>
     where
         S: Signer + SignerSync + TxSigner<Signature> + Send + Sync + 'static
     {

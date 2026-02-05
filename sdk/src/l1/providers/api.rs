@@ -73,7 +73,7 @@ where
 {
     /// Returns the wrapped Ethereum provider.
     /// This wrapper implements both `Provider` and the SDK data APIs.
-    pub fn eth_provider(&self) -> &AlloyProviderWrapper<P> {
+    pub fn eth_provider(&self) -> &AlloyProviderWrapper {
         self.provider.eth_provider()
     }
 
@@ -215,7 +215,14 @@ where
         block_number: Option<BlockNumber>
     ) -> eyre::Result<(Vec<TickData>, U256)> {
         self.provider
-            .load_tick_data(pool_id, current_tick, zero_for_one, num_ticks, tick_spacing, block_number)
+            .load_tick_data(
+                pool_id,
+                current_tick,
+                zero_for_one,
+                num_ticks,
+                tick_spacing,
+                block_number
+            )
             .await
     }
 }
