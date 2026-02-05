@@ -1,10 +1,10 @@
-use std::{fmt::Debug, marker::PhantomData, ops::Deref};
+use std::ops::Deref;
 
 use alloy_eips::BlockId;
 use alloy_json_rpc::RpcError;
 use alloy_network::{Ethereum, Network};
 use alloy_primitives::{Address, StorageKey, StorageValue, TxKind};
-use alloy_provider::{Provider, RootProvider};
+use alloy_provider::{DynProvider, Provider, RootProvider};
 use alloy_rpc_types::{TransactionInput, TransactionRequest};
 use alloy_sol_types::{SolCall, SolType};
 use alloy_transport::TransportErrorKind;
@@ -18,30 +18,22 @@ pub struct AlloyProviderWrapper<N: Network = Ethereum> {
     provider: DynProvider<N>
 }
 
-impl<P: Debug, N: Network> Debug for AlloyProviderWrapper<N> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AlloyProviderWrapper")
-            .field("provider", &self.provider)
-            .finish()
-    }
-}
-
 impl<N: Network> AlloyProviderWrapper<N> {
-    pub fn new(provider: P) -> Self {
-        Self { provider }
+    pub fn new(provider: impl Provider<N> + 'static) -> Self {
+        Self { provider: DynProvider::new(provider) }
     }
 
-    pub fn provider(&self) -> &P {
+    pub fn provider(&self) -> &DynProvider<N> {
         &self.provider
     }
 
-    pub fn into_inner(self) -> P {
+    pub fn into_inner(self) -> DynProvider<N> {
         self.provider
     }
 }
 
-impl<P, N: Network> Deref for AlloyProviderWrapper<N> {
-    type Target = P;
+impl<N: Network> Deref for AlloyProviderWrapper<N> {
+    type Target = DynProvider<N>;
 
     fn deref(&self) -> &Self::Target {
         &self.provider
@@ -51,12 +43,6 @@ impl<P, N: Network> Deref for AlloyProviderWrapper<N> {
 impl<N: Network> Provider<N> for AlloyProviderWrapper<N> {
     fn root(&self) -> &RootProvider<N> {
         self.provider.root()
-    }
-}
-
-impl<N: Network> From<P> for AlloyProviderWrapper<N> {
-    fn from(value: P) -> Self {
-        Self::new(value)
     }
 }
 
@@ -89,6 +75,7 @@ pub(crate) async fn alloy_view_deploy<P, N, IC>(
     tx: <N as Network>::TransactionRequest
 ) -> Result<Result<IC::RustType, alloy_sol_types::Error>, RpcError<TransportErrorKind>>
 where
+    P: Provider<N>,
     N: Network,
     IC: SolType + Send
 {

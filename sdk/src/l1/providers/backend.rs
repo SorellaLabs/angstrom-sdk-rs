@@ -1,9 +1,6 @@
 use alloy_network::{Ethereum, EthereumWallet, TxSigner};
 use alloy_primitives::{BlockNumber, Signature, U256, aliases::I24};
-use alloy_provider::{
-    Identity, Provider, RootProvider,
-    fillers::{FillProvider, JoinFill, WalletFiller}
-};
+use alloy_provider::{Provider, RootProvider};
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types_primitives::PoolId;
 use jsonrpsee_http_client::HttpClient;
@@ -15,21 +12,17 @@ use crate::{
     types::{pool_tick_loaders::PoolTickDataLoader, providers::AlloyProviderWrapper}
 };
 
-pub type AlloyWalletRpcProvider =
-    FillProvider<JoinFill<Identity, WalletFiller<EthereumWallet>>, AlloyProviderWrapper>;
-
 #[derive(Debug, Clone)]
-pub struct AngstromProvider<P, T>
+pub struct AngstromProvider<T>
 where
-    P: Provider + Clone,
     T: AngstromOrderApiClient
 {
-    eth_provider:      AlloyProviderWrapper<P>,
+    eth_provider:      AlloyProviderWrapper,
     angstrom_provider: T
 }
 
-impl<P: Provider + Clone> AngstromProvider<P, HttpClient> {
-    pub fn new_angstrom_http(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
+impl AngstromProvider<HttpClient> {
+    pub fn new_angstrom_http(eth_provider: impl Provider + 'static, angstrom_url: &str) -> eyre::Result<Self> {
         Ok(Self {
             eth_provider:      AlloyProviderWrapper::new(eth_provider),
             angstrom_provider: HttpClient::builder().build(angstrom_url)?
@@ -37,8 +30,8 @@ impl<P: Provider + Clone> AngstromProvider<P, HttpClient> {
     }
 }
 
-impl<P: Provider + Clone> AngstromProvider<P, WsClient> {
-    pub async fn new_angstrom_ws(eth_provider: P, angstrom_url: &str) -> eyre::Result<Self> {
+impl AngstromProvider<WsClient> {
+    pub async fn new_angstrom_ws(eth_provider: impl Provider + 'static, angstrom_url: &str) -> eyre::Result<Self> {
         Ok(Self {
             eth_provider:      AlloyProviderWrapper::new(eth_provider),
             angstrom_provider: WsClientBuilder::new().build(angstrom_url).await?
@@ -46,8 +39,8 @@ impl<P: Provider + Clone> AngstromProvider<P, WsClient> {
     }
 }
 
-impl<P: Provider + Clone, T: AngstromOrderApiClient> AngstromProvider<P, T> {
-    pub fn new_with_providers(eth_provider: P, angstrom_provider: T) -> Self {
+impl<T: AngstromOrderApiClient> AngstromProvider<T> {
+    pub fn new_with_providers(eth_provider: impl Provider + 'static, angstrom_provider: T) -> Self {
         Self { eth_provider: AlloyProviderWrapper::new(eth_provider), angstrom_provider }
     }
 
@@ -57,7 +50,7 @@ impl<P: Provider + Clone, T: AngstromOrderApiClient> AngstromProvider<P, T> {
         &self.eth_provider
     }
 
-    pub fn with_wallet<S>(self, signer: S) -> AngstromProvider<AlloyWalletRpcProvider, T>
+    pub fn with_wallet<S>(self, signer: S) -> AngstromProvider<T>
     where
         S: Signer + SignerSync + TxSigner<Signature> + Send + Sync + 'static
     {
@@ -72,22 +65,21 @@ impl<P: Provider + Clone, T: AngstromOrderApiClient> AngstromProvider<P, T> {
     }
 }
 
-impl<P: Provider + Clone, T: AngstromOrderApiClient> AngstromNodeApi<T> for AngstromProvider<P, T> {
+impl<T: AngstromOrderApiClient> AngstromNodeApi<T> for AngstromProvider<T> {
     fn angstrom_rpc_provider(&self) -> &T {
         &self.angstrom_provider
     }
 }
 
-impl<P: Provider + Clone, T: AngstromOrderApiClient> Provider for AngstromProvider<P, T> {
+impl<T: AngstromOrderApiClient> Provider for AngstromProvider<T> {
     fn root(&self) -> &RootProvider {
         self.eth_provider.root()
     }
 }
 
 #[async_trait::async_trait]
-impl<P, T> PoolTickDataLoader<Ethereum> for AngstromProvider<P, T>
+impl<T> PoolTickDataLoader<Ethereum> for AngstromProvider<T>
 where
-    P: Provider + Clone + Sync,
     T: AngstromOrderApiClient + Sync
 {
     async fn load_tick_data(

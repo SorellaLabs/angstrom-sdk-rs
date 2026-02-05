@@ -54,13 +54,12 @@ impl NonceGeneratorFiller {
 impl FillWrapper for NonceGeneratorFiller {
     type FillOutput = Option<u64>;
 
-    async fn prepare<P, T>(
+    async fn prepare<T>(
         &self,
-        provider: &AngstromProvider<P, T>,
+        provider: &AngstromProvider<T>,
         order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         if !matches!(order, AllOrders::PartialStanding(_) | AllOrders::ExactStanding(_)) {
@@ -99,14 +98,12 @@ impl FillFrom<NonceGeneratorFiller> for Option<u64> {
 
 #[cfg(test)]
 mod tests {
-    use alloy_provider::RootProvider;
     use jsonrpsee_http_client::HttpClient;
 
     use super::*;
     use crate::l1::{
         AngstromApi,
         test_utils::{
-            AlloyRpcProvider,
             filler_orders::{AllOrdersSpecific, match_all_orders},
             spawn_angstrom_api
         },
@@ -115,7 +112,6 @@ mod tests {
 
     async fn spawn_api_with_filler() -> eyre::Result<
         AngstromApi<
-            AlloyRpcProvider<RootProvider>,
             HttpClient,
             AngstromFillProvider<(), NonceGeneratorFiller>
         >

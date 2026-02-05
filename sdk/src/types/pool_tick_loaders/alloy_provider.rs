@@ -1,6 +1,5 @@
 use alloy_network::Network;
 use alloy_primitives::{BlockNumber, U256, aliases::I24};
-use alloy_provider::Provider;
 use angstrom_types_primitives::{POOL_MANAGER_ADDRESS, PoolId};
 use uni_v4::{
     loaders::get_uniswap_v_4_tick_data::GetUniswapV4TickData,
@@ -13,9 +12,8 @@ use crate::types::{
 };
 
 #[async_trait::async_trait]
-impl<P, N> PoolTickDataLoader<N> for AlloyProviderWrapper< N>
+impl<N> PoolTickDataLoader<N> for AlloyProviderWrapper<N>
 where
-    P: Provider<N> + Sync,
     N: Network
 {
     async fn load_tick_data(

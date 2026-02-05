@@ -1,7 +1,5 @@
 pub mod api;
 
-use std::marker::PhantomData;
-
 use angstrom_types_primitives::primitive::{AngstromAddressBuilder, init_with_chain_id};
 pub use api::AngstromApi;
 pub(crate) mod backend;
@@ -10,39 +8,23 @@ use alloy_provider::Provider;
 use jsonrpsee_http_client::HttpClient;
 use jsonrpsee_ws_client::WsClient;
 
-use crate::l1::apis::node_api::AngstromOrderApiClient;
-
-pub struct AngstromApiBuilder<P, T, F = ()>
-where
-    P: Provider + Clone,
-    T: AngstromOrderApiClient
-{
+pub struct AngstromApiBuilder<P: Provider + 'static> {
     eth_provider:    Option<P>,
     angstrom_url:    String,
     address_builder: Option<AngstromAddressBuilder>,
-    _t:              PhantomData<fn() -> (T, F)>
 }
 
-impl<P, T, F> Default for AngstromApiBuilder<P, T, F>
-where
-    P: Provider + Clone,
-    T: AngstromOrderApiClient
-{
+impl<P: Provider + 'static> Default for AngstromApiBuilder<P> {
     fn default() -> Self {
         Self {
             eth_provider:    None,
             angstrom_url:    "".to_owned(),
             address_builder: None,
-            _t:              Default::default()
         }
     }
 }
 
-impl<P, T, F> AngstromApiBuilder<P, T, F>
-where
-    P: Provider + Clone,
-    T: AngstromOrderApiClient
-{
+impl<P: Provider + 'static> AngstromApiBuilder<P> {
     pub fn with_angstrom_addresses(self, address_builder: AngstromAddressBuilder) -> Self {
         Self { address_builder: Some(address_builder), ..self }
     }
@@ -56,7 +38,7 @@ where
     }
 
     /// Uses the chain-id of the eth-provider if a address config is not set.
-    pub async fn build_http(self) -> AngstromApi<P, HttpClient> {
+    pub async fn build_http(self) -> AngstromApi<HttpClient> {
         assert!(!self.angstrom_url.is_empty());
         let provider = self.eth_provider.expect("eth provider must be passed in");
 
@@ -70,7 +52,7 @@ where
         AngstromApi::new_angstrom_http(provider, &self.angstrom_url).unwrap()
     }
 
-    pub async fn build_ws(self) -> AngstromApi<P, WsClient> {
+    pub async fn build_ws(self) -> AngstromApi<WsClient> {
         assert!(!self.angstrom_url.is_empty());
         let provider = self.eth_provider.expect("eth provider must be passed in");
 

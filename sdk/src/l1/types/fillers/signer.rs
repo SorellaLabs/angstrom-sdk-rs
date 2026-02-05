@@ -1,5 +1,4 @@
 use alloy_primitives::Address;
-use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types_primitives::{
     primitive::ANGSTROM_DOMAIN,
@@ -37,13 +36,12 @@ impl<S: Signer + SignerSync + Clone> AngstromSignerFiller<S> {
 impl<S: Signer + SignerSync + Send + Sync + Clone> FillWrapper for AngstromSignerFiller<S> {
     type FillOutput = (Address, OrderMeta);
 
-    async fn prepare<P, T>(
+    async fn prepare<T>(
         &self,
-        _: &AngstromProvider<P, T>,
+        _: &AngstromProvider<T>,
         order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         let my_address = self.0.address();

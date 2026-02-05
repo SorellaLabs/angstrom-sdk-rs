@@ -1,7 +1,6 @@
 mod balance_check;
 pub mod errors;
 use alloy_primitives::Address;
-use alloy_provider::Provider;
 use angstrom_types_primitives::sol_bindings::grouped_orders::AllOrders;
 pub use balance_check::*;
 mod signer;
@@ -33,13 +32,12 @@ where
 {
     type FillOutput = ();
 
-    async fn fill<P, T>(
+    async fn fill<T>(
         &self,
-        provider: &AngstromProvider<P, T>,
+        provider: &AngstromProvider<T>,
         order: &mut AllOrders
     ) -> Result<(), FillerError>
     where
-        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         self.left.fill(provider, order).await?;
@@ -48,13 +46,12 @@ where
         Ok(())
     }
 
-    async fn prepare<P, T>(
+    async fn prepare<T>(
         &self,
-        _: &AngstromProvider<P, T>,
+        _: &AngstromProvider<T>,
         _: &AllOrders
     ) -> Result<(), FillerError>
     where
-        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         Ok(())
@@ -71,13 +68,12 @@ impl<L: FillWrapper, R: FillWrapper> AngstromFiller for AngstromFillProvider<L, 
 pub(crate) trait FillWrapper: Send + Sync + Clone + Sized {
     type FillOutput: FillFrom<Self>;
 
-    async fn fill<P, T>(
+    async fn fill<T>(
         &self,
-        provider: &AngstromProvider<P, T>,
+        provider: &AngstromProvider<T>,
         order: &mut AllOrders
     ) -> Result<(), FillerError>
     where
-        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         let input = self.prepare(provider, order).await?;
@@ -86,13 +82,12 @@ pub(crate) trait FillWrapper: Send + Sync + Clone + Sized {
         Ok(())
     }
 
-    async fn fill_many<P, T>(
+    async fn fill_many<T>(
         &self,
-        provider: &AngstromProvider<P, T>,
+        provider: &AngstromProvider<T>,
         orders: &mut [AllOrders]
     ) -> Result<(), FillerError>
     where
-        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         let inputs = self.prepare_many(provider, orders).await;
@@ -105,22 +100,20 @@ pub(crate) trait FillWrapper: Send + Sync + Clone + Sized {
         Ok(())
     }
 
-    async fn prepare<P, T>(
+    async fn prepare<T>(
         &self,
-        provider: &AngstromProvider<P, T>,
+        provider: &AngstromProvider<T>,
         order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError>
     where
-        P: Provider + Clone,
         T: AngstromOrderApiClient;
 
-    async fn prepare_many<P, T>(
+    async fn prepare_many<T>(
         &self,
-        provider: &AngstromProvider<P, T>,
+        provider: &AngstromProvider<T>,
         orders: &[AllOrders]
     ) -> Vec<Result<Self::FillOutput, FillerError>>
     where
-        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         futures::future::join_all(
@@ -140,13 +133,12 @@ pub(crate) trait FillWrapper: Send + Sync + Clone + Sized {
 impl FillWrapper for () {
     type FillOutput = ();
 
-    async fn prepare<P, T>(
+    async fn prepare<T>(
         &self,
-        _: &AngstromProvider<P, T>,
+        _: &AngstromProvider<T>,
         _: &AllOrders
     ) -> Result<(), FillerError>
     where
-        P: Provider + Clone,
         T: AngstromOrderApiClient
     {
         Ok(())

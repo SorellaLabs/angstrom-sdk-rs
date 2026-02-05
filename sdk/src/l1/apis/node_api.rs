@@ -203,11 +203,10 @@ mod tests {
     }
 
     impl AllOrdersSent {
-        async fn send_orders<P, T>(
-            provider: &AngstromProvider<P, T>
+        async fn send_orders<T>(
+            provider: &AngstromProvider<T>
         ) -> Result<Self, AngstromSdkError>
         where
-            P: Provider + Clone,
             T: AngstromOrderApiClientClone
         {
             let (generator, _rx) = make_order_generator(provider).await.unwrap();

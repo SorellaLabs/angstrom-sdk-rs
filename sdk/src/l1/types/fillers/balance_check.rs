@@ -1,5 +1,4 @@
 use alloy_primitives::{Address, U256};
-use alloy_provider::Provider;
 use angstrom_types_primitives::primitive::ERC20;
 
 use super::{AllOrders, FillWrapper, errors::FillerError};
@@ -12,8 +11,8 @@ use crate::{
 pub struct TokenBalanceCheckFiller;
 
 impl TokenBalanceCheckFiller {
-    async fn check_balance<P: Provider + Clone, T: AngstromOrderApiClient>(
-        provider: &AngstromProvider<P, T>,
+    async fn check_balance<T: AngstromOrderApiClient>(
+        provider: &AngstromProvider<T>,
         user: Address,
         token: Address,
         requested_amount: U256
@@ -42,9 +41,9 @@ impl TokenBalanceCheckFiller {
 impl FillWrapper for TokenBalanceCheckFiller {
     type FillOutput = ();
 
-    async fn prepare<P: Provider + Clone, T: AngstromOrderApiClient>(
+    async fn prepare<T: AngstromOrderApiClient>(
         &self,
-        provider: &AngstromProvider<P, T>,
+        provider: &AngstromProvider<T>,
         order: &AllOrders
     ) -> Result<Self::FillOutput, FillerError> {
         if order.from_address() != Address::ZERO {

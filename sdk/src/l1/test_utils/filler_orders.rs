@@ -30,17 +30,16 @@ use uniswap_v4::uniswap::pool_manager::TickRangeToLoad;
 
 #[cfg(feature = "example-utils")]
 use crate::l1::test_utils::AngstromOrderApiClientClone;
-use crate::l1::{providers::backend::AngstromProvider, test_utils::AlloyRpcProvider};
+use crate::l1::providers::backend::AngstromProvider;
 
 #[cfg(feature = "example-utils")]
-pub async fn make_order_generator<P, T>(
-    provider: &AngstromProvider<P, T>
+pub async fn make_order_generator<T>(
+    provider: &AngstromProvider<T>
 ) -> eyre::Result<(
     OrderGenerator<T>,
     tokio::sync::mpsc::Receiver<(TickRangeToLoad, Arc<tokio::sync::Notify>)>
 )>
 where
-    P: Provider + Clone,
     T: AngstromOrderApiClientClone
 {
     use alloy_primitives::aliases::U24;
@@ -143,7 +142,7 @@ pub fn match_all_orders<O>(
 }
 
 pub struct AnvilAngstromProvider {
-    pub provider: AngstromProvider<AlloyRpcProvider<RootProvider>, HttpClient>,
+    pub provider: AngstromProvider<HttpClient>,
     handle:       Handle,
     _anvil:       AnvilInstance
 }

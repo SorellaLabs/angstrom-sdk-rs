@@ -5,7 +5,6 @@ use std::{
 
 use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
-use alloy_network::Ethereum;
 use alloy_primitives::{
     Address, B256, FixedBytes, TxHash, U256,
     aliases::{I24, U24},
@@ -65,9 +64,7 @@ use crate::{
 };
 
 #[async_trait::async_trait]
-impl<P> AngstromL1DataApi for AlloyProviderWrapper<P>
-where
-    P: Provider + Clone + Sync
+impl AngstromL1DataApi for AlloyProviderWrapper
 {
     async fn tokens_by_partial_pool_key(
         &self,
@@ -496,9 +493,7 @@ where
 }
 
 #[async_trait::async_trait]
-impl<P> AngstromL1UserApi for AlloyProviderWrapper<Ethereum>
-where
-    P: Provider<Ethereum> + Clone + Sync
+impl AngstromL1UserApi for AlloyProviderWrapper
 {
     async fn position_and_pool_info(
         &self,
