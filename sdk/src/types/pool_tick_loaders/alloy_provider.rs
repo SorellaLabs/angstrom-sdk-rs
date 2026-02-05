@@ -13,7 +13,7 @@ use crate::types::{
 };
 
 #[async_trait::async_trait]
-impl<P, N> PoolTickDataLoader<N> for AlloyProviderWrapper<P, N>
+impl<P, N> PoolTickDataLoader<N> for AlloyProviderWrapper< N>
 where
     P: Provider<N> + Sync,
     N: Network

@@ -13,13 +13,12 @@ use uniswap_storage::StorageSlotFetcher;
 /// Wrapper for alloy providers that implements SDK traits.
 /// This wrapper is necessary to avoid trait coherence conflicts with
 /// `RethDbProviderWrapper`.
-#[derive(Clone)]
-pub struct AlloyProviderWrapper<P, N: Network = Ethereum> {
-    provider: P,
-    _network: PhantomData<N>,
+#[derive(Debug, Clone)]
+pub struct AlloyProviderWrapper<N: Network = Ethereum> {
+    provider: DynProvider<N>
 }
 
-impl<P: Debug, N: Network> Debug for AlloyProviderWrapper<P, N> {
+impl<P: Debug, N: Network> Debug for AlloyProviderWrapper<N> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("AlloyProviderWrapper")
             .field("provider", &self.provider)
@@ -27,9 +26,9 @@ impl<P: Debug, N: Network> Debug for AlloyProviderWrapper<P, N> {
     }
 }
 
-impl<P, N: Network> AlloyProviderWrapper<P, N> {
+impl<N: Network> AlloyProviderWrapper<N> {
     pub fn new(provider: P) -> Self {
-        Self { provider, _network: PhantomData }
+        Self { provider }
     }
 
     pub fn provider(&self) -> &P {
@@ -41,7 +40,7 @@ impl<P, N: Network> AlloyProviderWrapper<P, N> {
     }
 }
 
-impl<P, N: Network> Deref for AlloyProviderWrapper<P, N> {
+impl<P, N: Network> Deref for AlloyProviderWrapper<N> {
     type Target = P;
 
     fn deref(&self) -> &Self::Target {
@@ -49,13 +48,13 @@ impl<P, N: Network> Deref for AlloyProviderWrapper<P, N> {
     }
 }
 
-impl<P: Provider<N>, N: Network> Provider<N> for AlloyProviderWrapper<P, N> {
+impl<N: Network> Provider<N> for AlloyProviderWrapper<N> {
     fn root(&self) -> &RootProvider<N> {
         self.provider.root()
     }
 }
 
-impl<P: Provider<N>, N: Network> From<P> for AlloyProviderWrapper<P, N> {
+impl<N: Network> From<P> for AlloyProviderWrapper<N> {
     fn from(value: P) -> Self {
         Self::new(value)
     }
@@ -65,11 +64,11 @@ pub(crate) async fn alloy_view_call<P, IC>(
     provider: &P,
     block_number: Option<u64>,
     contract: Address,
-    call: IC,
+    call: IC
 ) -> Result<Result<IC::Return, alloy_sol_types::Error>, RpcError<TransportErrorKind>>
 where
     P: Provider + Clone,
-    IC: SolCall + Send,
+    IC: SolCall + Send
 {
     let tx = TransactionRequest {
         to: Some(TxKind::Call(contract)),
@@ -87,12 +86,11 @@ where
 pub(crate) async fn alloy_view_deploy<P, N, IC>(
     provider: &P,
     block_number: Option<u64>,
-    tx: <N as Network>::TransactionRequest,
+    tx: <N as Network>::TransactionRequest
 ) -> Result<Result<IC::RustType, alloy_sol_types::Error>, RpcError<TransportErrorKind>>
 where
-    P: Provider<N>,
     N: Network,
-    IC: SolType + Send,
+    IC: SolType + Send
 {
     let data = provider
         .call(tx)
@@ -102,12 +100,12 @@ where
 }
 
 #[async_trait::async_trait]
-impl<P: Provider<N>, N: Network> StorageSlotFetcher for AlloyProviderWrapper<P, N> {
+impl<N: Network> StorageSlotFetcher for AlloyProviderWrapper<N> {
     async fn storage_at(
         &self,
         address: Address,
         key: StorageKey,
-        block_id: Option<BlockId>,
+        block_id: Option<BlockId>
     ) -> eyre::Result<StorageValue> {
         Ok(self
             .root()

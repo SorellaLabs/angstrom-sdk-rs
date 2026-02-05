@@ -53,7 +53,7 @@ use crate::{
 };
 
 #[async_trait::async_trait]
-impl<P, N> AngstromL2DataApi<N> for AlloyProviderWrapper<P, N>
+impl<P, N> AngstromL2DataApi<N> for AlloyProviderWrapper< N>
 where
     P: Provider<N> + Clone + Sync,
     N: Network
@@ -280,7 +280,7 @@ where
 }
 
 #[async_trait::async_trait]
-impl<P, N> AngstromL2UserApi<N> for AlloyProviderWrapper<P, N>
+impl<P, N> AngstromL2UserApi<N> for AlloyProviderWrapper< N>
 where
     P: Provider<N> + Clone + Sync,
     N: Network

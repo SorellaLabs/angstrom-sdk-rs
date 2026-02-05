@@ -496,7 +496,7 @@ where
 }
 
 #[async_trait::async_trait]
-impl<P> AngstromL1UserApi for AlloyProviderWrapper<P, Ethereum>
+impl<P> AngstromL1UserApi for AlloyProviderWrapper<Ethereum>
 where
     P: Provider<Ethereum> + Clone + Sync
 {
@@ -576,19 +576,14 @@ where
 
         if end_token_id == U256::ZERO {
             end_token_id =
-                position_manager_next_token_id(root, position_manager_address, block_id)
-                    .await?;
+                position_manager_next_token_id(root, position_manager_address, block_id).await?;
         }
 
         let mut all_positions = Vec::new();
         while start_token_id <= end_token_id {
-            let owner_of = position_manager_owner_of(
-                root,
-                position_manager_address,
-                block_id,
-                start_token_id
-            )
-            .await?;
+            let owner_of =
+                position_manager_owner_of(root, position_manager_address, block_id, start_token_id)
+                    .await?;
 
             if owner_of != owner {
                 start_token_id += U256::from(1u8);
