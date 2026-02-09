@@ -34,7 +34,8 @@ use crate::l1::providers::backend::AngstromProvider;
 
 #[cfg(feature = "example-utils")]
 pub async fn make_order_generator<T>(
-    provider: &AngstromProvider<T>
+    provider: &AngstromProvider<T>,
+    chain: crate::l1::AngstromL1Chain
 ) -> eyre::Result<(
     OrderGenerator<T>,
     tokio::sync::mpsc::Receiver<(TickRangeToLoad, Arc<tokio::sync::Notify>)>
@@ -45,7 +46,7 @@ where
     use alloy_primitives::aliases::U24;
     use angstrom_types_primitives::{
         PoolId,
-        primitive::{POOL_MANAGER_ADDRESS, UniswapPoolRegistry}
+        primitive::UniswapPoolRegistry
     };
     use futures::future::try_join_all;
     use rust_utils::ToHashMapByKey;
@@ -55,9 +56,11 @@ where
 
     use crate::l1::apis::{AngstromNodeApi, data_api::AngstromL1DataApi};
 
+    let consts = chain.constants();
+    let pool_manager_address = consts.uniswap_constants().pool_manager();
     let block_number = provider.eth_provider().get_block_number().await?;
 
-    let pools = provider.eth_provider().all_pool_keys(Some(block_number)).await?;
+    let pools = provider.eth_provider().all_pool_keys(Some(block_number), chain).await?;
 
     let enhanced_pools = try_join_all(pools.into_iter().map(|pool_key| {
         let provider = provider.eth_provider().clone();
@@ -72,7 +75,7 @@ where
                 private_pool_id,
                 public_pool_id,
                 registry,
-                *POOL_MANAGER_ADDRESS.get().unwrap()
+                pool_manager_address
             );
 
             let mut pool = EnhancedUniswapPool::new(data_loader, INITIAL_TICKS_PER_SIDE);

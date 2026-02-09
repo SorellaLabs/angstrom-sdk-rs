@@ -1,26 +1,23 @@
 use alloy_eips::BlockNumberOrTag;
+use alloy_primitives::Address;
 use alloy_rpc_types::Filter;
 use alloy_sol_types::SolEvent;
-use angstrom_types_primitives::{
-    ANGSTROM_DEPLOYED_BLOCK, contract_bindings::pool_manager::PoolManager,
-    primitive::POOL_MANAGER_ADDRESS
-};
+use angstrom_types_primitives::contract_bindings::pool_manager::PoolManager;
 
 pub(crate) fn historical_pool_manager_swap_filter(
     start_block: Option<u64>,
-    end_block: Option<u64>
+    end_block: Option<u64>,
+    pool_manager_address: Address,
+    deploy_block: u64
 ) -> Vec<Filter> {
     let swap_event = PoolManager::Swap::SIGNATURE_HASH;
-    let pool_manager = *POOL_MANAGER_ADDRESS
-        .get()
-        .expect("POOL_MANAGER_ADDRESS has not been set");
 
-    chunk_blocks(start_block, end_block)
+    chunk_blocks(start_block, end_block, deploy_block)
         .into_iter()
         .map(|(s, e)| {
             Filter::new()
                 .event_signature(swap_event)
-                .address(pool_manager)
+                .address(pool_manager_address)
                 .from_block(s)
                 .to_block(e)
         })
@@ -29,19 +26,18 @@ pub(crate) fn historical_pool_manager_swap_filter(
 
 pub(crate) fn historical_pool_manager_modify_liquidity_filter(
     start_block: Option<u64>,
-    end_block: Option<u64>
+    end_block: Option<u64>,
+    pool_manager_address: Address,
+    deploy_block: u64
 ) -> Vec<Filter> {
     let modify_liquidity_event = PoolManager::ModifyLiquidity::SIGNATURE_HASH;
-    let pool_manager = *POOL_MANAGER_ADDRESS
-        .get()
-        .expect("POOL_MANAGER_ADDRESS has not been set");
 
-    chunk_blocks(start_block, end_block)
+    chunk_blocks(start_block, end_block, deploy_block)
         .into_iter()
         .map(|(s, e)| {
             Filter::new()
                 .event_signature(modify_liquidity_event)
-                .address(pool_manager)
+                .address(pool_manager_address)
                 .from_block(s)
                 .to_block(e)
         })
@@ -50,9 +46,10 @@ pub(crate) fn historical_pool_manager_modify_liquidity_filter(
 
 pub(crate) fn chunk_blocks(
     start_block: Option<u64>,
-    end_block: Option<u64>
+    end_block: Option<u64>,
+    deploy_block: u64
 ) -> Vec<(BlockNumberOrTag, BlockNumberOrTag)> {
-    let mut start_block = start_block.unwrap_or_else(|| *ANGSTROM_DEPLOYED_BLOCK.get().unwrap());
+    let mut start_block = start_block.unwrap_or(deploy_block);
     if let Some(eb) = end_block {
         let mut tags = Vec::new();
         while eb - start_block > 1000 {

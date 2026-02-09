@@ -206,7 +206,8 @@ where
             .map(|pool_key| PoolId::from(pool_key))
             .collect::<HashSet<_>>();
 
-        let filters = historical_pool_manager_modify_liquidity_filter(start_block, end_block);
+        let consts = chain.constants();
+        let filters = historical_pool_manager_modify_liquidity_filter(start_block, end_block, consts.uniswap_constants().pool_manager(), consts.angstrom_deploy_block());
         let provider = self.provider();
 
         let logs = futures::future::try_join_all(

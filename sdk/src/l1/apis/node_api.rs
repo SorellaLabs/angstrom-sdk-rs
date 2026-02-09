@@ -178,6 +178,7 @@ mod tests {
 
     use super::*;
     use crate::l1::{
+        AngstromL1Chain,
         apis::data_api::AngstromL1DataApi,
         providers::backend::AngstromProvider,
         test_utils::{
@@ -209,7 +210,7 @@ mod tests {
         where
             T: AngstromOrderApiClientClone
         {
-            let (generator, _rx) = make_order_generator(provider).await.unwrap();
+            let (generator, _rx) = make_order_generator(provider, AngstromL1Chain::Mainnet).await.unwrap();
             let orders = generator.generate_orders().await;
 
             let tob_order = AllOrders::TOB(get_tob_order(&orders));

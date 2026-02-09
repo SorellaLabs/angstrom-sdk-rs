@@ -10,7 +10,7 @@ use angstrom_types_primitives::{
     primitive::PoolId
 };
 
-use crate::{l1::apis::data_api::AngstromL1DataApi, types::common::*};
+use crate::{l1::{AngstromL1Chain, apis::data_api::AngstromL1DataApi}, types::common::*};
 
 #[derive(Debug, Default, Clone)]
 pub struct HistoricalOrdersFilter {
@@ -150,7 +150,8 @@ pub(crate) struct AngstromPoolTokenIndexToPair(HashMap<u16, PoolMetadata>);
 impl AngstromPoolTokenIndexToPair {
     pub(crate) async fn new_with_tokens<P>(
         provider: &P,
-        filter: &HistoricalOrdersFilter
+        filter: &HistoricalOrdersFilter,
+        chain: AngstromL1Chain
     ) -> eyre::Result<Self>
     where
         P: AngstromL1DataApi + Sized
@@ -164,13 +165,14 @@ impl AngstromPoolTokenIndexToPair {
             return Ok(Self(HashMap::default()));
         }
 
-        let config_store = provider.pool_config_store(filter.from_block).await?;
+        let angstrom_address = chain.constants().angstrom_address();
+        let config_store = provider.pool_config_store(filter.from_block, chain).await?;
         let pools = token_pairs
             .map(|(token0, token1)| {
                 config_store
                     .get_entry(token0, token1)
                     .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))
-                    .map(|cng| (cng.store_index as u16, PoolMetadata::new(token0, token1, cng)))
+                    .map(|cng| (cng.store_index as u16, PoolMetadata::new(token0, token1, cng, angstrom_address)))
             })
             .collect::<Result<HashMap<_, _>, _>>()?;
 

@@ -2,13 +2,11 @@ use std::fmt::Debug;
 
 use alloy_primitives::{Address, B256, U256, hex, keccak256};
 use alloy_provider::Provider;
-use angstrom_types_primitives::{
-    primitive::ANGSTROM_ADDRESS, sol_bindings::grouped_orders::AllOrders
-};
+use angstrom_types_primitives::sol_bindings::grouped_orders::AllOrders;
 
 use super::{FillFrom, FillWrapper, errors::FillerError};
 use crate::{
-    l1::{apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider},
+    l1::{AngstromL1Chain, apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider},
     types::common::*
 };
 
@@ -23,12 +21,13 @@ fn get_nonce_word_slot(user: Address, nonce: u64) -> B256 {
     arry[24..31].copy_from_slice(&nonce[0..7]);
     keccak256(arry)
 }
-#[derive(Clone, Copy, Debug, Default)]
-pub struct NonceGeneratorFiller;
+#[derive(Clone, Copy, Debug)]
+pub struct NonceGeneratorFiller(pub AngstromL1Chain);
 
 impl NonceGeneratorFiller {
     async fn get_valid_angstrom_nonce<P: Provider + Clone>(
         user: Address,
+        angstrom_address: Address,
         provider: &P
     ) -> Result<u64, FillerError> {
         let mut nonce: u64 = rand::random();
@@ -36,7 +35,7 @@ impl NonceGeneratorFiller {
             let slot = get_nonce_word_slot(user, nonce);
 
             let word = provider
-                .get_storage_at(*ANGSTROM_ADDRESS.get().unwrap(), slot.into())
+                .get_storage_at(angstrom_address, slot.into())
                 .await?;
 
             let flag = U256::from(1) << (nonce as u8);
@@ -67,8 +66,9 @@ impl FillWrapper for NonceGeneratorFiller {
         }
 
         if order.from_address() != Address::ZERO {
+            let angstrom_address = self.0.constants().angstrom_address();
             let nonce =
-                Self::get_valid_angstrom_nonce(order.from_address(), provider.eth_provider())
+                Self::get_valid_angstrom_nonce(order.from_address(), angstrom_address, provider.eth_provider())
                     .await?;
             Ok(Some(nonce))
         } else {
@@ -102,7 +102,7 @@ mod tests {
 
     use super::*;
     use crate::l1::{
-        AngstromApi,
+        AngstromApi, AngstromL1Chain,
         test_utils::{
             filler_orders::{AllOrdersSpecific, match_all_orders},
             spawn_angstrom_api
@@ -116,7 +116,7 @@ mod tests {
             AngstromFillProvider<(), NonceGeneratorFiller>
         >
     > {
-        Ok(spawn_angstrom_api().await?.with_nonce_generator_filler())
+        Ok(spawn_angstrom_api().await?.with_nonce_generator_filler(AngstromL1Chain::Mainnet))
     }
 
     #[tokio::test]

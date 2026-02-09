@@ -9,6 +9,7 @@ use uni_v4::pool_data_loader::TickData;
 
 use crate::{
     l1::{
+        AngstromL1Chain,
         apis::node_api::{AngstromNodeApi, AngstromOrderApiClient},
         providers::backend::AngstromProvider,
         types::{
@@ -90,11 +91,12 @@ where
     }
 
     pub fn with_nonce_generator_filler(
-        self
+        self,
+        chain: AngstromL1Chain
     ) -> AngstromApi<T, AngstromFillProvider<F, NonceGeneratorFiller>> {
         AngstromApi {
             provider: self.provider,
-            filler:   self.filler.wrap_with_filler(NonceGeneratorFiller)
+            filler:   self.filler.wrap_with_filler(NonceGeneratorFiller(chain))
         }
     }
 
@@ -125,7 +127,8 @@ where
 
     pub fn with_all_fillers<S>(
         self,
-        signer: S
+        signer: S,
+        chain: AngstromL1Chain
     ) -> AngstromApi<
         T,
         AngstromFillProvider<
@@ -144,7 +147,7 @@ where
             provider: self.provider,
             filler:   self
                 .filler
-                .wrap_with_filler(NonceGeneratorFiller)
+                .wrap_with_filler(NonceGeneratorFiller(chain))
                 .wrap_with_filler(TokenBalanceCheckFiller)
                 .wrap_with_filler(AngstromSignerFiller::new(signer))
         }
