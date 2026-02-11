@@ -48,7 +48,7 @@ impl<N: Network> Provider<N> for AlloyProviderWrapper<N> {
 
 pub(crate) async fn alloy_view_call<P, IC>(
     provider: &P,
-    block_number: Option<u64>,
+    block_id: BlockId,
     contract: Address,
     call: IC
 ) -> Result<Result<IC::Return, alloy_sol_types::Error>, RpcError<TransportErrorKind>>
@@ -64,14 +64,14 @@ where
 
     let data = provider
         .call(tx)
-        .block(block_number.map(Into::into).unwrap_or(BlockId::latest()))
+        .block(block_id)
         .await?;
     Ok(IC::abi_decode_returns(&data))
 }
 
 pub(crate) async fn alloy_view_deploy<P, N, IC>(
     provider: &P,
-    block_number: Option<u64>,
+    block_id: BlockId,
     tx: <N as Network>::TransactionRequest
 ) -> Result<Result<IC::RustType, alloy_sol_types::Error>, RpcError<TransportErrorKind>>
 where
@@ -81,7 +81,7 @@ where
 {
     let data = provider
         .call(tx)
-        .block(block_number.map(Into::into).unwrap_or(BlockId::latest()))
+        .block(block_id)
         .await?;
     Ok(IC::abi_decode(&data))
 }
@@ -92,12 +92,12 @@ impl<N: Network> StorageSlotFetcher for AlloyProviderWrapper<N> {
         &self,
         address: Address,
         key: StorageKey,
-        block_id: Option<BlockId>
+        block_id: BlockId
     ) -> eyre::Result<StorageValue> {
         Ok(self
             .root()
             .get_storage_at(address, key.into())
-            .block_id(block_id.unwrap_or(BlockId::latest()))
+            .block_id(block_id)
             .await?)
     }
 }

@@ -3,6 +3,7 @@ use std::{
     str::FromStr
 };
 
+use alloy_eips::BlockId;
 use alloy_primitives::Address;
 use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager::PoolKey,
@@ -166,7 +167,15 @@ impl AngstromPoolTokenIndexToPair {
         }
 
         let angstrom_address = chain.constants().angstrom_address();
-        let config_store = provider.pool_config_store(filter.from_block, chain).await?;
+        let config_store = provider
+            .pool_config_store(
+                filter
+                    .from_block
+                    .map(Into::into)
+                    .unwrap_or_else(BlockId::latest),
+                chain
+            )
+            .await?;
         let pools = token_pairs
             .map(|(token0, token1)| {
                 config_store

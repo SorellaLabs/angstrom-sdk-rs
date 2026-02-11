@@ -68,7 +68,7 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
     async fn tokens_by_partial_pool_key(
         &self,
         pool_partial_key: AngstromPoolPartialKey,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<TokenPair> {
         let out = alloy_view_call(
@@ -85,7 +85,7 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
     async fn all_token_pairs_with_config_store(
         &self,
         config_store: AngstromPoolConfigStore,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<Vec<TokenPair>> {
         let partial_key_entries = config_store.all_entries();
@@ -102,7 +102,7 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
         &self,
         token0: Address,
         token1: Address,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<PoolKeyWithAngstromFee> {
         let (token0, token1) = sort_tokens(token0, token1);
@@ -155,7 +155,7 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
         });
 
         let mut bundle_stream = futures::stream::iter(blocks_with_bundles)
-            .map(|block_number| self.get_bundle_by_block(block_number, true, chain))
+            .map(|block_number| self.get_bundle_by_block(block_number.into(), true, chain))
             .buffer_unordered(block_stream_buffer.unwrap_or(100));
 
         let mut all_bundles = Vec::new();
@@ -173,7 +173,7 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
         chain: AngstromL1Chain
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
         let all_pool_ids = self
-            .all_pool_keys(end_block, chain)
+            .all_pool_keys(end_block.map(Into::into).unwrap_or_else(BlockId::latest), chain)
             .await?
             .into_iter()
             .map(|val| PoolId::from(val.pool_key))
@@ -221,7 +221,7 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
         chain: AngstromL1Chain
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::Swap>>> {
         let all_pool_ids = self
-            .all_pool_keys(end_block, chain)
+            .all_pool_keys(end_block.map(Into::into).unwrap_or_else(BlockId::latest), chain)
             .await?
             .into_iter()
             .map(|val| PoolId::from(val.pool_key))
@@ -268,18 +268,16 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
         token0: Address,
         token1: Address,
         load_ticks: bool,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
-        let block_number = match block_number {
-            Some(bn) => bn,
-            None => self.get_block_number().await?
-        };
+        let block_number =
+            block_number.as_u64().unwrap_or(self.get_block_number().await?);
 
         let (token0, token1) = sort_tokens(token0, token1);
 
         let pool_key = self
-            .pool_key_by_tokens(token0, token1, Some(block_number), chain)
+            .pool_key_by_tokens(token0, token1, BlockId::number(block_number), chain)
             .await?;
 
         let uni_pool_key = UniPoolKey {
@@ -301,9 +299,12 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
         )
         .into_transaction_request();
 
-        let out_pool_data =
-            alloy_view_deploy::<_, _, PoolDataV4>(&self, Some(block_number), data_deployer_call)
-                .await??;
+        let out_pool_data = alloy_view_deploy::<_, _, PoolDataV4>(
+            &self,
+            BlockId::number(block_number),
+            data_deployer_call
+        )
+        .await??;
         let pool_data: PoolData = (uni_pool_key, out_pool_data).into();
 
         let fee_config = self
@@ -311,7 +312,7 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
                 pool_key.pool_key.currency0,
                 pool_key.pool_key.currency1,
                 Some(pool_key.pool_fee_in_e6),
-                Some(block_number),
+                BlockId::number(block_number),
                 chain
             )
             .await?;
@@ -362,12 +363,12 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
 
     async fn pool_config_store(
         &self,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<AngstromPoolConfigStore> {
         AngstromPoolConfigStore::load_from_chain(
             chain.constants().angstrom_address(),
-            block_number.map(Into::into).unwrap_or(BlockId::latest()),
+            block_number,
             self
         )
         .await
@@ -377,25 +378,25 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
     async fn slot0_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<UnpackedSlot0> {
         Ok(pool_manager_pool_slot0(
             self.root(),
             chain.constants().uniswap_constants().pool_manager(),
             pool_id,
-            block_number.map(Into::into)
+            block_number
         )
         .await?)
     }
 
     async fn get_bundle_by_block(
         &self,
-        block_number: u64,
+        block_number: BlockId,
         verify_successful_tx: bool,
         chain: AngstromL1Chain
     ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
-        let Some(block) = self.get_block(block_number.into()).full().await? else {
+        let Some(block) = self.get_block(block_number).full().await? else {
             return Ok(None)
         };
 
@@ -479,7 +480,7 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
         token0: Address,
         token1: Address,
         bundle_fee: Option<U24>,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<FeeConfiguration> {
         const UNLOCKED_FEES_SLOT: u64 = 2;
@@ -525,13 +526,13 @@ impl AngstromL1UserApi for AlloyProviderWrapper {
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
             chain.constants().uniswap_constants().position_manager(),
-            block_number.map(Into::into),
+            block_number,
             position_token_id
         )
         .await?;
@@ -551,14 +552,14 @@ impl AngstromL1UserApi for AlloyProviderWrapper {
     async fn position_liquidity(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<u128> {
         let consts = chain.constants();
         let position_manager_address = consts.uniswap_constants().position_manager();
         let pool_manager_address = consts.uniswap_constants().pool_manager();
 
-        let block_id = block_number.map(Into::into);
+        let block_id = block_number;
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
             position_manager_address,
@@ -589,14 +590,14 @@ impl AngstromL1UserApi for AlloyProviderWrapper {
         mut end_token_id: U256,
         pool_id: Option<PoolId>,
         max_results: Option<usize>,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<Vec<V4UserLiquidityPosition>> {
         let consts = chain.constants();
         let position_manager_address = consts.uniswap_constants().position_manager();
         let pool_manager_address = consts.uniswap_constants().pool_manager();
         let angstrom_address = consts.angstrom_address();
-        let block_id = block_number.map(Into::into);
+        let block_id = block_number;
 
         let root = self.root();
 
@@ -672,10 +673,10 @@ impl AngstromL1UserApi for AlloyProviderWrapper {
     async fn user_position_fees(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<LiquidityPositionFees> {
-        let block_id = block_number.map(Into::into);
+        let block_id = block_number;
         let ((pool_key, position_info), position_liquidity) = tokio::try_join!(
             self.position_and_pool_info(position_token_id, block_number, chain),
             self.position_liquidity(position_token_id, block_number, chain),
@@ -726,14 +727,14 @@ impl AngstromL1UserApi for AlloyProviderWrapper {
         position_token_id: U256,
         tick_lower: I24,
         tick_upper: I24,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<U256> {
         let consts = chain.constants();
         let angstrom_address = consts.angstrom_address();
         let position_manager_address = consts.uniswap_constants().position_manager();
 
-        let block_id = block_number.map(Into::into);
+        let block_id = block_number;
         let (growth_inside, last_growth_inside) = tokio::try_join!(
             angstrom_growth_inside(
                 self.root(),
@@ -1174,7 +1175,7 @@ mod user_api_tests {
         let (pool_key, unpacked_position_info) = provider
             .position_and_pool_info(
                 pos_info.position_token_id,
-                Some(block_number),
+                block_number,
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -1192,7 +1193,7 @@ mod user_api_tests {
         let position_liquidity = provider
             .position_liquidity(
                 pos_info.position_token_id,
-                Some(block_number),
+                block_number,
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -1215,7 +1216,7 @@ mod user_api_tests {
                 pos_info.position_token_id + U256::from(bound),
                 None,
                 None,
-                Some(block_number),
+                block_number,
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -1232,7 +1233,7 @@ mod user_api_tests {
         let results = provider
             .user_position_fees(
                 pos_info.position_token_id,
-                Some(block_number),
+                block_number,
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -1261,7 +1262,7 @@ mod user_api_tests {
                 pos_info.position_token_id,
                 pos_info.tick_lower,
                 pos_info.tick_upper,
-                Some(block_number),
+                block_number,
                 AngstromL1Chain::Mainnet
             )
             .await

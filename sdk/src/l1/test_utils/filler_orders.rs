@@ -60,7 +60,10 @@ where
     let pool_manager_address = consts.uniswap_constants().pool_manager();
     let block_number = provider.eth_provider().get_block_number().await?;
 
-    let pools = provider.eth_provider().all_pool_keys(Some(block_number), chain).await?;
+    let pools = provider
+        .eth_provider()
+        .all_pool_keys(BlockId::number(block_number), chain)
+        .await?;
 
     let enhanced_pools = try_join_all(pools.into_iter().map(|pool_key| {
         let provider = provider.eth_provider().clone();

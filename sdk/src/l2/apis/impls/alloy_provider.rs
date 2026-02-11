@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use alloy_eips::BlockId;
 use alloy_network::Network;
 use alloy_primitives::{Address, B256, U256, aliases::I24};
 use alloy_provider::Provider;
@@ -59,7 +60,7 @@ where
 {
     async fn all_pool_keys(
         &self,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Vec<AngstromL2Factory::PoolKey>> {
         let constants = chain.constants();
@@ -69,7 +70,7 @@ where
             .from_block(constants.angstrom_deploy_block())
             .event_signature(AngstromL2Factory::PoolCreated::SIGNATURE_HASH);
 
-        if let Some(bn) = block_number {
+        if let BlockId::Number(bn) = block_number {
             filter = filter.to_block(bn);
         }
 
@@ -92,16 +93,14 @@ where
         &self,
         pool_id: PoolId,
         load_ticks: bool,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
-        let block_number = match block_number {
-            Some(bn) => bn,
-            None => self.provider().get_block_number().await?
-        };
+        let block_number =
+            block_number.as_u64().unwrap_or(self.provider().get_block_number().await?);
 
         let pool_key = self
-            .pool_key_by_pool_id(pool_id, Some(block_number), chain)
+            .pool_key_by_pool_id(pool_id, BlockId::number(block_number), chain)
             .await?;
 
         let uni_pool_key = UniPoolKey {
@@ -125,14 +124,14 @@ where
 
         let out_pool_data = alloy_view_deploy::<_, _, PoolDataV4>(
             self.provider(),
-            Some(block_number),
+            BlockId::number(block_number),
             data_deployer_call
         )
         .await??;
         let pool_data: PoolData = (uni_pool_key, out_pool_data).into();
 
         // let fee_config = self
-        //     .fee_configuration_by_pool_id(pool_id, Some(block_number), chain)
+        //     .fee_configuration_by_pool_id(pool_id, block_number, chain)
         //     .await?;
         let fee_config = FeeConfiguration {
             bundle_fee:   Default::default(),
@@ -200,7 +199,7 @@ where
         chain: AngstromL2Chain
     ) -> eyre::Result<Vec<WithEthMeta<PoolManager::ModifyLiquidity>>> {
         let all_pool_ids = self
-            .all_pool_keys(end_block, chain)
+            .all_pool_keys(end_block.map(Into::into).unwrap_or_else(BlockId::latest), chain)
             .await?
             .into_iter()
             .map(|pool_key| PoolId::from(pool_key))
@@ -240,14 +239,14 @@ where
     async fn slot0_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<UnpackedSlot0> {
         Ok(pool_manager_pool_slot0(
             self.root(),
             chain.constants().uniswap_constants().pool_manager(),
             pool_id,
-            block_number.map(Into::into)
+            block_number
         )
         .await?)
     }
@@ -255,14 +254,14 @@ where
     async fn hook_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Address> {
         Ok(angstrom_l2_factory_hook_address_for_pool_id(
             self.root(),
             chain.constants().angstrom_l2_factory(),
             pool_id,
-            block_number.map(Into::into)
+            block_number
         )
         .await?
         .ok_or_else(|| eyre::eyre!("no hook found for pool id: {pool_id:?}"))?)
@@ -272,10 +271,10 @@ where
         &self,
         pool_id: PoolId,
         hook_address: Address,
-        block_number: Option<u64>,
+        block_number: BlockId,
         _chain: AngstromL2Chain
     ) -> eyre::Result<AngstromL2PoolFeeConfiguration> {
-        angstrom_l2_pool_fee_config(self.root(), hook_address, pool_id, block_number.map(Into::into)).await
+        angstrom_l2_pool_fee_config(self.root(), hook_address, pool_id, block_number).await
     }
 }
 
@@ -287,13 +286,13 @@ where
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
             chain.constants().uniswap_constants().position_manager(),
-            block_number.map(Into::into),
+            block_number,
             position_token_id
         )
         .await?;
@@ -313,11 +312,11 @@ where
     async fn position_liquidity(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<u128> {
         let consts = chain.constants();
-        let block_id = block_number.map(Into::into);
+        let block_id = block_number;
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
             consts.uniswap_constants().position_manager(),
@@ -348,14 +347,14 @@ where
         mut end_token_id: U256,
         pool_id: Option<PoolId>,
         max_results: Option<usize>,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Vec<V4UserLiquidityPosition>> {
         let consts = chain.constants();
 
         let position_manager_address = consts.uniswap_constants().position_manager();
         let pool_manager_address = consts.uniswap_constants().pool_manager();
-        let block_id = block_number.map(Into::into);
+        let block_id = block_number;
 
         let all_angstrom_hooks = if pool_id.is_none() {
             self.all_pool_keys(block_number, chain)
@@ -446,11 +445,11 @@ where
     async fn user_position_fees(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<LiquidityPositionFees> {
         let consts = chain.constants();
-        let block_id = block_number.map(Into::into);
+        let block_id = block_number;
 
         let ((pool_key, position_info), position_liquidity) = tokio::try_join!(
             self.position_and_pool_info(position_token_id, block_number, chain),
@@ -501,7 +500,7 @@ where
         position_token_id: U256,
         tick_lower: I24,
         tick_upper: I24,
-        block_number: Option<u64>,
+        block_number: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<U256> {
         let hook = if let Some(hook_address) = hook_address {
@@ -510,7 +509,7 @@ where
             self.hook_by_pool_id(pool_id, block_number, chain).await?
         };
         let consts = chain.constants();
-        let block_id = block_number.map(Into::into);
+        let block_id = block_number;
         let (growth_inside, last_growth_inside) = tokio::try_join!(
             angstrom_l2_growth_inside(
                 self.root(),
@@ -701,7 +700,7 @@ mod user_api_tests {
         let block_number = pos_info.block_for_liquidity_add + 1;
 
         let (pool_key, unpacked_position_info) = provider
-            .position_and_pool_info(pos_info.position_token_id, Some(block_number), pos_info.chain)
+            .position_and_pool_info(pos_info.position_token_id, block_number, pos_info.chain)
             .await
             .unwrap();
 
@@ -715,7 +714,7 @@ mod user_api_tests {
         let block_number = pos_info.block_for_liquidity_add + 1;
 
         let position_liquidity = provider
-            .position_liquidity(pos_info.position_token_id, Some(block_number), pos_info.chain)
+            .position_liquidity(pos_info.position_token_id, block_number, pos_info.chain)
             .await
             .unwrap();
 
@@ -736,7 +735,7 @@ mod user_api_tests {
                 pos_info.position_token_id + U256::from(bound),
                 None,
                 None,
-                Some(block_number),
+                block_number,
                 pos_info.chain
             )
             .await
@@ -751,7 +750,7 @@ mod user_api_tests {
         let block_number = pos_info.block_for_liquidity_add + 100;
 
         let results = provider
-            .user_position_fees(pos_info.position_token_id, Some(block_number), pos_info.chain)
+            .user_position_fees(pos_info.position_token_id, block_number, pos_info.chain)
             .await
             .unwrap();
 

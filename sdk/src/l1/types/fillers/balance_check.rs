@@ -1,3 +1,4 @@
+use alloy_eips::BlockId;
 use alloy_primitives::{Address, U256};
 use angstrom_types_primitives::primitive::ERC20;
 
@@ -19,7 +20,7 @@ impl TokenBalanceCheckFiller {
     ) -> Result<(), FillerError> {
         let user_balance_of = alloy_view_call(
             provider.eth_provider(),
-            None,
+            BlockId::latest(),
             token,
             ERC20::balanceOfCall { _owner: user }
         )

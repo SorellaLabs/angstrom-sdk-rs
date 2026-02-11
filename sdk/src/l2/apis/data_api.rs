@@ -1,3 +1,4 @@
+use alloy_eips::BlockId;
 use alloy_network::Network;
 use alloy_primitives::Address;
 use angstrom_types_primitives::{contract_bindings::pool_manager::PoolManager, primitive::PoolId};
@@ -15,17 +16,17 @@ use crate::{
 pub trait AngstromL2DataApi<N: Network>: PoolTickDataLoader<N> + Send + Sized {
     async fn all_pool_keys(
         &self,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Vec<AngstromL2Factory::PoolKey>>;
 
     async fn all_token_pairs(
         &self,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Vec<TokenPair>> {
         Ok(self
-            .all_pool_keys(block_number, chain)
+            .all_pool_keys(block_id, chain)
             .await?
             .into_iter()
             .map(|key| TokenPair { token0: key.currency0, token1: key.currency1 })
@@ -36,11 +37,11 @@ pub trait AngstromL2DataApi<N: Network>: PoolTickDataLoader<N> + Send + Sized {
         &self,
         token0: Address,
         token1: Address,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Vec<AngstromL2Factory::PoolKey>> {
         Ok(self
-            .all_pool_keys(block_number, chain)
+            .all_pool_keys(block_id, chain)
             .await?
             .into_iter()
             .filter(|key| key.currency0 == token0 && key.currency1 == token1)
@@ -49,11 +50,11 @@ pub trait AngstromL2DataApi<N: Network>: PoolTickDataLoader<N> + Send + Sized {
 
     async fn all_tokens(
         &self,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Vec<Address>> {
         Ok(self
-            .all_pool_keys(block_number, chain)
+            .all_pool_keys(block_id, chain)
             .await?
             .into_iter()
             .flat_map(|key| [key.currency0, key.currency1])
@@ -63,10 +64,10 @@ pub trait AngstromL2DataApi<N: Network>: PoolTickDataLoader<N> + Send + Sized {
     async fn pool_key_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<AngstromL2Factory::PoolKey> {
-        self.all_pool_keys(block_number, chain)
+        self.all_pool_keys(block_id, chain)
             .await?
             .into_iter()
             .filter(|key| PoolId::from(key) == pool_id)
@@ -85,18 +86,18 @@ pub trait AngstromL2DataApi<N: Network>: PoolTickDataLoader<N> + Send + Sized {
         &self,
         pool_id: PoolId,
         load_ticks: bool,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<(u64, BaselinePoolStateWithKey)>;
 
     async fn all_pool_data(
         &self,
         load_ticks: bool,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Vec<(u64, BaselinePoolStateWithKey)>> {
         let pool_ids = self
-            .all_pool_keys(block_number, chain)
+            .all_pool_keys(block_id, chain)
             .await?
             .into_iter()
             .map(Into::into)
@@ -104,7 +105,7 @@ pub trait AngstromL2DataApi<N: Network>: PoolTickDataLoader<N> + Send + Sized {
 
         let pools =
             futures::future::try_join_all(pool_ids.into_iter().map(|pool_id| {
-                self.pool_data_by_pool_id(pool_id, load_ticks, block_number, chain)
+                self.pool_data_by_pool_id(pool_id, load_ticks, block_id, chain)
             }))
             .await?;
 
@@ -114,26 +115,26 @@ pub trait AngstromL2DataApi<N: Network>: PoolTickDataLoader<N> + Send + Sized {
     async fn slot0_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<UnpackedSlot0>;
 
     async fn hook_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Address>;
 
     async fn fee_configuration_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<AngstromL2PoolFeeConfiguration> {
-        let hook = self.hook_by_pool_id(pool_id, block_number, chain).await?;
+        let hook = self.hook_by_pool_id(pool_id, block_id, chain).await?;
         Ok(self
-            .fee_configuration_by_pool_id_and_hook(pool_id, hook, block_number, chain)
+            .fee_configuration_by_pool_id_and_hook(pool_id, hook, block_id, chain)
             .await?)
     }
 
@@ -141,7 +142,7 @@ pub trait AngstromL2DataApi<N: Network>: PoolTickDataLoader<N> + Send + Sized {
         &self,
         pool_id: PoolId,
         hook_address: Address,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<AngstromL2PoolFeeConfiguration>;
 }

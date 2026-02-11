@@ -1,29 +1,29 @@
 use std::sync::Arc;
 
+use alloy_eips::BlockId;
 use alloy_primitives::{Address, Bytes, TxKind};
 use alloy_sol_types::{SolCall, SolType};
 use eth_network_exts::EthNetworkExt;
 use lib_reth::{
     ExecuteEvm,
     reth_libmdbx::{NodeClientSpec, RethNodeClient},
-    traits::EthRevm,
+    traits::EthRevm
 };
-use reth_provider::BlockNumReader;
 use revm::context::TxEnv;
 
 #[derive(Clone)]
 pub struct RethDbProviderWrapper<N>
 where
     N: EthNetworkExt,
-    N::RethNode: NodeClientSpec,
+    N::RethNode: NodeClientSpec
 {
-    provider: Arc<RethNodeClient<N>>,
+    provider: Arc<RethNodeClient<N>>
 }
 
 impl<N> RethDbProviderWrapper<N>
 where
     N: EthNetworkExt,
-    N::RethNode: NodeClientSpec,
+    N::RethNode: NodeClientSpec
 {
     pub fn new(provider: Arc<RethNodeClient<N>>) -> Self {
         Self { provider }
@@ -40,14 +40,14 @@ where
 
 pub(crate) fn reth_db_view_call<Node, IC>(
     provider: &RethNodeClient<Node>,
-    block_number: Option<u64>,
+    block_id: BlockId,
     contract: Address,
-    call: IC,
+    call: IC
 ) -> eyre::Result<Result<IC::Return, alloy_sol_types::Error>>
 where
     Node: EthNetworkExt,
     Node::RethNode: NodeClientSpec,
-    IC: SolCall + Send,
+    IC: SolCall + Send
 {
     let tx = TxEnv {
         kind: TxKind::Call(contract),
@@ -55,13 +55,7 @@ where
         ..Default::default()
     };
 
-    let block_number = if let Some(bn) = block_number {
-        bn
-    } else {
-        provider.eth_db_provider().best_block_number()?
-    };
-
-    let mut evm = provider.make_empty_evm(block_number)?;
+    let mut evm = provider.make_empty_evm(block_id)?;
 
     let data = evm.transact(tx)?;
 
@@ -70,23 +64,17 @@ where
 
 pub(crate) fn reth_db_deploy_call<Node, IC>(
     provider: &RethNodeClient<Node>,
-    block_number: Option<u64>,
-    call_data: Bytes,
+    block_id: BlockId,
+    call_data: Bytes
 ) -> eyre::Result<Result<IC::RustType, alloy_sol_types::Error>>
 where
     Node: EthNetworkExt,
     Node::RethNode: NodeClientSpec,
-    IC: SolType + Send,
+    IC: SolType + Send
 {
     let tx = TxEnv { kind: TxKind::Create, data: call_data, ..Default::default() };
 
-    let block_number = if let Some(bn) = block_number {
-        bn
-    } else {
-        provider.eth_db_provider().best_block_number()?
-    };
-
-    let mut evm = provider.make_empty_evm(block_number)?;
+    let mut evm = provider.make_empty_evm(block_id)?;
 
     let data = evm.transact(tx)?;
 

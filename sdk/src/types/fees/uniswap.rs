@@ -4,24 +4,24 @@ use angstrom_types_primitives::primitive::PoolId;
 use uniswap_storage::{
     self, StorageSlotFetcher,
     v4::pool_manager::position_state::{
-        pool_manager_position_fee_growth_inside, pool_manager_position_state_last_fee_growth_inside,
-    },
+        pool_manager_position_fee_growth_inside, pool_manager_position_state_last_fee_growth_inside
+    }
 };
 
 pub async fn uniswap_fee_deltas<F: StorageSlotFetcher>(
     slot_fetcher: &F,
     pool_manager_address: Address,
     position_manager_address: Address,
-    block_id: Option<BlockId>,
+    block_id: BlockId,
     pool_id: PoolId,
     current_pool_tick: I24,
     position_token_id: U256,
     tick_lower: I24,
-    tick_upper: I24,
+    tick_upper: I24
 ) -> eyre::Result<(U256, U256)> {
     let (
         (fee_growth_inside0_x128, fee_growth_inside1_x128),
-        (fee_growth_inside0_last_x128, fee_growth_inside1_last_x128),
+        (fee_growth_inside0_last_x128, fee_growth_inside1_last_x128)
     ) = tokio::try_join!(
         pool_manager_position_fee_growth_inside(
             slot_fetcher,
@@ -46,7 +46,7 @@ pub async fn uniswap_fee_deltas<F: StorageSlotFetcher>(
 
     Ok((
         fee_growth_inside0_x128 - fee_growth_inside0_last_x128,
-        fee_growth_inside1_x128 - fee_growth_inside1_last_x128,
+        fee_growth_inside1_x128 - fee_growth_inside1_last_x128
     ))
 }
 
@@ -77,7 +77,7 @@ mod tests {
             pos_info.current_pool_tick,
             pos_info.position_token_id,
             pos_info.tick_lower,
-            pos_info.tick_upper,
+            pos_info.tick_upper
         )
         .await
         .unwrap();
@@ -112,7 +112,7 @@ mod tests {
             pos_info.current_pool_tick,
             pos_info.position_token_id,
             pos_info.tick_lower,
-            pos_info.tick_upper,
+            pos_info.tick_upper
         )
         .await
         .unwrap();

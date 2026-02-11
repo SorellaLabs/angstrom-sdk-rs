@@ -1,3 +1,4 @@
+use alloy_eips::BlockId;
 use alloy_network::Network;
 use alloy_primitives::{Address, U256, aliases::I24};
 use angstrom_types_primitives::{
@@ -13,14 +14,14 @@ pub trait AngstromL2UserApi<N: Network>: AngstromL2DataApi<N> {
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)>;
 
     async fn position_liquidity(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<u128>;
 
@@ -31,14 +32,14 @@ pub trait AngstromL2UserApi<N: Network>: AngstromL2DataApi<N> {
         last_token_id: U256,
         pool_id: Option<PoolId>,
         max_results: Option<usize>,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Vec<V4UserLiquidityPosition>>;
 
     async fn user_position_fees(
         &self,
         position_token_id: U256,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<LiquidityPositionFees>;
 
@@ -50,7 +51,7 @@ pub trait AngstromL2UserApi<N: Network>: AngstromL2DataApi<N> {
         position_token_id: U256,
         tick_lower: I24,
         tick_upper: I24,
-        block_number: Option<u64>,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<U256>;
 }

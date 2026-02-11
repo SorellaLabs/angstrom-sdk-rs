@@ -19,9 +19,8 @@ mod reth_db_impls {
             &self,
             address: Address,
             key: StorageKey,
-            block_id: Option<BlockId>
+            block_id: BlockId
         ) -> eyre::Result<StorageValue> {
-            let block_id = block_id.unwrap_or_else(BlockId::latest);
             let state_provider = self
                 .provider_ref()
                 .eth_db_provider()

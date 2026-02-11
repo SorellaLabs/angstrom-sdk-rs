@@ -1,3 +1,4 @@
+use alloy_eips::BlockId;
 use alloy_network::Network;
 use alloy_primitives::{BlockNumber, U256, aliases::I24};
 use angstrom_types_primitives::{POOL_MANAGER_ADDRESS, PoolId};
@@ -37,8 +38,12 @@ where
         .into_transaction_request();
 
         let out_tick_data =
-            alloy_view_deploy::<_, _, TicksWithBlock>(self.provider(), block_number, deployer_tx)
-                .await??;
+            alloy_view_deploy::<_, _, TicksWithBlock>(
+                self.provider(),
+                block_number.map(Into::into).unwrap_or_else(BlockId::latest),
+                deployer_tx
+            )
+            .await??;
 
         Ok((
             out_tick_data

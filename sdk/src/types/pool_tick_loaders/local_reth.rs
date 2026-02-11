@@ -1,5 +1,6 @@
+use alloy_eips::BlockId;
 use alloy_network::TransactionBuilder;
-use alloy_primitives::{BlockNumber, U256, aliases::I24};
+use alloy_primitives::{U256, aliases::I24};
 use angstrom_types_primitives::{POOL_MANAGER_ADDRESS, PoolId};
 #[cfg(feature = "l1")]
 use eth_network_exts::mainnet::MainnetExt;
@@ -30,7 +31,7 @@ macro_rules! reth_db_pool_tick_data_loader_impl {
                     zero_for_one: bool,
                     num_ticks: u16,
                     tick_spacing: I24,
-                    block_number: Option<BlockNumber>
+                    block_number: Option<u64>
                 ) -> eyre::Result<(Vec<TickData>, U256)> {
                     __load_tick_data(
                         self,
@@ -61,7 +62,7 @@ async fn __load_tick_data<N>(
     zero_for_one: bool,
     num_ticks: u16,
     tick_spacing: I24,
-    block_number: Option<BlockNumber>
+    block_number: Option<u64>
 ) -> eyre::Result<(Vec<TickData>, U256)>
 where
     N: EthNetworkExt,
@@ -80,7 +81,9 @@ where
 
     let out_tick_data = reth_db_deploy_call::<N, TicksWithBlock>(
         this.provider_ref(),
-        block_number,
+        block_number
+            .map(BlockId::number)
+            .unwrap_or_else(BlockId::latest),
         TransactionBuilder::input(&deployer_tx)
             .cloned()
             .unwrap_or_default()
