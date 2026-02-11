@@ -1,7 +1,7 @@
 use alloy_eips::BlockId;
 use alloy_network::TransactionBuilder;
-use alloy_primitives::{U256, aliases::I24};
-use angstrom_types_primitives::{POOL_MANAGER_ADDRESS, PoolId};
+use alloy_primitives::{Address, U256, aliases::I24};
+use angstrom_types_primitives::PoolId;
 #[cfg(feature = "l1")]
 use eth_network_exts::mainnet::MainnetExt;
 use eth_network_exts::{AllExtensions, EthNetworkExt};
@@ -31,6 +31,7 @@ macro_rules! reth_db_pool_tick_data_loader_impl {
                     zero_for_one: bool,
                     num_ticks: u16,
                     tick_spacing: I24,
+                    pool_manager_address: Address,
                     block_number: Option<u64>
                 ) -> eyre::Result<(Vec<TickData>, U256)> {
                     __load_tick_data(
@@ -40,6 +41,7 @@ macro_rules! reth_db_pool_tick_data_loader_impl {
                         zero_for_one,
                         num_ticks,
                         tick_spacing,
+                        pool_manager_address,
                         block_number
                     )
                     .await
@@ -62,6 +64,7 @@ async fn __load_tick_data<N>(
     zero_for_one: bool,
     num_ticks: u16,
     tick_spacing: I24,
+    pool_manager_address: Address,
     block_number: Option<u64>
 ) -> eyre::Result<(Vec<TickData>, U256)>
 where
@@ -71,7 +74,7 @@ where
     let deployer_tx = GetUniswapV4TickData::deploy_builder(
         this.provider().root_provider().await?,
         pool_id,
-        *POOL_MANAGER_ADDRESS.get().unwrap(),
+        pool_manager_address,
         zero_for_one,
         current_tick,
         num_ticks,

@@ -33,7 +33,10 @@ where
 }
 
 impl AngstromApi<HttpClient> {
-    pub fn new_angstrom_http(eth_provider: impl Provider + 'static, angstrom_url: &str) -> eyre::Result<Self> {
+    pub fn new_angstrom_http(
+        eth_provider: impl Provider + 'static,
+        angstrom_url: &str
+    ) -> eyre::Result<Self> {
         Ok(Self {
             provider: AngstromProvider::new_angstrom_http(eth_provider, angstrom_url)?,
             filler:   ()
@@ -42,7 +45,10 @@ impl AngstromApi<HttpClient> {
 }
 
 impl AngstromApi<WsClient> {
-    pub async fn new_angstrom_ws(eth_provider: impl Provider + 'static, angstrom_url: &str) -> eyre::Result<Self> {
+    pub async fn new_angstrom_ws(
+        eth_provider: impl Provider + 'static,
+        angstrom_url: &str
+    ) -> eyre::Result<Self> {
         Ok(Self {
             provider: AngstromProvider::new_angstrom_ws(eth_provider, angstrom_url).await?,
             filler:   ()
@@ -207,6 +213,7 @@ where
         zero_for_one: bool,
         num_ticks: u16,
         tick_spacing: I24,
+        pool_manager_address: Address,
         block_number: Option<BlockNumber>
     ) -> eyre::Result<(Vec<TickData>, U256)> {
         self.provider
@@ -216,6 +223,7 @@ where
                 zero_for_one,
                 num_ticks,
                 tick_spacing,
+                pool_manager_address,
                 block_number
             )
             .await

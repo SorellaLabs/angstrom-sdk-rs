@@ -96,8 +96,9 @@ where
         block_number: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
-        let block_number =
-            block_number.as_u64().unwrap_or(self.provider().get_block_number().await?);
+        let block_number = block_number
+            .as_u64()
+            .unwrap_or(self.provider().get_block_number().await?);
 
         let pool_key = self
             .pool_key_by_pool_id(pool_id, BlockId::number(block_number), chain)
@@ -146,7 +147,8 @@ where
                 uni_pool_key.tickSpacing.as_i32(),
                 Some(block_number),
                 INITIAL_TICKS_PER_SIDE,
-                DEFAULT_TICKS_PER_BATCH
+                DEFAULT_TICKS_PER_BATCH,
+                chain.constants().uniswap_constants().pool_manager()
             )
             .await?
         } else {
@@ -206,7 +208,12 @@ where
             .collect::<HashSet<_>>();
 
         let consts = chain.constants();
-        let filters = historical_pool_manager_modify_liquidity_filter(start_block, end_block, consts.uniswap_constants().pool_manager(), consts.angstrom_deploy_block());
+        let filters = historical_pool_manager_modify_liquidity_filter(
+            start_block,
+            end_block,
+            consts.uniswap_constants().pool_manager(),
+            consts.angstrom_deploy_block()
+        );
         let provider = self.provider();
 
         let logs = futures::future::try_join_all(
@@ -374,19 +381,14 @@ where
 
         if end_token_id == U256::ZERO {
             end_token_id =
-                position_manager_next_token_id(root, position_manager_address, block_id)
-                    .await?;
+                position_manager_next_token_id(root, position_manager_address, block_id).await?;
         }
 
         let mut all_positions = Vec::new();
         while start_token_id <= end_token_id {
-            let owner_of = position_manager_owner_of(
-                root,
-                position_manager_address,
-                block_id,
-                start_token_id
-            )
-            .await?;
+            let owner_of =
+                position_manager_owner_of(root, position_manager_address, block_id, start_token_id)
+                    .await?;
 
             if owner_of != owner {
                 start_token_id += U256::from(1u8);
@@ -548,7 +550,7 @@ mod data_api_tests {
 
     //     let fee_config = provider
     //         .fee_configuration_by_pool_id(state.pool_id,
-    // Some(state.block_number), state.chain)         .await
+    // state.block_number.into(), state.chain)         .await
     //         .unwrap();
 
     //     assert_eq!(
@@ -562,7 +564,7 @@ mod data_api_tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let all_pairs = provider
-            .all_token_pairs(Some(state.block_number), state.chain)
+            .all_token_pairs(state.block_number.into(), state.chain)
             .await
             .unwrap();
 
@@ -575,7 +577,7 @@ mod data_api_tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let all_tokens = provider
-            .all_tokens(Some(state.block_number), state.chain)
+            .all_tokens(state.block_number.into(), state.chain)
             .await
             .unwrap();
 
@@ -588,7 +590,7 @@ mod data_api_tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let pool_key = provider
-            .pool_key_by_pool_id(state.pool_key.into(), Some(state.block_number), state.chain)
+            .pool_key_by_pool_id(state.pool_key.into(), state.block_number.into(), state.chain)
             .await
             .unwrap();
 
@@ -616,7 +618,7 @@ mod data_api_tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let (_, pool_data) = provider
-            .pool_data_by_pool_id(state.pool_id, true, Some(state.block_number), state.chain)
+            .pool_data_by_pool_id(state.pool_id, true, state.block_number.into(), state.chain)
             .await
             .unwrap();
 
@@ -639,7 +641,7 @@ mod data_api_tests {
             .pool_data_by_pool_id(
                 PoolId::from(state.pool_key),
                 true,
-                Some(state.block_number),
+                state.block_number.into(),
                 state.chain
             )
             .await
@@ -661,7 +663,7 @@ mod data_api_tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let all_pool_data = provider
-            .all_pool_data(true, Some(state.block_number), state.chain)
+            .all_pool_data(true, state.block_number.into(), state.chain)
             .await
             .unwrap();
 
@@ -673,7 +675,7 @@ mod data_api_tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let slot0 = provider
-            .slot0_by_pool_id(PoolId::from(state.pool_key), Some(state.block_number), state.chain)
+            .slot0_by_pool_id(PoolId::from(state.pool_key), state.block_number.into(), state.chain)
             .await
             .unwrap();
 
@@ -700,7 +702,7 @@ mod user_api_tests {
         let block_number = pos_info.block_for_liquidity_add + 1;
 
         let (pool_key, unpacked_position_info) = provider
-            .position_and_pool_info(pos_info.position_token_id, block_number, pos_info.chain)
+            .position_and_pool_info(pos_info.position_token_id, block_number.into(), pos_info.chain)
             .await
             .unwrap();
 
@@ -714,7 +716,7 @@ mod user_api_tests {
         let block_number = pos_info.block_for_liquidity_add + 1;
 
         let position_liquidity = provider
-            .position_liquidity(pos_info.position_token_id, block_number, pos_info.chain)
+            .position_liquidity(pos_info.position_token_id, block_number.into(), pos_info.chain)
             .await
             .unwrap();
 
@@ -735,7 +737,7 @@ mod user_api_tests {
                 pos_info.position_token_id + U256::from(bound),
                 None,
                 None,
-                block_number,
+                block_number.into(),
                 pos_info.chain
             )
             .await
@@ -750,7 +752,7 @@ mod user_api_tests {
         let block_number = pos_info.block_for_liquidity_add + 100;
 
         let results = provider
-            .user_position_fees(pos_info.position_token_id, block_number, pos_info.chain)
+            .user_position_fees(pos_info.position_token_id, block_number.into(), pos_info.chain)
             .await
             .unwrap();
 

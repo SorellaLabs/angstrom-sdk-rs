@@ -172,6 +172,7 @@ mod tests {
 
     use std::task::Poll;
 
+    use alloy_eips::BlockId;
     use alloy_provider::Provider;
     use angstrom_types_primitives::sol_bindings::{RawPoolOrder, rpc_orders::TopOfBlockOrder};
     use testing_tools::order_generator::GeneratedPoolOrders;
@@ -357,7 +358,12 @@ mod tests {
 
         let tob_pool_id = provider
             .eth_provider()
-            .pool_id(orders.tob.token_in(), orders.tob.token_out(), None)
+            .pool_id(
+                orders.tob.token_in(),
+                orders.tob.token_out(),
+                BlockId::latest(),
+                AngstromL1Chain::Mainnet
+            )
             .await
             .unwrap();
         let tob_orders = provider
@@ -368,7 +374,12 @@ mod tests {
 
         let user_pool_id = provider
             .eth_provider()
-            .pool_id(orders.user.token_in(), orders.user.token_out(), None)
+            .pool_id(
+                orders.user.token_in(),
+                orders.user.token_out(),
+                BlockId::latest(),
+                AngstromL1Chain::Mainnet
+            )
             .await
             .unwrap();
         let user_orders = provider

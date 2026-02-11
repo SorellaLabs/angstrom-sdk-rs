@@ -1,5 +1,5 @@
 use alloy_network::{Ethereum, EthereumWallet, TxSigner};
-use alloy_primitives::{BlockNumber, Signature, U256, aliases::I24};
+use alloy_primitives::{Address, BlockNumber, Signature, U256, aliases::I24};
 use alloy_provider::{Provider, RootProvider};
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types_primitives::PoolId;
@@ -22,7 +22,10 @@ where
 }
 
 impl AngstromProvider<HttpClient> {
-    pub fn new_angstrom_http(eth_provider: impl Provider + 'static, angstrom_url: &str) -> eyre::Result<Self> {
+    pub fn new_angstrom_http(
+        eth_provider: impl Provider + 'static,
+        angstrom_url: &str
+    ) -> eyre::Result<Self> {
         Ok(Self {
             eth_provider:      AlloyProviderWrapper::new(eth_provider),
             angstrom_provider: HttpClient::builder().build(angstrom_url)?
@@ -31,7 +34,10 @@ impl AngstromProvider<HttpClient> {
 }
 
 impl AngstromProvider<WsClient> {
-    pub async fn new_angstrom_ws(eth_provider: impl Provider + 'static, angstrom_url: &str) -> eyre::Result<Self> {
+    pub async fn new_angstrom_ws(
+        eth_provider: impl Provider + 'static,
+        angstrom_url: &str
+    ) -> eyre::Result<Self> {
         Ok(Self {
             eth_provider:      AlloyProviderWrapper::new(eth_provider),
             angstrom_provider: WsClientBuilder::new().build(angstrom_url).await?
@@ -89,6 +95,7 @@ where
         zero_for_one: bool,
         num_ticks: u16,
         tick_spacing: I24,
+        pool_manager_address: Address,
         block_number: Option<BlockNumber>
     ) -> eyre::Result<(Vec<TickData>, U256)> {
         self.eth_provider
@@ -98,6 +105,7 @@ where
                 zero_for_one,
                 num_ticks,
                 tick_spacing,
+                pool_manager_address,
                 block_number
             )
             .await

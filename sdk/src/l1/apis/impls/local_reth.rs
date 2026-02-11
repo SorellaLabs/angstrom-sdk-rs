@@ -333,7 +333,8 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
                 uni_pool_key.tickSpacing.as_i32(),
                 Some(block_number),
                 INITIAL_TICKS_PER_SIDE,
-                DEFAULT_TICKS_PER_BATCH
+                DEFAULT_TICKS_PER_BATCH,
+                chain.constants().uniswap_constants().pool_manager()
             )
             .await?
         } else {
@@ -418,8 +419,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
                     .block_by_hash(hash.block_hash, true)
                     .await?
             }
-        })
-        else {
+        }) else {
             return Ok(None);
         };
 
@@ -805,7 +805,7 @@ mod tests {
                 USDC,
                 WETH,
                 None,
-                Some(state.block_number),
+                state.block_number.into(),
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -828,7 +828,7 @@ mod tests {
                     state.pool_key.currency0,
                     state.pool_key.currency1
                 ),
-                Some(state.block_number),
+                state.block_number.into(),
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -844,14 +844,14 @@ mod tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let config_store = provider
-            .pool_config_store(Some(state.block_number), AngstromL1Chain::Mainnet)
+            .pool_config_store(state.block_number.into(), AngstromL1Chain::Mainnet)
             .await
             .unwrap();
 
         let all_pairs = provider
             .all_token_pairs_with_config_store(
                 config_store,
-                Some(state.block_number),
+                state.block_number.into(),
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -867,7 +867,7 @@ mod tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let all_pairs = provider
-            .all_token_pairs(Some(state.block_number), AngstromL1Chain::Mainnet)
+            .all_token_pairs(state.block_number.into(), AngstromL1Chain::Mainnet)
             .await
             .unwrap();
 
@@ -881,7 +881,7 @@ mod tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let all_tokens = provider
-            .all_tokens(Some(state.block_number), AngstromL1Chain::Mainnet)
+            .all_tokens(state.block_number.into(), AngstromL1Chain::Mainnet)
             .await
             .unwrap();
 
@@ -894,14 +894,14 @@ mod tests {
     async fn test_all_tokens_with_config_store() {
         let (provider, state) = init_valid_position_params_with_provider().await;
         let config_store = provider
-            .pool_config_store(Some(state.block_number), AngstromL1Chain::Mainnet)
+            .pool_config_store(state.block_number.into(), AngstromL1Chain::Mainnet)
             .await
             .unwrap();
 
         let all_tokens = provider
             .all_tokens_with_config_store(
                 config_store,
-                Some(state.block_number),
+                state.block_number.into(),
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -920,7 +920,7 @@ mod tests {
             .pool_key_by_tokens(
                 state.pool_key.currency0,
                 state.pool_key.currency1,
-                Some(state.block_number),
+                state.block_number.into(),
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -943,7 +943,7 @@ mod tests {
         let pool_key = provider
             .pool_key_by_pool_id(
                 state.pool_key.into(),
-                Some(state.block_number),
+                state.block_number.into(),
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -967,7 +967,7 @@ mod tests {
             .pool_id(
                 state.pool_key.currency0,
                 state.pool_key.currency1,
-                Some(state.block_number),
+                state.block_number.into(),
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -981,7 +981,7 @@ mod tests {
     async fn test_pool_key_by_pool_id_with_config_store() {
         let (provider, state) = init_valid_position_params_with_provider().await;
         let config_store = provider
-            .pool_config_store(Some(state.block_number), AngstromL1Chain::Mainnet)
+            .pool_config_store(state.block_number.into(), AngstromL1Chain::Mainnet)
             .await
             .unwrap();
 
@@ -989,7 +989,7 @@ mod tests {
             .pool_key_by_pool_id_with_config_store(
                 state.pool_key.into(),
                 config_store,
-                Some(state.block_number),
+                state.block_number.into(),
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -1066,7 +1066,7 @@ mod tests {
                 state.pool_key.currency0,
                 state.pool_key.currency1,
                 true,
-                Some(state.block_number),
+                state.block_number.into(),
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -1092,7 +1092,7 @@ mod tests {
             .pool_data_by_pool_id(
                 PoolId::from(state.pool_key),
                 true,
-                Some(state.block_number),
+                state.block_number.into(),
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -1115,7 +1115,7 @@ mod tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let all_pool_data = provider
-            .all_pool_data(true, Some(state.block_number), AngstromL1Chain::Mainnet)
+            .all_pool_data(true, state.block_number.into(), AngstromL1Chain::Mainnet)
             .await
             .unwrap();
 
@@ -1128,7 +1128,7 @@ mod tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let config_store = provider
-            .pool_config_store(Some(state.block_number), AngstromL1Chain::Mainnet)
+            .pool_config_store(state.block_number.into(), AngstromL1Chain::Mainnet)
             .await
             .unwrap();
 
@@ -1143,7 +1143,7 @@ mod tests {
         let slot0 = provider
             .slot0_by_pool_id(
                 PoolId::from(state.pool_key),
-                Some(state.block_number),
+                state.block_number.into(),
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -1161,7 +1161,7 @@ mod tests {
             .slot0_by_tokens(
                 state.pool_key.currency0,
                 state.pool_key.currency1,
-                Some(state.block_number),
+                state.block_number.into(),
                 AngstromL1Chain::Mainnet
             )
             .await
@@ -1176,7 +1176,11 @@ mod tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let bundle = provider
-            .get_bundle_by_block(state.valid_block_after_swaps, true, AngstromL1Chain::Mainnet)
+            .get_bundle_by_block(
+                state.valid_block_after_swaps.into(),
+                true,
+                AngstromL1Chain::Mainnet
+            )
             .await
             .unwrap();
 

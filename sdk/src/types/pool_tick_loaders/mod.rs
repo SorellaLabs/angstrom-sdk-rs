@@ -3,7 +3,7 @@ mod alloy_provider;
 mod local_reth;
 
 use alloy_network::Network;
-use alloy_primitives::{BlockNumber, U256, aliases::I24};
+use alloy_primitives::{Address, BlockNumber, U256, aliases::I24};
 use angstrom_types_primitives::PoolId;
 pub use full::FullTickLoader;
 use uni_v4::pool_data_loader::TickData;
@@ -19,6 +19,7 @@ pub trait PoolTickDataLoader<N: Network>: Send + Sync {
         zero_for_one: bool,
         num_ticks: u16,
         tick_spacing: I24,
+        pool_manager_address: Address,
         block_number: Option<BlockNumber>
     ) -> eyre::Result<(Vec<TickData>, U256)>;
 }
@@ -27,7 +28,7 @@ mod full {
     use std::collections::HashMap;
 
     use alloy_network::Network;
-    use alloy_primitives::{U256, aliases::I24};
+    use alloy_primitives::{Address, U256, aliases::I24};
     use angstrom_types_primitives::PoolId;
     use uni_v4::{
         baseline_pool_factory::BaselinePoolFactoryError, pool_data_loader::TickData,
@@ -58,7 +59,8 @@ mod full {
             tick_spacing: i32,
             block_number: Option<u64>,
             tick_band: u16,
-            ticks_per_batch: usize
+            ticks_per_batch: usize,
+            pool_manager_address: Address
         ) -> eyre::Result<(HashMap<i32, TickInfo>, HashMap<i16, U256>)>;
 
         async fn load_ticks_in_direction(
@@ -69,7 +71,8 @@ mod full {
             tick_spacing: i32,
             block_number: Option<u64>,
             tick_band: u16,
-            ticks_per_batch: usize
+            ticks_per_batch: usize,
+            pool_manager_address: Address
         ) -> eyre::Result<Vec<TickData>>;
 
         async fn get_tick_data_batch_request(
@@ -79,6 +82,7 @@ mod full {
             zero_for_one: bool,
             num_ticks: u16,
             tick_spacing: i32,
+            pool_manager_address: Address,
             block_number: Option<u64>
         ) -> eyre::Result<(Vec<TickData>, i32)>;
 
@@ -102,7 +106,8 @@ mod full {
             tick_spacing: i32,
             block_number: Option<u64>,
             tick_band: u16,
-            ticks_per_batch: usize
+            ticks_per_batch: usize,
+            pool_manager_address: Address
         ) -> eyre::Result<(HashMap<i32, TickInfo>, HashMap<i16, U256>)> {
             // Load ticks in both directions concurrently
             let (asks_result, bids_result) = futures::future::join(
@@ -113,7 +118,8 @@ mod full {
                     tick_spacing,
                     block_number,
                     tick_band,
-                    ticks_per_batch
+                    ticks_per_batch,
+                    pool_manager_address
                 ),
                 self.load_ticks_in_direction(
                     pool_id,
@@ -122,7 +128,8 @@ mod full {
                     tick_spacing,
                     block_number,
                     tick_band,
-                    ticks_per_batch
+                    ticks_per_batch,
+                    pool_manager_address
                 )
             )
             .await;
@@ -146,7 +153,8 @@ mod full {
             tick_spacing: i32,
             block_number: Option<u64>,
             tick_band: u16,
-            ticks_per_batch: usize
+            ticks_per_batch: usize,
+            pool_manager_address: Address
         ) -> eyre::Result<Vec<TickData>> {
             let mut fetched_ticks = Vec::new();
             let mut tick_start = current_tick;
@@ -162,6 +170,7 @@ mod full {
                         zero_for_one,
                         ticks_to_load,
                         tick_spacing,
+                        pool_manager_address,
                         block_number
                     )
                     .await?;
@@ -187,6 +196,7 @@ mod full {
             zero_for_one: bool,
             num_ticks: u16,
             tick_spacing: i32,
+            pool_manager_address: Address,
             block_number: Option<u64>
         ) -> eyre::Result<(Vec<TickData>, i32)> {
             let (ticks, _last_tick_bitmap) = self
@@ -196,6 +206,7 @@ mod full {
                     zero_for_one,
                     num_ticks,
                     I24::unchecked_from(tick_spacing),
+                    pool_manager_address,
                     block_number
                 )
                 .await
