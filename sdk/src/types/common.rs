@@ -8,7 +8,7 @@ use angstrom_types_primitives::{
     ANGSTROM_DOMAIN,
     contract_bindings::pool_manager::PoolManager::PoolKey,
     contract_payloads::angstrom::AngPoolConfigEntry,
-    primitive::{ANGSTROM_ADDRESS, PoolId},
+    primitive::PoolId,
     sol_bindings::{RawPoolOrder, grouped_orders::AllOrders, rpc_orders::OmitOrderMeta}
 };
 use serde::{Deserialize, Serialize};
@@ -38,13 +38,18 @@ pub struct PoolMetadata {
 }
 
 impl PoolMetadata {
-    pub fn new(token0: Address, token1: Address, config_store: AngPoolConfigEntry) -> Self {
+    pub fn new(
+        token0: Address,
+        token1: Address,
+        config_store: AngPoolConfigEntry,
+        angstrom_address: Address
+    ) -> Self {
         let pool_key = PoolKey {
             currency0:   token0,
             currency1:   token1,
             fee:         U24::from(config_store.fee_in_e6),
             tickSpacing: I24::unchecked_from(config_store.tick_spacing),
-            hooks:       *ANGSTROM_ADDRESS.get().unwrap()
+            hooks:       angstrom_address
         };
 
         Self {
