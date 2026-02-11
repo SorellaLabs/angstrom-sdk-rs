@@ -103,11 +103,12 @@ pub trait AngstromL2DataApi<N: Network>: PoolTickDataLoader<N> + Send + Sized {
             .map(Into::into)
             .collect::<Vec<PoolId>>();
 
-        let pools =
-            futures::future::try_join_all(pool_ids.into_iter().map(|pool_id| {
-                self.pool_data_by_pool_id(pool_id, load_ticks, block_id, chain)
-            }))
-            .await?;
+        let pools = futures::future::try_join_all(
+            pool_ids
+                .into_iter()
+                .map(|pool_id| self.pool_data_by_pool_id(pool_id, load_ticks, block_id, chain))
+        )
+        .await?;
 
         Ok(pools)
     }

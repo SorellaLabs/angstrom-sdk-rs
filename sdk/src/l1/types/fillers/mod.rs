@@ -46,11 +46,7 @@ where
         Ok(())
     }
 
-    async fn prepare<T>(
-        &self,
-        _: &AngstromProvider<T>,
-        _: &AllOrders
-    ) -> Result<(), FillerError>
+    async fn prepare<T>(&self, _: &AngstromProvider<T>, _: &AllOrders) -> Result<(), FillerError>
     where
         T: AngstromOrderApiClient
     {
@@ -133,11 +129,7 @@ pub(crate) trait FillWrapper: Send + Sync + Clone + Sized {
 impl FillWrapper for () {
     type FillOutput = ();
 
-    async fn prepare<T>(
-        &self,
-        _: &AngstromProvider<T>,
-        _: &AllOrders
-    ) -> Result<(), FillerError>
+    async fn prepare<T>(&self, _: &AngstromProvider<T>, _: &AllOrders) -> Result<(), FillerError>
     where
         T: AngstromOrderApiClient
     {

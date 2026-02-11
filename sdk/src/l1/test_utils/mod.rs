@@ -57,8 +57,7 @@ pub fn testing_private_key() -> AngstromSigner<PrivateKeySigner> {
     )
 }
 
-async fn spawn_angstrom_provider()
--> eyre::Result<AngstromProvider<HttpClient>> {
+async fn spawn_angstrom_provider() -> eyre::Result<AngstromProvider<HttpClient>> {
     let eth_provider = RootProvider::builder()
         .with_recommended_fillers()
         .connect_ws(WsConnect::new(eth_ws_url()))
@@ -66,8 +65,7 @@ async fn spawn_angstrom_provider()
     AngstromProvider::new_angstrom_http(eth_provider, &angstrom_http_url())
 }
 
-pub async fn spawn_angstrom_api()
--> eyre::Result<AngstromApi<HttpClient>> {
+pub async fn spawn_angstrom_api() -> eyre::Result<AngstromApi<HttpClient>> {
     let _ = try_init_with_chain_id(1);
     Ok(AngstromApi::new_with_provider(spawn_angstrom_provider().await?))
 }

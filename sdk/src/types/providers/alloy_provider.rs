@@ -62,10 +62,7 @@ where
         ..Default::default()
     };
 
-    let data = provider
-        .call(tx)
-        .block(block_id)
-        .await?;
+    let data = provider.call(tx).block(block_id).await?;
     Ok(IC::abi_decode_returns(&data))
 }
 
@@ -79,10 +76,7 @@ where
     N: Network,
     IC: SolType + Send
 {
-    let data = provider
-        .call(tx)
-        .block(block_id)
-        .await?;
+    let data = provider.call(tx).block(block_id).await?;
     Ok(IC::abi_decode(&data))
 }
 

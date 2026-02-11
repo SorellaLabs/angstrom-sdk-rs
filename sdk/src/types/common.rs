@@ -38,7 +38,12 @@ pub struct PoolMetadata {
 }
 
 impl PoolMetadata {
-    pub fn new(token0: Address, token1: Address, config_store: AngPoolConfigEntry, angstrom_address: Address) -> Self {
+    pub fn new(
+        token0: Address,
+        token1: Address,
+        config_store: AngPoolConfigEntry,
+        angstrom_address: Address
+    ) -> Self {
         let pool_key = PoolKey {
             currency0:   token0,
             currency1:   token1,

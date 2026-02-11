@@ -6,7 +6,10 @@ use angstrom_types_primitives::sol_bindings::grouped_orders::AllOrders;
 
 use super::{FillFrom, FillWrapper, errors::FillerError};
 use crate::{
-    l1::{AngstromL1Chain, apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider},
+    l1::{
+        AngstromL1Chain, apis::node_api::AngstromOrderApiClient,
+        providers::backend::AngstromProvider
+    },
     types::common::*
 };
 
@@ -67,9 +70,12 @@ impl FillWrapper for NonceGeneratorFiller {
 
         if order.from_address() != Address::ZERO {
             let angstrom_address = self.0.constants().angstrom_address();
-            let nonce =
-                Self::get_valid_angstrom_nonce(order.from_address(), angstrom_address, provider.eth_provider())
-                    .await?;
+            let nonce = Self::get_valid_angstrom_nonce(
+                order.from_address(),
+                angstrom_address,
+                provider.eth_provider()
+            )
+            .await?;
             Ok(Some(nonce))
         } else {
             Ok(None)
@@ -110,13 +116,11 @@ mod tests {
         types::fillers::AngstromFillProvider
     };
 
-    async fn spawn_api_with_filler() -> eyre::Result<
-        AngstromApi<
-            HttpClient,
-            AngstromFillProvider<(), NonceGeneratorFiller>
-        >
-    > {
-        Ok(spawn_angstrom_api().await?.with_nonce_generator_filler(AngstromL1Chain::Mainnet))
+    async fn spawn_api_with_filler()
+    -> eyre::Result<AngstromApi<HttpClient, AngstromFillProvider<(), NonceGeneratorFiller>>> {
+        Ok(spawn_angstrom_api()
+            .await?
+            .with_nonce_generator_filler(AngstromL1Chain::Mainnet))
     }
 
     #[tokio::test]

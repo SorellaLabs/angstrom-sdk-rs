@@ -28,9 +28,9 @@ use tokio::runtime::Handle;
 #[cfg(feature = "example-utils")]
 use uniswap_v4::uniswap::pool_manager::TickRangeToLoad;
 
+use crate::l1::providers::backend::AngstromProvider;
 #[cfg(feature = "example-utils")]
 use crate::l1::test_utils::AngstromOrderApiClientClone;
-use crate::l1::providers::backend::AngstromProvider;
 
 #[cfg(feature = "example-utils")]
 pub async fn make_order_generator<T>(
@@ -44,10 +44,7 @@ where
     T: AngstromOrderApiClientClone
 {
     use alloy_primitives::aliases::U24;
-    use angstrom_types_primitives::{
-        PoolId,
-        primitive::UniswapPoolRegistry
-    };
+    use angstrom_types_primitives::{PoolId, primitive::UniswapPoolRegistry};
     use futures::future::try_join_all;
     use rust_utils::ToHashMapByKey;
     use testing_tools::order_generator::{InternalBalanceMode, OrderGenerator};

@@ -205,13 +205,13 @@ mod tests {
     }
 
     impl AllOrdersSent {
-        async fn send_orders<T>(
-            provider: &AngstromProvider<T>
-        ) -> Result<Self, AngstromSdkError>
+        async fn send_orders<T>(provider: &AngstromProvider<T>) -> Result<Self, AngstromSdkError>
         where
             T: AngstromOrderApiClientClone
         {
-            let (generator, _rx) = make_order_generator(provider, AngstromL1Chain::Mainnet).await.unwrap();
+            let (generator, _rx) = make_order_generator(provider, AngstromL1Chain::Mainnet)
+                .await
+                .unwrap();
             let orders = generator.generate_orders().await;
 
             let tob_order = AllOrders::TOB(get_tob_order(&orders));

@@ -241,9 +241,7 @@ pub trait AngstromL1DataApi: PoolTickDataLoader<Ethereum> + Send + Sized {
         block_id: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
-        let pool_key = self
-            .pool_key_by_pool_id(pool_id, block_id, chain)
-            .await?;
+        let pool_key = self.pool_key_by_pool_id(pool_id, block_id, chain).await?;
         self.pool_data_by_tokens(
             pool_key.pool_key.currency0,
             pool_key.pool_key.currency1,
@@ -300,9 +298,7 @@ pub trait AngstromL1DataApi: PoolTickDataLoader<Ethereum> + Send + Sized {
         block_id: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<FeeConfiguration> {
-        let pool_key = self
-            .pool_key_by_pool_id(pool_id, block_id, chain)
-            .await?;
+        let pool_key = self.pool_key_by_pool_id(pool_id, block_id, chain).await?;
         self.fee_configuration_by_tokens(
             pool_key.pool_key.currency0,
             pool_key.pool_key.currency1,

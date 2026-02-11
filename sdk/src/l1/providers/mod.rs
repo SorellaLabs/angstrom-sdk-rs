@@ -11,16 +11,12 @@ use jsonrpsee_ws_client::WsClient;
 pub struct AngstromApiBuilder<P: Provider + 'static> {
     eth_provider:    Option<P>,
     angstrom_url:    String,
-    address_builder: Option<AngstromAddressBuilder>,
+    address_builder: Option<AngstromAddressBuilder>
 }
 
 impl<P: Provider + 'static> Default for AngstromApiBuilder<P> {
     fn default() -> Self {
-        Self {
-            eth_provider:    None,
-            angstrom_url:    "".to_owned(),
-            address_builder: None,
-        }
+        Self { eth_provider: None, angstrom_url: "".to_owned(), address_builder: None }
     }
 }
 

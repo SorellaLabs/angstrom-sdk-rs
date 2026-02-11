@@ -11,7 +11,10 @@ use angstrom_types_primitives::{
     primitive::PoolId
 };
 
-use crate::{l1::{AngstromL1Chain, apis::data_api::AngstromL1DataApi}, types::common::*};
+use crate::{
+    l1::{AngstromL1Chain, apis::data_api::AngstromL1DataApi},
+    types::common::*
+};
 
 #[derive(Debug, Default, Clone)]
 pub struct HistoricalOrdersFilter {
@@ -181,7 +184,12 @@ impl AngstromPoolTokenIndexToPair {
                 config_store
                     .get_entry(token0, token1)
                     .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))
-                    .map(|cng| (cng.store_index as u16, PoolMetadata::new(token0, token1, cng, angstrom_address)))
+                    .map(|cng| {
+                        (
+                            cng.store_index as u16,
+                            PoolMetadata::new(token0, token1, cng, angstrom_address)
+                        )
+                    })
             })
             .collect::<Result<HashMap<_, _>, _>>()?;
 
