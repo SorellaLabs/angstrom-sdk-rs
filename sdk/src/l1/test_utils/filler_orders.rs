@@ -22,89 +22,9 @@ use revm::{
     primitives::hardfork::SpecId
 };
 use revm_database::{AlloyDB, CacheDB, EmptyDBTyped, WrapDatabaseAsync};
-#[cfg(feature = "example-utils")]
-use testing_tools::order_generator::OrderGenerator;
 use tokio::runtime::Handle;
-#[cfg(feature = "example-utils")]
-use uniswap_v4::uniswap::pool_manager::TickRangeToLoad;
 
 use crate::l1::providers::backend::AngstromProvider;
-#[cfg(feature = "example-utils")]
-use crate::l1::test_utils::AngstromOrderApiClientClone;
-
-#[cfg(feature = "example-utils")]
-pub async fn make_order_generator<T>(
-    provider: &AngstromProvider<T>,
-    chain: crate::l1::AngstromL1Chain
-) -> eyre::Result<(
-    OrderGenerator<T>,
-    tokio::sync::mpsc::Receiver<(TickRangeToLoad, Arc<tokio::sync::Notify>)>
-)>
-where
-    T: AngstromOrderApiClientClone
-{
-    use alloy_primitives::aliases::U24;
-    use angstrom_types_primitives::{PoolId, primitive::UniswapPoolRegistry};
-    use futures::future::try_join_all;
-    use rust_utils::ToHashMapByKey;
-    use testing_tools::order_generator::{InternalBalanceMode, OrderGenerator};
-    use uni_v4::baseline_pool_factory::INITIAL_TICKS_PER_SIDE;
-    use uniswap_v4::uniswap::{pool::EnhancedUniswapPool, pool_manager::SyncedUniswapPools};
-
-    use crate::l1::apis::{AngstromNodeApi, data_api::AngstromL1DataApi};
-
-    let consts = chain.constants();
-    let pool_manager_address = consts.uniswap_constants().pool_manager();
-    let block_number = provider.eth_provider().get_block_number().await?;
-
-    let pools = provider
-        .eth_provider()
-        .all_pool_keys(BlockId::number(block_number), chain)
-        .await?;
-
-    let enhanced_pools = try_join_all(pools.into_iter().map(|pool_key| {
-        let provider = provider.eth_provider().clone();
-        async move {
-            let public_pool_id: PoolId = pool_key.as_angstrom_pool_key_type().into();
-            let mut private_pool_key = pool_key.pool_key;
-            private_pool_key.fee = U24::from(0x800000);
-            let private_pool_id: PoolId = private_pool_key.into();
-            let registry = UniswapPoolRegistry::from(vec![pool_key.as_angstrom_pool_key_type()]);
-
-            let data_loader = uniswap_v4::uniswap::pool_data_loader::DataLoader::new_with_registry(
-                private_pool_id,
-                public_pool_id,
-                registry,
-                pool_manager_address
-            );
-
-            let mut pool = EnhancedUniswapPool::new(data_loader, INITIAL_TICKS_PER_SIDE);
-            pool.initialize(Some(block_number), Arc::new(provider))
-                .await?;
-            eyre::Ok((public_pool_id, Arc::new(std::sync::RwLock::new(pool))))
-        }
-    }))
-    .await?
-    .into_iter()
-    .collect::<Vec<_>>();
-
-    let uniswap_pools = enhanced_pools
-        .into_iter()
-        .hashmap_by_key_val(|(id, pool)| (id, pool));
-    let cloned = provider.angstrom_rpc_provider().clone();
-
-    let (tx, rx) = tokio::sync::mpsc::channel(100);
-    let generator = OrderGenerator::new(
-        SyncedUniswapPools::new(Arc::new(uniswap_pools.into_iter().collect()), tx),
-        block_number,
-        cloned,
-        20..50,
-        0.5..0.7,
-        InternalBalanceMode::Random(0.5)
-    );
-
-    Ok((generator, rx))
-}
 
 #[derive(Debug, Clone, Default)]
 pub struct AllOrdersSpecific {

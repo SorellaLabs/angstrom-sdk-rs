@@ -3,7 +3,7 @@ pub use providers::AngstromApi;
 
 pub mod builders;
 pub mod providers;
-#[cfg(any(test, feature = "example-utils"))]
+#[cfg(test)]
 pub(crate) mod test_utils;
 
 pub mod types;

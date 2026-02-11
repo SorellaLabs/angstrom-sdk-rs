@@ -45,12 +45,10 @@ revm-database = { workspace = true, features = ["alloydb"] }
 rust-utils.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-testing-tools = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio.workspace = true
 uni-v4.workspace = true
 uniswap-storage.workspace = true
-uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git", optional = true }
 
 [dev-dependencies]
 revm = { workspace = true, features = ["alloydb"], default-features = false }
@@ -64,7 +62,7 @@ convert_case = "0"
 itertools.workspace = true
 
 [features]
-default = ["ipc", "ws", "full"]
+default = ["ipc", "ws", "l1", "l2"]
 full = ["ipc", "ws", "local-reth", "l1", "l2"]
 local-reth = ["dep:lib-reth", "dep:revm", "dep:reth-provider", "uniswap-storage/local-reth"]
 
@@ -73,5 +71,3 @@ ws = []
 
 l1 = []
 l2 = ["lib-reth/op-reth-libmdbx", "dep:op-alloy-network"]
-
-example-utils = ["revm/alloydb", "dep:testing-tools", "dep:uniswap-v4"]

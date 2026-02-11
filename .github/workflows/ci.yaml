@@ -45,8 +45,8 @@ jobs:
           key: cargo-check
           cache-on-failure: true
 
-      - name: cargo check --all-features
-        run: cargo check --all-features
+      - name: cargo check --workspace --all-features --all-targets
+        run: cargo check --workspace --all-features --all-targets
 
   cargo-clippy:
     name: cargo clippy
@@ -62,12 +62,12 @@ jobs:
           key: cargo-clippy
           cache-on-failure: true
 
-      - name: cargo clippy --all-features
-        run: cargo clippy --all-features
+      - name: cargo clippy --workspace --all-features --all-targets
+        run: cargo clippy --workspace --all-features --all-targets
 
   cargo-test:
     name: cargo test
     runs-on: ubuntu-latest
     steps:
       - name: cargo test
-        run: cargo test
+        run: cargo test --workspace --all-targets

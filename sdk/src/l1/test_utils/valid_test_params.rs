@@ -10,6 +10,8 @@ use angstrom_types_primitives::{
 use uniswap_storage::{angstrom::mainnet::ANGSTROM_L1_CONSTANTS_MAINNET, v4::UnpackedPositionInfo};
 
 use crate::l1::test_utils::{USDC, WETH};
+#[cfg(not(feature = "local-reth"))]
+use crate::types::providers::AlloyProviderWrapper;
 #[cfg(feature = "local-reth")]
 use crate::types::{MainnetExt, providers::RethDbProviderWrapper};
 
@@ -31,7 +33,7 @@ pub struct ValidPositionTestParameters {
 
 #[cfg(not(feature = "local-reth"))]
 pub async fn init_valid_position_params_with_provider()
--> (alloy_provider::RootProvider, ValidPositionTestParameters) {
+-> (AlloyProviderWrapper, ValidPositionTestParameters) {
     use alloy_provider::Provider;
 
     let params = init_valid_position_params();
@@ -43,7 +45,7 @@ pub async fn init_valid_position_params_with_provider()
         .root()
         .clone();
 
-    (provider, params)
+    (AlloyProviderWrapper::new(provider), params)
 }
 
 #[cfg(feature = "local-reth")]

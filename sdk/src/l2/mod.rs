@@ -6,7 +6,7 @@ use uniswap_storage::angstrom::l2::{
 
 pub mod apis;
 
-#[cfg(any(test, feature = "example-utils"))]
+#[cfg(test)]
 pub(crate) mod test_utils;
 
 #[derive(Debug, Clone, Copy)]
