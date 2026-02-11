@@ -15,6 +15,8 @@ use crate::l2::{
 };
 #[cfg(feature = "local-reth")]
 use crate::types::BaseMainnetExt;
+#[cfg(not(feature = "local-reth"))]
+use crate::types::providers::AlloyProviderWrapper;
 
 pub struct ValidPositionTestParameters {
     pub owner: Address,
@@ -33,11 +35,11 @@ pub struct ValidPositionTestParameters {
 
 #[cfg(not(feature = "local-reth"))]
 pub async fn init_valid_position_params_with_provider()
--> (alloy_provider::RootProvider<op_alloy_network::Optimism>, ValidPositionTestParameters) {
+-> (AlloyProviderWrapper<op_alloy_network::Optimism>, ValidPositionTestParameters) {
     let params = init_valid_position_params();
     let provider = crate::l2::test_utils::eth_provider().await.unwrap();
 
-    (provider, params)
+    (AlloyProviderWrapper::new(provider), params)
 }
 
 #[cfg(feature = "local-reth")]
