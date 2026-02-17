@@ -68,6 +68,10 @@ jobs:
   cargo-test:
     name: cargo test
     runs-on: ubuntu-latest
+    env:
+      ETH_WS_URL: ${{ secrets.ETH_WS_URL }} 
+      BASE_WS_URL: ${{ secrets.BASE_WS_URL }} 
+      ANGSTROM_HTTP_URL: ${{ secrets.ANGSTROM_HTTP_URL }} 
     steps:
       - name: cargo test
         run: cargo test --workspace --all-targets
