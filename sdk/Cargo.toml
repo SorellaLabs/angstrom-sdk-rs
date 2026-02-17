@@ -1,16 +1,14 @@
 [package]
-name = "angstrom-sdk-rs"
+name = "angstrom-sdk"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 exclude.workspace = true
 
-[lib]
-name = "angstrom_sdk_rs"
-
 [dependencies]
 alloy-consensus.workspace = true
+alloy-contract.workspace = true
 alloy-eips.workspace = true
 alloy-json-rpc.workspace = true
 alloy-network.workspace = true
@@ -35,22 +33,22 @@ itertools.workspace = true
 jsonrpsee-core.workspace = true
 jsonrpsee-http-client.workspace = true
 jsonrpsee-ws-client.workspace = true
+lazy_static.workspace = true
+lib-reth = { workspace = true, optional = true }
+op-alloy-network = { workspace = true, optional = true }
 pade.workspace = true
+paste.workspace = true
 rand.workspace = true
+reth-provider = { workspace = true, optional = true }
+revm = { workspace = true, optional = true }
+revm-database = { workspace = true, features = ["alloydb"] }
 rust-utils.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-testing-tools = { workspace = true, optional = true }
 thiserror.workspace = true
 tokio.workspace = true
 uni-v4.workspace = true
 uniswap-storage.workspace = true
-
-lib-reth = { workspace = true, optional = true }
-reth-provider = { workspace = true, optional = true }
-revm = { workspace = true, optional = true }
-revm-database = { workspace = true, features = ["alloydb"] }
-uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git", optional = true }
 
 [dev-dependencies]
 revm = { workspace = true, features = ["alloydb"], default-features = false }
@@ -59,12 +57,17 @@ serial_test.workspace = true
 testing-tools.workspace = true
 uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git" }
 
+[build-dependencies]
+convert_case = "0"
+itertools.workspace = true
+
 [features]
-default = ["ipc", "ws"]
-full = ["ipc", "ws", "local-reth"]
-local-reth = ["dep:lib-reth", "dep:revm", "dep:reth-provider"]
+default = ["ipc", "ws", "l1"]
+full = ["ipc", "ws", "local-reth", "l1", "l2"]
+local-reth = ["dep:lib-reth", "dep:revm", "dep:reth-provider", "uniswap-storage/local-reth"]
 
 ipc = []
 ws = []
 
-example-utils = ["revm/alloydb", "dep:testing-tools", "dep:uniswap-v4"]
+l1 = ["uniswap-storage/l1-angstrom"]
+l2 = ["lib-reth/op-reth-libmdbx", "dep:op-alloy-network", "uniswap-storage/l2-angstrom"]

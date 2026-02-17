@@ -1,0 +1,84 @@
+name: Check Rust
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  cargo-fmt:
+    name: cargo fmt
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check-Out
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Nightly
+        run: |
+          rustup toolchain install nightly
+          rustup component add --toolchain nightly-x86_64-unknown-linux-gnu rustfmt
+
+      - name: cargo +nightly fmt
+        run: cargo +nightly fmt --all -- --check
+
+  cargo-check:
+    name: cargo check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check-Out
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: cargo-check
+          cache-on-failure: true
+
+      - name: cargo check --workspace --all-features --all-targets
+        run: cargo check --workspace --all-features --all-targets
+
+  cargo-clippy:
+    name: cargo clippy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check-Out
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: cargo-clippy
+          cache-on-failure: true
+
+      - name: cargo clippy --workspace --all-features --all-targets
+        run: cargo clippy --workspace --all-features --all-targets
+
+  cargo-test:
+    name: cargo test
+    runs-on: ubuntu-latest
+    env:
+      ETH_WS_URL: ${{ secrets.ETH_WS_URL }} 
+      BASE_WS_URL: ${{ secrets.BASE_WS_URL }} 
+      ANGSTROM_HTTP_URL: ${{ secrets.ANGSTROM_HTTP_URL }} 
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo test
+        run: cargo test --workspace --all-targets -- --nocapture

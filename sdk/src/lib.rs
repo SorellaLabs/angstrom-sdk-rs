@@ -4,13 +4,9 @@
 #![allow(clippy::too_many_arguments)]
 #![allow(clippy::wrong_self_convention)]
 
-pub mod apis;
-pub use providers::AngstromApi;
+#[cfg(feature = "l1")]
+pub mod l1;
+#[cfg(feature = "l2")]
+pub mod l2;
 
-pub mod builders;
-pub mod providers;
-#[cfg(any(test, feature = "example-utils"))]
-pub mod test_utils;
 pub mod types;
-
-pub mod utils;
