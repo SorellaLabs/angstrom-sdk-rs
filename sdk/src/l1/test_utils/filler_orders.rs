@@ -83,7 +83,7 @@ impl AnvilAngstromProvider {
         let provider = AngstromProvider::new_angstrom_http(
             RootProvider::builder()
                 .with_recommended_fillers()
-                .connect(&anvil.ws_endpoint())
+                .connect(&anvil.ipc_path())
                 .await?,
             &angstrom_http_url
         )?;
