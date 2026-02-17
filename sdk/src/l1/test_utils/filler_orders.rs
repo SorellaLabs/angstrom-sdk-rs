@@ -90,7 +90,8 @@ impl AnvilAngstromProvider {
             RootProvider::builder()
                 .with_recommended_fillers()
                 .connect(&eth_ipc)
-                .await?
+                .await?,
+            &angstrom_http_url
         )?;
 
         Ok(Self { provider, _anvil: anvil, handle: tokio::runtime::Handle::current().clone() })
