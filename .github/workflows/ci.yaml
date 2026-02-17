@@ -73,5 +73,8 @@ jobs:
       BASE_WS_URL: ${{ secrets.BASE_WS_URL }} 
       ANGSTROM_HTTP_URL: ${{ secrets.ANGSTROM_HTTP_URL }} 
     steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - name: cargo test
         run: cargo test --workspace --all-targets -- --nocapture
