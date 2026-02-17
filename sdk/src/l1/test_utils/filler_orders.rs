@@ -78,14 +78,19 @@ impl AnvilAngstromProvider {
         let eth_ws_url =
             std::env::var("ETH_WS_URL").unwrap_or_else(|_| panic!("ETH_WS_URL not found in .env"));
 
-        let anvil = Anvil::new().chain_id(1).fork(eth_ws_url).try_spawn()?;
+        let seed: u16 = rand::random();
+        let eth_ipc = format!("/tmp/anvil_{seed}.ipc");
+        let anvil = Anvil::new()
+            .chain_id(1)
+            .ipc_path(&eth_ipc)
+            .fork(eth_ws_url)
+            .try_spawn()?;
 
         let provider = AngstromProvider::new_angstrom_http(
             RootProvider::builder()
                 .with_recommended_fillers()
-                .connect(&anvil.ipc_path())
-                .await?,
-            &angstrom_http_url
+                .connect(&eth_ipc)
+                .await?
         )?;
 
         Ok(Self { provider, _anvil: anvil, handle: tokio::runtime::Handle::current().clone() })
