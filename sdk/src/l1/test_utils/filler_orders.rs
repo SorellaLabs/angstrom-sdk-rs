@@ -78,7 +78,6 @@ impl AnvilAngstromProvider {
         let eth_ws_url =
             std::env::var("ETH_WS_URL").unwrap_or_else(|_| panic!("ETH_WS_URL not found in .env"));
 
-        let seed: u16 = rand::random();
         let anvil = Anvil::new().chain_id(1).fork(eth_ws_url).try_spawn()?;
 
         let provider = AngstromProvider::new_angstrom_http(
