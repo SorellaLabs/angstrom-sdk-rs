@@ -62,12 +62,12 @@ convert_case = "0"
 itertools.workspace = true
 
 [features]
-default = ["ipc", "ws", "l1", "l2"]
+default = ["ipc", "ws", "l1"]
 full = ["ipc", "ws", "local-reth", "l1", "l2"]
 local-reth = ["dep:lib-reth", "dep:revm", "dep:reth-provider", "uniswap-storage/local-reth"]
 
 ipc = []
 ws = []
 
-l1 = []
-l2 = ["lib-reth/op-reth-libmdbx", "dep:op-alloy-network"]
+l1 = ["uniswap-storage/l1-angstrom"]
+l2 = ["lib-reth/op-reth-libmdbx", "dep:op-alloy-network", "uniswap-storage/l2-angstrom"]
