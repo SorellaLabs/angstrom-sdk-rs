@@ -17,3 +17,18 @@ impl From<&AngstromL2Factory::PoolKey> for PoolId {
         keccak256(value.abi_encode())
     }
 }
+
+#[cfg(feature = "l1")]
+impl From<AngstromL2Factory::PoolKey>
+    for angstrom_types_primitives::contract_bindings::pool_manager::PoolManager::PoolKey
+{
+    fn from(value: AngstromL2Factory::PoolKey) -> Self {
+        Self {
+            currency0:   value.currency0,
+            currency1:   value.currency1,
+            fee:         value.fee,
+            tickSpacing: value.tickSpacing,
+            hooks:       value.hooks
+        }
+    }
+}
