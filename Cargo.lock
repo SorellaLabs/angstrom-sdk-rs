@@ -1370,7 +1370,7 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "uni-v4",
- "uniswap-storage",
+ "uniswap-storage 0.1.0 (git+https://github.com/jnoorchashm37/lib-eth?branch=l2)",
  "uniswap-v4",
 ]
 
@@ -6178,7 +6178,7 @@ dependencies = [
  "revm 34.0.0",
  "revm-database 10.0.0",
  "tokio",
- "uniswap-storage",
+ "uniswap-storage 0.1.0 (git+https://github.com/jnoorchashm37/lib-eth)",
 ]
 
 [[package]]
@@ -14415,7 +14415,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "uniswap-storage"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-eth#d210545c92dc51318a0f909b5866fc6a18f7311e"
+source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#9d56eda0104a80491bac350f3ded74af54b650db"
 dependencies = [
  "alloy-eips",
  "alloy-network",
@@ -14431,6 +14431,25 @@ dependencies = [
  "reth-provider",
  "reth-rpc",
  "reth-rpc-convert",
+ "revm-database 10.0.0",
+ "serde",
+]
+
+[[package]]
+name = "uniswap-storage"
+version = "0.1.0"
+source = "git+https://github.com/jnoorchashm37/lib-eth#d210545c92dc51318a0f909b5866fc6a18f7311e"
+dependencies = [
+ "alloy-eips",
+ "alloy-network",
+ "alloy-primitives",
+ "alloy-provider",
+ "alloy-sol-types",
+ "async-trait",
+ "auto_impl",
+ "eyre",
+ "futures",
+ "itertools 0.14.0",
  "revm-database 10.0.0",
  "serde",
 ]
