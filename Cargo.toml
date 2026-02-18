@@ -71,4 +71,4 @@ testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", default-f
 thiserror = "1.0"
 tokio = { version = "1", features = ["full"] }
 uni-v4 = { git = "https://github.com/SorellaLabs/angstrom-v4.git" }
-uniswap-storage = { git = "https://github.com/jnoorchashm37/lib-eth" }
+uniswap-storage = { git = "https://github.com/jnoorchashm37/lib-eth", branch = "l2" }
