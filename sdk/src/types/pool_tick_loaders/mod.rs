@@ -5,12 +5,14 @@ mod local_reth;
 use alloy_network::Network;
 use alloy_primitives::{Address, BlockNumber, U256, aliases::I24};
 use angstrom_types_primitives::PoolId;
+use auto_impl::auto_impl;
 pub use full::FullTickLoader;
 use uni_v4::pool_data_loader::TickData;
 
 pub const DEFAULT_TICKS_PER_BATCH: usize = 10;
 
 #[async_trait::async_trait]
+#[auto_impl(&, Box, Arc)]
 pub trait PoolTickDataLoader<N: Network>: Send + Sync {
     async fn load_tick_data(
         &self,
