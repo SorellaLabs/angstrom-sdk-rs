@@ -2,6 +2,7 @@ use alloy_eips::BlockId;
 use alloy_network::Network;
 use alloy_primitives::Address;
 use angstrom_types_primitives::{contract_bindings::pool_manager::PoolManager, primitive::PoolId};
+use auto_impl::auto_impl;
 use uniswap_storage::{angstrom::l2::AngstromL2PoolFeeConfiguration, v4::UnpackedSlot0};
 
 use crate::{
@@ -13,6 +14,7 @@ use crate::{
 };
 
 #[async_trait::async_trait]
+#[auto_impl(&, Box, Arc)]
 pub trait AngstromL2DataApi<N: Network>: PoolTickDataLoader<N> + Send + Sized {
     async fn all_pool_keys(
         &self,

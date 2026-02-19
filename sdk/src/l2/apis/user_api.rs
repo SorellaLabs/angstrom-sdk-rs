@@ -4,12 +4,14 @@ use alloy_primitives::{Address, U256, aliases::I24};
 use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager::PoolKey, primitive::PoolId
 };
+use auto_impl::auto_impl;
 use uniswap_storage::v4::{UnpackedPositionInfo, V4UserLiquidityPosition};
 
 use super::data_api::AngstromL2DataApi;
 use crate::{l2::AngstromL2Chain, types::fees::LiquidityPositionFees};
 
 #[async_trait::async_trait]
+#[auto_impl(&, Box, Arc)]
 pub trait AngstromL2UserApi<N: Network>: AngstromL2DataApi<N> {
     async fn position_and_pool_info(
         &self,

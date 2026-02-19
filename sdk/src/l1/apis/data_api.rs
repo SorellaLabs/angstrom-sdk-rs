@@ -13,6 +13,7 @@ use angstrom_types_primitives::{
     },
     primitive::PoolId
 };
+use auto_impl::auto_impl;
 use itertools::Itertools;
 use uni_v4::FeeConfiguration;
 use uniswap_storage::v4::UnpackedSlot0;
@@ -23,6 +24,7 @@ use crate::{
 };
 
 #[async_trait::async_trait]
+#[auto_impl(&, Box, Arc)]
 pub trait AngstromL1DataApi: PoolTickDataLoader<Ethereum> + Send + Sized {
     async fn all_token_pairs(
         &self,

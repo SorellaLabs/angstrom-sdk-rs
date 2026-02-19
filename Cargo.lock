@@ -14415,7 +14415,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "uniswap-storage"
 version = "0.1.0"
-source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#9d56eda0104a80491bac350f3ded74af54b650db"
+source = "git+https://github.com/jnoorchashm37/lib-eth?branch=l2#426e66fa93d67025670ef1b78d6478ae1fcd0c42"
 dependencies = [
  "alloy-eips",
  "alloy-network",
