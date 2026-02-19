@@ -93,16 +93,16 @@ where
         &self,
         pool_id: PoolId,
         load_ticks: bool,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
-        let block_number = block_number
-            .as_u64()
-            .unwrap_or(self.provider().get_block_number().await?);
+        let block_number = if let Some(bn) = block_id.as_u64() {
+            bn
+        } else {
+            self.provider().get_block_number().await?
+        };
 
-        let pool_key = self
-            .pool_key_by_pool_id(pool_id, BlockId::number(block_number), chain)
-            .await?;
+        let pool_key = self.pool_key_by_pool_id(pool_id, block_id, chain).await?;
 
         let uni_pool_key = UniPoolKey {
             currency0:   pool_key.currency0,
@@ -123,16 +123,13 @@ where
         )
         .into_transaction_request();
 
-        let out_pool_data = alloy_view_deploy::<_, _, PoolDataV4>(
-            self.provider(),
-            BlockId::number(block_number),
-            data_deployer_call
-        )
-        .await??;
+        let out_pool_data =
+            alloy_view_deploy::<_, _, PoolDataV4>(self.provider(), block_id, data_deployer_call)
+                .await??;
         let pool_data: PoolData = (uni_pool_key, out_pool_data).into();
 
         // let fee_config = self
-        //     .fee_configuration_by_pool_id(pool_id, block_number, chain)
+        //     .fee_configuration_by_pool_id(pool_id, block_id, chain)
         //     .await?;
         let fee_config = FeeConfiguration {
             bundle_fee:   Default::default(),
