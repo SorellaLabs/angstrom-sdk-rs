@@ -70,7 +70,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ETH_WS_URL: ${{ secrets.ETH_WS_URL }} 
-      BASE_WS_URL: ${{ secrets.BASE_WS_URL }} 
+      BASE_ETH_WS_URL: ${{ secrets.BASE_WS_URL }} 
       ANGSTROM_HTTP_URL: ${{ secrets.ANGSTROM_HTTP_URL }} 
     steps:
       - uses: actions/checkout@v4
