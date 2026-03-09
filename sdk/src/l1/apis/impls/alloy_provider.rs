@@ -5,6 +5,7 @@ use std::{
 
 use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
+use alloy_network::Ethereum;
 use alloy_primitives::{
     Address, B256, FixedBytes, TxHash, U256,
     aliases::{I24, U24},
@@ -26,10 +27,10 @@ use angstrom_types_primitives::{
 use futures::StreamExt;
 use pade::PadeDecode;
 use uni_v4::{
-    BaselinePoolState, FeeConfiguration, PoolKey as UniPoolKey,
+    BaselinePoolState, L1FeeConfiguration, PoolKey as UniPoolKey,
     baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
+    bindings::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
     liquidity_base::BaselineLiquidity,
-    loaders::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
     pool_data_loader::{PoolData, PoolDataV4}
 };
 use uniswap_storage::{
@@ -270,7 +271,7 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
         load_ticks: bool,
         block_number: BlockId,
         chain: AngstromL1Chain
-    ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
+    ) -> eyre::Result<(u64, BaselinePoolStateWithKey<Ethereum>)> {
         let block_number = block_number
             .as_u64()
             .unwrap_or(self.get_block_number().await?);
@@ -482,7 +483,7 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
         bundle_fee: Option<U24>,
         block_number: BlockId,
         chain: AngstromL1Chain
-    ) -> eyre::Result<FeeConfiguration> {
+    ) -> eyre::Result<L1FeeConfiguration> {
         const UNLOCKED_FEES_SLOT: u64 = 2;
 
         let pool_partial_key = AngstromPoolConfigStore::derive_store_key(token0, token1);
@@ -513,7 +514,7 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
         let unlocked_fee = U24::from_be_bytes([bytes[29], bytes[30], bytes[31]]);
         let protocol_fee = U24::from_be_bytes([bytes[26], bytes[27], bytes[28]]);
 
-        Ok(FeeConfiguration {
+        Ok(L1FeeConfiguration {
             bundle_fee:   bundle_fee.to::<u32>(),
             swap_fee:     unlocked_fee.to::<u32>(),
             protocol_fee: protocol_fee.to::<u32>()
@@ -789,7 +790,7 @@ mod data_api_tests {
             .unwrap();
 
         assert_eq!(
-            FeeConfiguration { bundle_fee: 200, swap_fee: 238, protocol_fee: 112 },
+            L1FeeConfiguration { bundle_fee: 200, swap_fee: 238, protocol_fee: 112 },
             fee_config
         );
     }

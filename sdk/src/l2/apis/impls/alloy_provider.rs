@@ -10,20 +10,23 @@ use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager::{self, PoolKey},
     primitive::PoolId
 };
+use op_alloy_network::Optimism;
 use uni_v4::{
-    BaselinePoolState, FeeConfiguration, PoolKey as UniPoolKey,
+    BaselinePoolState, L2FeeConfiguration, PoolKey as UniPoolKey,
     baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
+    bindings::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
     liquidity_base::BaselineLiquidity,
-    loaders::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
     pool_data_loader::{PoolData, PoolDataV4}
 };
 use uniswap_storage::{
     angstrom::l2::{
-        AngstromL2PoolFeeConfiguration,
         angstrom_l2::{
-            angstrom_l2_growth_inside, angstrom_l2_last_growth_inside, angstrom_l2_pool_fee_config
+            angstrom_l2_growth_inside, angstrom_l2_jit_tax_enabled, angstrom_l2_last_growth_inside,
+            angstrom_l2_pool_fee_config, angstrom_l2_priority_fee_tax_floor
         },
-        angstrom_l2_factory::angstrom_l2_factory_hook_address_for_pool_id
+        angstrom_l2_factory::{
+            angstrom_l2_factory_get_slot0, angstrom_l2_factory_hook_address_for_pool_id
+        }
     },
     v4::{
         UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
@@ -95,7 +98,7 @@ where
         load_ticks: bool,
         block_id: BlockId,
         chain: AngstromL2Chain
-    ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
+    ) -> eyre::Result<(u64, BaselinePoolStateWithKey<Optimism>)> {
         let block_number = if let Some(bn) = block_id.as_u64() {
             bn
         } else {
@@ -128,14 +131,9 @@ where
                 .await??;
         let pool_data: PoolData = (uni_pool_key, out_pool_data).into();
 
-        // let fee_config = self
-        //     .fee_configuration_by_pool_id(pool_id, block_id, chain)
-        //     .await?;
-        let fee_config = FeeConfiguration {
-            bundle_fee:   Default::default(),
-            swap_fee:     Default::default(),
-            protocol_fee: Default::default()
-        };
+        let fee_config = self
+            .fee_configuration_by_pool_id(pool_id, block_id, chain)
+            .await?;
 
         let (ticks, tick_bitmap) = if load_ticks {
             self.load_tick_data_in_band(
@@ -275,10 +273,28 @@ where
         &self,
         pool_id: PoolId,
         hook_address: Address,
-        block_number: BlockId,
-        _chain: AngstromL2Chain
-    ) -> eyre::Result<AngstromL2PoolFeeConfiguration> {
-        angstrom_l2_pool_fee_config(self.root(), hook_address, pool_id, block_number).await
+        block_id: BlockId,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<L2FeeConfiguration> {
+        let (fee_config, priority_fee_tax_floor, jit_tax_enabled, factory_slot0, pool_key) = tokio::try_join!(
+            angstrom_l2_pool_fee_config(self.root(), hook_address, pool_id, block_id),
+            angstrom_l2_priority_fee_tax_floor(self.root(), hook_address, block_id),
+            angstrom_l2_jit_tax_enabled(self.root(), hook_address, block_id),
+            angstrom_l2_factory_get_slot0(self.root(), hook_address, block_id),
+            self.pool_key_by_pool_id(pool_id, block_id, chain)
+        )?;
+
+        Ok(L2FeeConfiguration {
+            is_initialized: fee_config.is_initialized,
+            lp_fee: pool_key.fee.to(),
+            creator_tax_fee_e6: fee_config.creator_tax_fee_e6,
+            protocol_tax_fee_e6: fee_config.protocol_tax_fee_e6,
+            creator_swap_fee_e6: fee_config.creator_swap_fee_e6,
+            protocol_swap_fee_e6: fee_config.protocol_swap_fee_e6,
+            priority_fee_tax_floor: priority_fee_tax_floor.to(),
+            jit_tax_enabled,
+            withdraw_only: factory_slot0.withdraw_only
+        })
     }
 }
 
@@ -541,20 +557,29 @@ mod data_api_tests {
     use super::*;
     use crate::l2::test_utils::valid_test_params::init_valid_position_params_with_provider;
 
-    // #[tokio::test]
-    // async fn test_fetch_fee_configuration() {
-    //     let (provider, state) = init_valid_position_params_with_provider().await;
+    #[tokio::test]
+    async fn test_fetch_fee_configuration() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
 
-    //     let fee_config = provider
-    //         .fee_configuration_by_pool_id(state.pool_id,
-    // state.block_number.into(), state.chain)         .await
-    //         .unwrap();
+        let fee_config = provider
+            .fee_configuration_by_pool_id(state.pool_id, state.block_number.into(), state.chain)
+            .await
+            .unwrap();
 
-    //     assert_eq!(
-    //         FeeConfiguration { bundle_fee: 200, swap_fee: 238, protocol_fee: 112
-    // },         fee_config
-    //     );
-    // }
+        let expected = L2FeeConfiguration {
+            is_initialized:         Default::default(),
+            lp_fee:                 Default::default(),
+            creator_tax_fee_e6:     Default::default(),
+            protocol_tax_fee_e6:    Default::default(),
+            creator_swap_fee_e6:    Default::default(),
+            protocol_swap_fee_e6:   Default::default(),
+            priority_fee_tax_floor: Default::default(),
+            jit_tax_enabled:        Default::default(),
+            withdraw_only:          Default::default()
+        };
+
+        assert_eq!(expected, fee_config);
+    }
 
     #[tokio::test]
     async fn test_all_token_pairs() {

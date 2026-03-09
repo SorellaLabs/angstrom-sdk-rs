@@ -15,7 +15,7 @@ use angstrom_types_primitives::{
 };
 use auto_impl::auto_impl;
 use itertools::Itertools;
-use uni_v4::FeeConfiguration;
+use uni_v4::L1FeeConfiguration;
 use uniswap_storage::v4::UnpackedSlot0;
 
 use crate::{
@@ -234,7 +234,7 @@ pub trait AngstromL1DataApi: PoolTickDataLoader<Ethereum> + Send + Sized {
         load_ticks: bool,
         block_id: BlockId,
         chain: AngstromL1Chain
-    ) -> eyre::Result<(u64, BaselinePoolStateWithKey)>;
+    ) -> eyre::Result<(u64, BaselinePoolStateWithKey<Ethereum>)>;
 
     async fn pool_data_by_pool_id(
         &self,
@@ -242,7 +242,7 @@ pub trait AngstromL1DataApi: PoolTickDataLoader<Ethereum> + Send + Sized {
         load_ticks: bool,
         block_id: BlockId,
         chain: AngstromL1Chain
-    ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
+    ) -> eyre::Result<(u64, BaselinePoolStateWithKey<Ethereum>)> {
         let pool_key = self.pool_key_by_pool_id(pool_id, block_id, chain).await?;
         self.pool_data_by_tokens(
             pool_key.pool_key.currency0,
@@ -259,7 +259,7 @@ pub trait AngstromL1DataApi: PoolTickDataLoader<Ethereum> + Send + Sized {
         load_ticks: bool,
         block_id: BlockId,
         chain: AngstromL1Chain
-    ) -> eyre::Result<Vec<(u64, BaselinePoolStateWithKey)>> {
+    ) -> eyre::Result<Vec<(u64, BaselinePoolStateWithKey<Ethereum>)>> {
         let token_pairs = self.all_token_pairs(block_id, chain).await?;
 
         let pools = futures::future::try_join_all(token_pairs.into_iter().map(|pair| {
@@ -299,7 +299,7 @@ pub trait AngstromL1DataApi: PoolTickDataLoader<Ethereum> + Send + Sized {
         pool_id: PoolId,
         block_id: BlockId,
         chain: AngstromL1Chain
-    ) -> eyre::Result<FeeConfiguration> {
+    ) -> eyre::Result<L1FeeConfiguration> {
         let pool_key = self.pool_key_by_pool_id(pool_id, block_id, chain).await?;
         self.fee_configuration_by_tokens(
             pool_key.pool_key.currency0,
@@ -318,5 +318,5 @@ pub trait AngstromL1DataApi: PoolTickDataLoader<Ethereum> + Send + Sized {
         bundle_fee: Option<U24>,
         block_id: BlockId,
         chain: AngstromL1Chain
-    ) -> eyre::Result<FeeConfiguration>;
+    ) -> eyre::Result<L1FeeConfiguration>;
 }

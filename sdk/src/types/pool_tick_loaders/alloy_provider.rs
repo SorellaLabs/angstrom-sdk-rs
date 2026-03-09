@@ -3,7 +3,7 @@ use alloy_network::Network;
 use alloy_primitives::{Address, BlockNumber, U256, aliases::I24};
 use angstrom_types_primitives::PoolId;
 use uni_v4::{
-    loaders::get_uniswap_v_4_tick_data::GetUniswapV4TickData,
+    bindings::get_uniswap_v_4_tick_data::GetUniswapV4TickData,
     pool_data_loader::{TickData, TicksWithBlock}
 };
 
