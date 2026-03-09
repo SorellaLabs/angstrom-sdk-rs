@@ -562,7 +562,12 @@ mod data_api_tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let fee_config = provider
-            .fee_configuration_by_pool_id(state.pool_id, state.block_number.into(), state.chain)
+            .fee_configuration_by_pool_id_and_hook(
+                state.pool_id,
+                state.pool_key.hooks,
+                state.block_number.into(),
+                state.chain
+            )
             .await
             .unwrap();
 
