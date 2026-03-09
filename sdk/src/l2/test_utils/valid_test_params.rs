@@ -74,7 +74,7 @@ pub fn init_valid_position_params() -> ValidPositionTestParameters {
     let _ = try_init_with_chain_id(chain_consts.chain_id());
 
     let owner = address!("0xe344c3d419B7788006ab5aF4355E03b04CE75579");
-    let pool_id = b256!("0xe500210c7ea6bfd9f69dce044b09ef384ec2b34832f132baec3b418208e3a657");
+    let pool_id = b256!("0x71deb282904d0f76bc8c7867f4618ff91dcb43cf4574bc64700ffc48791d369c");
     let tick_lower = I24::unchecked_from(194970);
     let tick_upper = I24::unchecked_from(198000);
     let position_token_id = U256::from(102303_u128);
