@@ -74,8 +74,7 @@ pub trait AngstromL2DataApi<N: Network>: PoolTickDataLoader<N> + Send + Sized {
         self.all_pool_keys(block_id, chain)
             .await?
             .into_iter()
-            .filter(|key| PoolId::from(key) == pool_id)
-            .next()
+            .find(|key| PoolId::from(key) == pool_id)
             .ok_or_else(|| eyre::eyre!("no pool key found for pool id '{pool_id:?}'"))
     }
 

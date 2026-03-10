@@ -204,7 +204,7 @@ where
             .all_pool_keys(end_block.map(Into::into).unwrap_or_else(BlockId::latest), chain)
             .await?
             .into_iter()
-            .map(|pool_key| PoolId::from(pool_key))
+            .map(PoolId::from)
             .collect::<HashSet<_>>();
 
         let consts = chain.constants();
@@ -449,10 +449,10 @@ where
                 pool_key
             });
 
-            if let Some(max_res) = max_results {
-                if all_positions.len() >= max_res {
-                    break;
-                }
+            if let Some(max_res) = max_results
+                && all_positions.len() >= max_res
+            {
+                break;
             }
 
             start_token_id += U256::from(1u8);

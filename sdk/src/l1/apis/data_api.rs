@@ -180,7 +180,7 @@ pub trait AngstromL1DataApi: PoolTickDataLoader<Ethereum> + Send + Sized {
             .await?;
 
         if bundles.is_empty() {
-            return Ok(Vec::new())
+            return Ok(Vec::new());
         }
 
         let pool_stores =

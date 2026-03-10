@@ -361,7 +361,7 @@ mod _private {
             .all_pool_keys(end_block.map(Into::into).unwrap_or_else(BlockId::latest), chain)
             .await?
             .into_iter()
-            .map(|pool_key| PoolId::from(pool_key))
+            .map(PoolId::from)
             .collect::<HashSet<_>>();
 
         let consts = chain.constants();
@@ -409,13 +409,13 @@ mod _private {
         N: EthNetworkExt,
         <N as EthNetworkExt>::RethNode: NodeClientSpec
     {
-        Ok(pool_manager_pool_slot0(
+        pool_manager_pool_slot0(
             this,
             chain.constants().uniswap_constants().pool_manager(),
             pool_id,
             block_id
         )
-        .await?)
+        .await
     }
 
     pub(super) async fn hook_by_pool_id<N>(
@@ -428,14 +428,14 @@ mod _private {
         N: EthNetworkExt,
         <N as EthNetworkExt>::RethNode: NodeClientSpec
     {
-        Ok(angstrom_l2_factory_hook_address_for_pool_id(
+        angstrom_l2_factory_hook_address_for_pool_id(
             this,
             chain.constants().angstrom_l2_factory(),
             pool_id,
             block_id
         )
         .await?
-        .ok_or_else(|| eyre::eyre!("no hook found for pool id: {pool_id:?}"))?)
+        .ok_or_else(|| eyre::eyre!("no hook found for pool id: {pool_id:?}"))
     }
 
     pub(super) async fn fee_configuration_by_pool_id_and_hook<N>(
@@ -623,10 +623,10 @@ mod _private {
                 pool_key
             });
 
-            if let Some(max_res) = max_results {
-                if all_positions.len() >= max_res {
-                    break;
-                }
+            if let Some(max_res) = max_results
+                && all_positions.len() >= max_res
+            {
+                break;
             }
 
             start_token_id += U256::from(1u8);

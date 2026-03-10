@@ -444,7 +444,7 @@ impl AngstromL1DataApi for AlloyProviderWrapper {
         verify_successful_tx: bool
     ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
         let Some(transaction) = self.get_transaction_by_hash(tx_hash).await? else {
-            return Ok(None)
+            return Ok(None);
         };
 
         if verify_successful_tx
@@ -652,10 +652,10 @@ impl AngstromL1UserApi for AlloyProviderWrapper {
                 pool_key
             });
 
-            if let Some(max_res) = max_results {
-                if all_positions.len() >= max_res {
-                    break;
-                }
+            if let Some(max_res) = max_results
+                && all_positions.len() >= max_res
+            {
+                break;
             }
 
             start_token_id += U256::from(1u8);
