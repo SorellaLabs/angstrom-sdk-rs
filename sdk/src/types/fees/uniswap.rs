@@ -52,7 +52,6 @@ pub async fn uniswap_fee_deltas<F: StorageSlotFetcher>(
 
 #[cfg(test)]
 mod tests {
-    use angstrom_types_primitives::primitive::{POOL_MANAGER_ADDRESS, POSITION_MANAGER_ADDRESS};
 
     use super::*;
 
@@ -128,8 +127,8 @@ mod tests {
         assert_eq!(
             results,
             (
-                U256::from(4004676340914304001936429601015_u128),
-                U256::from_str_radix("1565824208245443875813344119471164423504", 10).unwrap()
+                U256::from_str_radix("1742761220412296065979064678736417713926", 10).unwrap(),
+                U256::from(3509357997365368433915890216217_u128),
             )
         );
     }
