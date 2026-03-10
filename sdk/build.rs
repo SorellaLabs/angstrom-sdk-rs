@@ -45,7 +45,7 @@ fn main() {
     let res = res.wait().unwrap();
 
     std::fs::read_dir(&out_dir)
-        .expect(&format!("{out_dir:?}"))
+        .unwrap_or_else(|_| panic!("{out_dir:?}"))
         .filter_map(|entry| entry.ok())
         .filter(|entry| {
             let file_name = entry.file_name();
