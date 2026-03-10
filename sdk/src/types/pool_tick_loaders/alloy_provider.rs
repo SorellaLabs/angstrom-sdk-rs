@@ -1,17 +1,3 @@
-use alloy_eips::BlockId;
-use alloy_network::Network;
-use alloy_primitives::{Address, U256, aliases::I24};
-use angstrom_types_primitives::PoolId;
-use uni_v4::{
-    bindings::get_uniswap_v_4_tick_data::GetUniswapV4TickData,
-    pool_data_loader::{TickData, TicksWithBlock}
-};
-
-use crate::types::{
-    pool_tick_loaders::PoolTickDataLoader,
-    providers::{AlloyProviderWrapper, primitive_fetcher::PrimitivesFetcher}
-};
-
 // #[async_trait::async_trait]
 // impl<N> PoolTickDataLoader<N> for AlloyProviderWrapper<N>
 // where

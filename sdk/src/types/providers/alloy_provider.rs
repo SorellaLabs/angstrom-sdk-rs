@@ -2,13 +2,11 @@ use std::ops::Deref;
 
 use alloy_consensus::BlockHeader;
 use alloy_eips::BlockId;
-use alloy_json_rpc::RpcError;
 use alloy_network::{BlockResponse, Ethereum, Network, ReceiptResponse, TransactionBuilder};
-use alloy_primitives::{Address, StorageKey, StorageValue, TxHash, TxKind};
+use alloy_primitives::{Address, StorageKey, StorageValue, TxHash};
 use alloy_provider::{DynProvider, Provider, RootProvider};
-use alloy_rpc_types::{BlockTransactionsKind, Filter, Log, TransactionInput, TransactionRequest};
+use alloy_rpc_types::{BlockTransactionsKind, Filter, Log};
 use alloy_sol_types::{SolCall, SolType};
-use alloy_transport::TransportErrorKind;
 use uniswap_storage::StorageSlotFetcher;
 
 use crate::types::providers::primitive_fetcher::PrimitivesFetcher;

@@ -1,49 +1,14 @@
-use std::{
-    collections::{HashMap, HashSet},
-    ops::Deref
-};
-
-use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
-use alloy_network::{Ethereum, TransactionResponse};
-use alloy_primitives::{
-    Address, FixedBytes, TxHash, U256,
-    aliases::{I24, U24},
-    keccak256
-};
-use alloy_provider::Provider;
-use alloy_sol_types::{SolCall, SolEvent};
+use alloy_primitives::{Address, U256, aliases::I24};
 use angstrom_types_primitives::{
-    contract_bindings::{
-        angstrom::Angstrom,
-        controller_v_1::ControllerV1,
-        pool_manager::PoolManager::{self, PoolKey}
-    },
-    contract_payloads::angstrom::{
-        AngstromBundle, AngstromPoolConfigStore, AngstromPoolPartialKey
-    },
+    contract_bindings::pool_manager::PoolManager::PoolKey,
     primitive::PoolId
-};
-use auto_impl::auto_impl;
-use eth_network_exts::AllExtensions;
-use futures::StreamExt;
-use lib_reth::{EthApiServer, traits::EthStream};
-use pade::PadeDecode;
-use uni_v4::{
-    BaselinePoolState, L1FeeConfiguration, PoolKey as UniPoolKey,
-    baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
-    bindings::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
-    liquidity_base::BaselineLiquidity,
-    pool_data_loader::{PoolData, PoolDataV4}
 };
 use uniswap_storage::{
     angstrom::mainnet::{angstrom_growth_inside, angstrom_last_growth_inside},
     v4::{
-        UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
-        pool_manager::{
-            pool_state::pool_manager_pool_slot0,
-            position_state::pool_manager_position_state_liquidity
-        },
+        UnpackedPositionInfo, V4UserLiquidityPosition,
+        pool_manager::position_state::pool_manager_position_state_liquidity,
         position_manager::{
             position_manager_next_token_id, position_manager_owner_of,
             position_manager_pool_key_and_info
@@ -54,16 +19,7 @@ use uniswap_storage::{
 use super::data_api::AngstromL1DataApi;
 use crate::{
     l1::AngstromL1Chain,
-    types::{
-        MainnetExt,
-        common::*,
-        fees::{LiquidityPositionFees, uniswap_fee_deltas},
-        pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader},
-        providers::RethDbProviderWrapper,
-        utils::{
-            historical_pool_manager_modify_liquidity_filter, historical_pool_manager_swap_filter
-        }
-    }
+    types::fees::{LiquidityPositionFees, uniswap_fee_deltas}
 };
 
 impl<P> AngstromL1UserApi for P where P: AngstromL1DataApi {}

@@ -11,7 +11,6 @@ use alloy_primitives::{
     aliases::{I24, U24},
     keccak256
 };
-use alloy_provider::Provider;
 use alloy_sol_types::{SolCall, SolEvent};
 use angstrom_types_primitives::{
     contract_bindings::{
@@ -24,11 +23,8 @@ use angstrom_types_primitives::{
     },
     primitive::PoolId
 };
-use auto_impl::auto_impl;
-use eth_network_exts::AllExtensions;
 use futures::StreamExt;
 use itertools::Itertools;
-use lib_reth::{EthApiServer, traits::EthStream};
 use pade::PadeDecode;
 use uni_v4::{
     BaselinePoolState, L1FeeConfiguration, PoolKey as UniPoolKey,
@@ -39,28 +35,14 @@ use uni_v4::{
 };
 use uniswap_storage::{
     StorageSlotFetcher,
-    angstrom::mainnet::{angstrom_growth_inside, angstrom_last_growth_inside},
-    v4::{
-        UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
-        pool_manager::{
-            pool_state::pool_manager_pool_slot0,
-            position_state::pool_manager_position_state_liquidity
-        },
-        position_manager::{
-            position_manager_next_token_id, position_manager_owner_of,
-            position_manager_pool_key_and_info
-        }
-    }
+    v4::{UnpackedSlot0, pool_manager::pool_state::pool_manager_pool_slot0}
 };
 
 use crate::{
     l1::{AngstromL1Chain, types::*},
     types::{
-        MainnetExt,
         common::*,
-        fees::{LiquidityPositionFees, uniswap_fee_deltas},
         pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader, PoolTickDataLoader},
-        providers::{RethDbProviderWrapper, primitive_fetcher::PrimitivesFetcher},
         utils::{
             historical_pool_manager_modify_liquidity_filter, historical_pool_manager_swap_filter
         }
@@ -427,39 +409,48 @@ pub trait AngstromL1DataApi:
         let block = self.fetch_block(block_id, true).await?;
         let angstrom_address = chain.constants().angstrom_address();
 
-        let mut angstrom_bundles = block
+        let txs = block
             .transactions
             .into_transactions()
-            .filter(|tx| tx.to() == Some(angstrom_address))
-            .filter_map(|transaction| {
+            .filter(|tx| tx.to() == Some(angstrom_address));
+
+        let angstrom_bundles = futures::stream::iter(txs)
+            .filter_map(|transaction| async move {
+                if verify_successful_tx {
+                    if !self
+                        .tx_success(transaction.tx_hash())
+                        .await
+                        .unwrap_or_default()
+                    {
+                        return None;
+                    };
+                }
+
                 let input: &[u8] = transaction.input();
                 let call = Angstrom::executeCall::abi_decode(input).ok()?;
                 let mut input = call.encoded.as_ref();
+
+                let tx_idx = transaction.transaction_index?;
+                let decoded_input = AngstromBundle::pade_decode(&mut input, None).ok()?;
+
                 Some((
-                    transaction.tx_hash(),
+                    tx_idx,
                     WithEthMeta::new(
                         transaction.block_number(),
                         Some(transaction.tx_hash()),
                         transaction.transaction_index(),
-                        AngstromBundle::pade_decode(&mut input, None).ok()?
+                        decoded_input
                     )
                 ))
-            });
+            })
+            .collect::<Vec<_>>()
+            .await;
 
-        if verify_successful_tx {
-            let bundles =
-                futures::future::try_join_all(angstrom_bundles.map(async |(tx_hash, bundle)| {
-                    if self.tx_success(tx_hash).await? {
-                        Ok::<_, eyre::ErrReport>(Some(bundle))
-                    } else {
-                        Ok(None)
-                    }
-                }))
-                .await?;
-            Ok(bundles.into_iter().flatten().next())
-        } else {
-            Ok(angstrom_bundles.next().map(|(_, bundle)| bundle))
-        }
+        Ok(angstrom_bundles
+            .into_iter()
+            .sorted_by_key(|(idx, _)| *idx)
+            .map(|(_, bundle)| bundle)
+            .next())
     }
 
     async fn get_bundle_by_tx_hash(

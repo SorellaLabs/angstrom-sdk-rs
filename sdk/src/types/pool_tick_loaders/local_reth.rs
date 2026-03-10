@@ -1,23 +1,3 @@
-use alloy_eips::BlockId;
-use alloy_network::TransactionBuilder;
-use alloy_primitives::{Address, U256, aliases::I24};
-use angstrom_types_primitives::PoolId;
-#[cfg(feature = "l1")]
-use eth_network_exts::mainnet::MainnetExt;
-use eth_network_exts::{AllExtensions, EthNetworkExt};
-#[cfg(feature = "l2")]
-use eth_network_exts::{base_mainnet::BaseMainnetExt, unichain_mainnet::UnichainMainnetExt};
-use lib_reth::{reth_libmdbx::NodeClientSpec, traits::EthStream};
-use uni_v4::{
-    bindings::get_uniswap_v_4_tick_data::GetUniswapV4TickData,
-    pool_data_loader::{TickData, TicksWithBlock}
-};
-
-use crate::types::{
-    pool_tick_loaders::PoolTickDataLoader,
-    providers::{RethDbProviderWrapper, primitive_fetcher::PrimitivesFetcher}
-};
-
 // macro_rules! reth_db_pool_tick_data_loader_impl {
 //     ($($network_ext:ident),*) => {
 //         $(

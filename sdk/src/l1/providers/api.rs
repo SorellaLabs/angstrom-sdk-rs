@@ -1,14 +1,13 @@
 use alloy_eips::BlockId;
-use alloy_network::{Ethereum, EthereumWallet, Network, TxSigner};
-use alloy_primitives::{Address, FixedBytes, Signature, TxHash, U256, aliases::I24};
+use alloy_network::{Ethereum, Network, TxSigner};
+use alloy_primitives::{Address, FixedBytes, Signature, TxHash};
 use alloy_provider::{Provider, RootProvider};
 use alloy_rpc_types::{Filter, Log};
 use alloy_signer::{Signer, SignerSync};
 use alloy_sol_types::{SolCall, SolType};
-use angstrom_types_primitives::{PoolId, sol_bindings::grouped_orders::AllOrders};
+use angstrom_types_primitives::sol_bindings::grouped_orders::AllOrders;
 use jsonrpsee_http_client::HttpClient;
-use jsonrpsee_ws_client::{WsClient, WsClientBuilder};
-use uni_v4::pool_data_loader::TickData;
+use jsonrpsee_ws_client::WsClient;
 
 use crate::{
     l1::{
@@ -23,10 +22,7 @@ use crate::{
             }
         }
     },
-    types::{
-        pool_tick_loaders::PoolTickDataLoader,
-        providers::{AlloyProviderWrapper, primitive_fetcher::PrimitivesFetcher}
-    }
+    types::providers::{AlloyProviderWrapper, primitive_fetcher::PrimitivesFetcher}
 };
 
 #[derive(Clone)]

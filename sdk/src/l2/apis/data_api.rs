@@ -2,14 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 use alloy_eips::BlockId;
 use alloy_network::Network;
-use alloy_primitives::{Address, B256, U256, aliases::I24};
-use alloy_provider::Provider;
+use alloy_primitives::Address;
 use alloy_sol_types::SolEvent;
 use angstrom_types_primitives::{
-    contract_bindings::pool_manager::{PoolManager, PoolManager::PoolKey},
+    contract_bindings::pool_manager::PoolManager,
     primitive::PoolId
 };
-use auto_impl::auto_impl;
 use futures::TryStreamExt;
 use op_alloy_network::Optimism;
 use uni_v4::{
@@ -23,7 +21,7 @@ use uniswap_storage::{
     StorageSlotFetcher,
     angstrom::l2::{
         angstrom_l2::{
-            angstrom_l2_growth_inside, angstrom_l2_jit_tax_enabled, angstrom_l2_last_growth_inside,
+            angstrom_l2_jit_tax_enabled,
             angstrom_l2_pool_fee_config, angstrom_l2_pool_keys_stream,
             angstrom_l2_priority_fee_tax_floor
         },
@@ -33,15 +31,8 @@ use uniswap_storage::{
         }
     },
     v4::{
-        UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
-        pool_manager::{
-            pool_state::pool_manager_pool_slot0,
-            position_state::pool_manager_position_state_liquidity
-        },
-        position_manager::{
-            position_manager_next_token_id, position_manager_owner_of,
-            position_manager_pool_key_and_info
-        }
+        UnpackedSlot0,
+        pool_manager::pool_state::pool_manager_pool_slot0
     }
 };
 

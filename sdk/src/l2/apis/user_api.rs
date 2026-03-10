@@ -1,38 +1,19 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use alloy_eips::BlockId;
 use alloy_network::Network;
 use alloy_primitives::{Address, B256, U256, aliases::I24};
-use alloy_provider::Provider;
-use alloy_sol_types::SolEvent;
 use angstrom_types_primitives::{
-    contract_bindings::pool_manager::PoolManager::{self, PoolKey},
+    contract_bindings::pool_manager::PoolManager::PoolKey,
     primitive::PoolId
-};
-use auto_impl::auto_impl;
-use eth_network_exts::{AllExtensions, EthNetworkExt};
-use lib_reth::{EthApiServer, traits::EthStream};
-use op_alloy_network::Optimism;
-use uni_v4::{
-    BaselinePoolState, L2FeeConfiguration, PoolKey as UniPoolKey,
-    baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
-    bindings::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
-    liquidity_base::BaselineLiquidity,
-    pool_data_loader::{PoolData, PoolDataV4}
 };
 use uniswap_storage::{
     angstrom::l2::{
-        angstrom_l2::{
-            angstrom_l2_growth_inside, angstrom_l2_last_growth_inside, angstrom_l2_pool_fee_config
-        },
-        angstrom_l2_factory::angstrom_l2_factory_hook_address_for_pool_id
+        angstrom_l2::{angstrom_l2_growth_inside, angstrom_l2_last_growth_inside}
     },
     v4::{
-        UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
-        pool_manager::{
-            pool_state::pool_manager_pool_slot0,
-            position_state::pool_manager_position_state_liquidity
-        },
+        UnpackedPositionInfo, V4UserLiquidityPosition,
+        pool_manager::position_state::pool_manager_position_state_liquidity,
         position_manager::{
             position_manager_next_token_id, position_manager_owner_of,
             position_manager_pool_key_and_info
@@ -43,15 +24,7 @@ use uniswap_storage::{
 use super::data_api::AngstromL2DataApi;
 use crate::{
     l2::AngstromL2Chain,
-    types::{
-        BaseMainnetExt, UnichainMainnetExt,
-        common::*,
-        contracts::angstrom_l2::angstrom_l_2_factory::AngstromL2Factory,
-        fees::{LiquidityPositionFees, uniswap_fee_deltas},
-        pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader},
-        providers::RethDbProviderWrapper,
-        utils::historical_pool_manager_modify_liquidity_filter
-    }
+    types::fees::{LiquidityPositionFees, uniswap_fee_deltas}
 };
 
 impl<P, N> AngstromL2UserApi<N> for P
