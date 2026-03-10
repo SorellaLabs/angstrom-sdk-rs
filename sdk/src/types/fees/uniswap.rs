@@ -59,9 +59,13 @@ mod tests {
     #[cfg(feature = "l1")]
     #[tokio::test]
     async fn test_uniswap_fee_deltas_l1() {
+        use uniswap_storage::v4::UNISWAP_V4_CONSTANTS_MAINNET;
+
         use crate::l1::test_utils::valid_test_params::init_valid_position_params_with_provider;
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
         let block_number = pos_info.block_number;
+
+        let consts = UNISWAP_V4_CONSTANTS_MAINNET;
 
         #[cfg(feature = "local-reth")]
         let provider = &provider.provider_ref().eth_api();
@@ -70,8 +74,8 @@ mod tests {
 
         let results = uniswap_fee_deltas(
             provider,
-            *POOL_MANAGER_ADDRESS.get().unwrap(),
-            *POSITION_MANAGER_ADDRESS.get().unwrap(),
+            consts.pool_manager(),
+            consts.position_manager(),
             block_number.into(),
             pos_info.pool_id,
             pos_info.current_pool_tick,
@@ -94,6 +98,8 @@ mod tests {
     #[cfg(feature = "l2")]
     #[tokio::test]
     async fn test_uniswap_fee_deltas_l2() {
+        use uniswap_storage::v4::UNISWAP_V4_CONSTANTS_BASE_MAINNET;
+
         use crate::l2::test_utils::valid_test_params::init_valid_position_params_with_provider;
         let (provider, pos_info) = init_valid_position_params_with_provider().await;
         let block_number = pos_info.block_number;
@@ -103,10 +109,12 @@ mod tests {
         #[cfg(not(feature = "local-reth"))]
         let provider = &provider;
 
+        let consts = UNISWAP_V4_CONSTANTS_BASE_MAINNET;
+
         let results = uniswap_fee_deltas(
             provider,
-            *POOL_MANAGER_ADDRESS.get().unwrap(),
-            *POSITION_MANAGER_ADDRESS.get().unwrap(),
+            consts.pool_manager(),
+            consts.position_manager(),
             block_number.into(),
             pos_info.pool_id,
             pos_info.current_pool_tick,

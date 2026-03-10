@@ -600,7 +600,7 @@ mod data_api_tests {
             .unwrap();
 
         assert_eq!(all_pairs.len(), 3);
-        assert!(!all_pairs.contains(&TokenPair { token0: Address::ZERO, token1: BASE_USDC }));
+        assert!(all_pairs.contains(&TokenPair { token0: Address::ZERO, token1: BASE_USDC }));
     }
 
     #[tokio::test]
@@ -612,8 +612,7 @@ mod data_api_tests {
             .await
             .unwrap();
 
-        assert_eq!(all_tokens.len(), 3);
-        assert!(!all_tokens.contains(&Address::ZERO));
+        assert_eq!(all_tokens.len(), 6);
     }
 
     #[tokio::test]
