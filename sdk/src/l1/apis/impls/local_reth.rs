@@ -85,51 +85,6 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
         Ok(TokenPair { token0: out.asset0, token1: out.asset1 })
     }
 
-    async fn all_token_pairs_with_config_store(
-        &self,
-        config_store: AngstromPoolConfigStore,
-        block_id: BlockId,
-        chain: AngstromL1Chain
-    ) -> eyre::Result<Vec<TokenPair>> {
-        let partial_key_entries = config_store.all_entries();
-        let token_pairs = futures::future::try_join_all(
-            partial_key_entries
-                .iter()
-                .map(|key| self.tokens_by_partial_pool_key(key.pool_partial_key, block_id, chain))
-        )
-        .await?;
-
-        Ok(token_pairs)
-    }
-
-    async fn pool_key_by_tokens(
-        &self,
-        token0: Address,
-        token1: Address,
-        block_id: BlockId,
-        chain: AngstromL1Chain
-    ) -> eyre::Result<PoolKeyWithAngstromFee> {
-        let (token0, token1) = sort_tokens(token0, token1);
-
-        let config_store = self.pool_config_store(block_id, chain).await?;
-        let pool_config_store = config_store
-            .get_entry(token0, token1)
-            .ok_or(eyre::eyre!("no config store entry for tokens {token0:?} - {token1:?}"))?;
-
-        let pool_key = PoolKey {
-            currency0:   token0,
-            currency1:   token1,
-            fee:         U24::from(0x800000),
-            tickSpacing: I24::unchecked_from(pool_config_store.tick_spacing),
-            hooks:       chain.constants().angstrom_address()
-        };
-
-        Ok(PoolKeyWithAngstromFee {
-            pool_key,
-            pool_fee_in_e6: U24::from(pool_config_store.fee_in_e6)
-        })
-    }
-
     async fn historical_bundles(
         &self,
         start_block: Option<u64>,
