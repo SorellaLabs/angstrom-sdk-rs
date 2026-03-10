@@ -104,7 +104,7 @@ where
     }
 
     async fn alloy_root_provider(&self) -> eyre::Result<RootProvider<N::AlloyNetwork>> {
-        Ok(self.provider().alloy_root_provider().await?)
+        Ok(self.provider().root_provider().await?)
     }
 
     async fn block_number_from_block_id(&self, block_id: BlockId) -> eyre::Result<u64> {
