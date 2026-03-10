@@ -8,13 +8,17 @@ use alloy_primitives::{Address, U256, aliases::I24};
 use angstrom_types_primitives::PoolId;
 use auto_impl::auto_impl;
 pub use full::FullTickLoader;
-use uni_v4::pool_data_loader::TickData;
+use uni_v4::{
+    bindings::get_uniswap_v_4_tick_data::GetUniswapV4TickData,
+    pool_data_loader::{TickData, TicksWithBlock}
+};
+
+use crate::types::providers::primitive_fetcher::PrimitivesFetcher;
 
 pub const DEFAULT_TICKS_PER_BATCH: usize = 10;
 
 #[async_trait::async_trait]
-#[auto_impl(&, Box, Arc)]
-pub trait PoolTickDataLoader<N: Network>: Send + Sync {
+pub trait PoolTickDataLoader<N: Network>: PrimitivesFetcher<N> + Send + Sync {
     async fn load_tick_data(
         &self,
         pool_id: PoolId,
@@ -24,7 +28,39 @@ pub trait PoolTickDataLoader<N: Network>: Send + Sync {
         tick_spacing: I24,
         pool_manager_address: Address,
         block_number: BlockId
-    ) -> eyre::Result<(Vec<TickData>, U256)>;
+    ) -> eyre::Result<(Vec<TickData>, U256)> {
+        let deployer_tx = GetUniswapV4TickData::deploy_builder(
+            self.root_provider().await?,
+            pool_id,
+            pool_manager_address,
+            zero_for_one,
+            current_tick,
+            num_ticks,
+            tick_spacing
+        )
+        .into_transaction_request();
+
+        let out_tick_data = self
+            .view_deploy_call::<TicksWithBlock>(block_number, deployer_tx)
+            .await?;
+
+        Ok((
+            out_tick_data
+                .ticks
+                .into_iter()
+                .take(out_tick_data.validTo.to::<usize>())
+                .collect::<Vec<_>>(),
+            out_tick_data.blockNumber
+        ))
+    }
+}
+
+#[async_trait::async_trait]
+impl<P, N> PoolTickDataLoader<N> for P
+where
+    P: PrimitivesFetcher<N> + Send + Sync,
+    N: Network
+{
 }
 
 mod full {

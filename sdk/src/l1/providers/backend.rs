@@ -1,16 +1,16 @@
 use alloy_eips::BlockId;
-use alloy_network::{Ethereum, EthereumWallet, TxSigner};
-use alloy_primitives::{Address, Signature, U256, aliases::I24};
+use alloy_network::{Ethereum, EthereumWallet, Network, TxSigner};
+use alloy_primitives::{Address, Signature, TxHash};
 use alloy_provider::{Provider, RootProvider};
+use alloy_rpc_types::{Filter, Log};
 use alloy_signer::{Signer, SignerSync};
-use angstrom_types_primitives::PoolId;
+use alloy_sol_types::{SolCall, SolType};
 use jsonrpsee_http_client::HttpClient;
 use jsonrpsee_ws_client::{WsClient, WsClientBuilder};
-use uni_v4::pool_data_loader::TickData;
 
 use crate::{
     l1::apis::node_api::{AngstromNodeApi, AngstromOrderApiClient},
-    types::{pool_tick_loaders::PoolTickDataLoader, providers::AlloyProviderWrapper}
+    types::providers::{AlloyProviderWrapper, primitive_fetcher::PrimitivesFetcher}
 };
 
 #[derive(Debug, Clone)]
@@ -85,30 +85,61 @@ impl<T: AngstromOrderApiClient> Provider for AngstromProvider<T> {
 }
 
 #[async_trait::async_trait]
-impl<T> PoolTickDataLoader<Ethereum> for AngstromProvider<T>
+impl<T> PrimitivesFetcher<Ethereum> for AngstromProvider<T>
 where
     T: AngstromOrderApiClient + Sync
 {
-    async fn load_tick_data(
+    async fn fetch_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
+        self.eth_provider.fetch_logs(filter).await
+    }
+
+    async fn view_call<IC>(
         &self,
-        pool_id: PoolId,
-        current_tick: I24,
-        zero_for_one: bool,
-        num_ticks: u16,
-        tick_spacing: I24,
-        pool_manager_address: Address,
-        block_id: BlockId
-    ) -> eyre::Result<(Vec<TickData>, U256)> {
-        self.eth_provider
-            .load_tick_data(
-                pool_id,
-                current_tick,
-                zero_for_one,
-                num_ticks,
-                tick_spacing,
-                pool_manager_address,
-                block_id
-            )
-            .await
+        block_id: BlockId,
+        contract: Address,
+        call: IC
+    ) -> eyre::Result<IC::Return>
+    where
+        IC: SolCall + Send
+    {
+        self.eth_provider.view_call(block_id, contract, call).await
+    }
+
+    async fn view_deploy_call<IC>(
+        &self,
+        block_id: BlockId,
+        tx: <Ethereum as Network>::TransactionRequest
+    ) -> eyre::Result<IC::RustType>
+    where
+        IC: SolType + Send
+    {
+        self.eth_provider.view_deploy_call::<IC>(block_id, tx).await
+    }
+
+    async fn root_provider(&self) -> eyre::Result<RootProvider<Ethereum>> {
+        self.eth_provider.root_provider().await
+    }
+
+    async fn block_number_from_block_id(&self, block_id: BlockId) -> eyre::Result<u64> {
+        self.eth_provider.block_number_from_block_id(block_id).await
+    }
+
+    async fn fetch_block(
+        &self,
+        block_id: BlockId,
+        full: bool
+    ) -> eyre::Result<<Ethereum as Network>::BlockResponse> {
+        self.eth_provider.fetch_block(block_id, full).await
+    }
+
+    async fn tx_success(&self, tx_hash: TxHash) -> eyre::Result<bool> {
+        self.eth_provider.tx_success(tx_hash).await
+    }
+
+    async fn tx_by_hash(
+        &self,
+        tx_hash: TxHash
+    ) -> eyre::Result<Option<<Ethereum as Network>::TransactionResponse>> {
+        self.eth_provider.tx_by_hash(tx_hash).await
     }
 }

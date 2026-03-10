@@ -1,14 +1,17 @@
 use std::ops::Deref;
 
+use alloy_consensus::BlockHeader;
 use alloy_eips::BlockId;
 use alloy_json_rpc::RpcError;
-use alloy_network::{Ethereum, Network};
-use alloy_primitives::{Address, StorageKey, StorageValue, TxKind};
+use alloy_network::{BlockResponse, Ethereum, Network, ReceiptResponse, TransactionBuilder};
+use alloy_primitives::{Address, StorageKey, StorageValue, TxHash, TxKind};
 use alloy_provider::{DynProvider, Provider, RootProvider};
-use alloy_rpc_types::{TransactionInput, TransactionRequest};
+use alloy_rpc_types::{BlockTransactionsKind, Filter, Log, TransactionInput, TransactionRequest};
 use alloy_sol_types::{SolCall, SolType};
 use alloy_transport::TransportErrorKind;
 use uniswap_storage::StorageSlotFetcher;
+
+use crate::types::providers::primitive_fetcher::PrimitivesFetcher;
 
 /// Wrapper for alloy providers that implements SDK traits.
 /// This wrapper is necessary to avoid trait coherence conflicts with
@@ -46,40 +49,6 @@ impl<N: Network> Provider<N> for AlloyProviderWrapper<N> {
     }
 }
 
-pub(crate) async fn alloy_view_call<P, IC>(
-    provider: &P,
-    block_id: BlockId,
-    contract: Address,
-    call: IC
-) -> Result<Result<IC::Return, alloy_sol_types::Error>, RpcError<TransportErrorKind>>
-where
-    P: Provider + Clone,
-    IC: SolCall + Send
-{
-    let tx = TransactionRequest {
-        to: Some(TxKind::Call(contract)),
-        input: TransactionInput::both(call.abi_encode().into()),
-        ..Default::default()
-    };
-
-    let data = provider.call(tx).block(block_id).await?;
-    Ok(IC::abi_decode_returns(&data))
-}
-
-pub(crate) async fn alloy_view_deploy<P, N, IC>(
-    provider: &P,
-    block_id: BlockId,
-    tx: <N as Network>::TransactionRequest
-) -> Result<Result<IC::RustType, alloy_sol_types::Error>, RpcError<TransportErrorKind>>
-where
-    P: Provider<N>,
-    N: Network,
-    IC: SolType + Send
-{
-    let data = provider.call(tx).block(block_id).await?;
-    Ok(IC::abi_decode(&data))
-}
-
 #[async_trait::async_trait]
 impl<N: Network> StorageSlotFetcher for AlloyProviderWrapper<N> {
     async fn storage_at(
@@ -93,5 +62,91 @@ impl<N: Network> StorageSlotFetcher for AlloyProviderWrapper<N> {
             .get_storage_at(address, key.into())
             .block_id(block_id)
             .await?)
+    }
+}
+
+#[async_trait::async_trait]
+impl<N: Network> PrimitivesFetcher<N> for AlloyProviderWrapper<N>
+where
+    DynProvider<N>: Provider<N>
+{
+    async fn fetch_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
+        Ok(self.provider.get_logs(filter).await?)
+    }
+
+    async fn view_call<IC>(
+        &self,
+        block_id: BlockId,
+        contract: Address,
+        call: IC
+    ) -> eyre::Result<IC::Return>
+    where
+        IC: SolCall + Send
+    {
+        let mut tx = N::TransactionRequest::default();
+        tx.set_to(contract);
+        tx.set_input(call.abi_encode());
+
+        let data = self.call(tx).block(block_id).await?;
+        Ok(IC::abi_decode_returns(&data)?)
+    }
+
+    async fn view_deploy_call<IC>(
+        &self,
+        block_id: BlockId,
+        tx: <N as Network>::TransactionRequest
+    ) -> eyre::Result<IC::RustType>
+    where
+        IC: SolType + Send
+    {
+        let data = self.call(tx).block(block_id).await?;
+        Ok(IC::abi_decode(&data)?)
+    }
+
+    async fn root_provider(&self) -> eyre::Result<RootProvider<N>> {
+        Ok(self.provider.root().clone())
+    }
+
+    async fn block_number_from_block_id(&self, block_id: BlockId) -> eyre::Result<u64> {
+        let number = if let Some(b) = block_id.as_u64() {
+            b
+        } else {
+            self.get_block(block_id)
+                .await?
+                .ok_or_else(|| eyre::eyre!("block not found: {block_id:?}"))?
+                .header()
+                .number()
+        };
+
+        Ok(number)
+    }
+
+    async fn fetch_block(
+        &self,
+        block_id: BlockId,
+        full: bool
+    ) -> eyre::Result<<N as Network>::BlockResponse> {
+        let tx_kind =
+            if full { BlockTransactionsKind::Full } else { BlockTransactionsKind::Hashes };
+        self.get_block(block_id)
+            .kind(tx_kind)
+            .await?
+            .ok_or_else(|| eyre::eyre!("block does not exist: {block_id:?}"))
+    }
+
+    async fn tx_success(&self, tx_hash: TxHash) -> eyre::Result<bool> {
+        Ok(self
+            .provider
+            .get_transaction_receipt(tx_hash)
+            .await?
+            .ok_or_else(|| eyre::eyre!("tx does not exist: {tx_hash:?}"))?
+            .status())
+    }
+
+    async fn tx_by_hash(
+        &self,
+        tx_hash: TxHash
+    ) -> eyre::Result<Option<<N as Network>::TransactionResponse>> {
+        Ok(self.provider.get_transaction_by_hash(tx_hash).await?)
     }
 }

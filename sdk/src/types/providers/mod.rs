@@ -8,3 +8,5 @@ pub use alloy_provider::AlloyProviderWrapper;
 pub(crate) use alloy_provider::*;
 
 mod storage;
+
+pub mod primitive_fetcher;

@@ -1,11 +1,12 @@
 use alloy_eips::BlockId;
+use alloy_json_rpc::RpcError;
 use alloy_primitives::{Address, U256};
 use angstrom_types_primitives::primitive::ERC20;
 
 use super::{AllOrders, FillWrapper, errors::FillerError};
 use crate::{
     l1::{apis::node_api::AngstromOrderApiClient, providers::backend::AngstromProvider},
-    types::{common::*, providers::alloy_view_call}
+    types::{common::*, providers::primitive_fetcher::PrimitivesFetcher}
 };
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -18,13 +19,10 @@ impl TokenBalanceCheckFiller {
         token: Address,
         requested_amount: U256
     ) -> Result<(), FillerError> {
-        let user_balance_of = alloy_view_call(
-            provider.eth_provider(),
-            BlockId::latest(),
-            token,
-            ERC20::balanceOfCall { _owner: user }
-        )
-        .await??;
+        let user_balance_of = provider
+            .view_call(BlockId::latest(), token, ERC20::balanceOfCall { _owner: user })
+            .await
+            .map_err(|e| FillerError::EthCall(RpcError::local_usage_str(&e.to_string())))?;
 
         if requested_amount > user_balance_of {
             return Err(FillerError::InsufficientBalanceError(
