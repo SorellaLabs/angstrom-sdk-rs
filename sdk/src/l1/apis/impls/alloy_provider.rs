@@ -727,7 +727,6 @@ impl AngstromL1UserApi for AlloyProviderWrapper {
         let angstrom_address = consts.angstrom_address();
         let position_manager_address = consts.uniswap_constants().position_manager();
 
-        let block_id = block_number;
         let (growth_inside, last_growth_inside) = tokio::try_join!(
             angstrom_growth_inside(
                 self.root(),

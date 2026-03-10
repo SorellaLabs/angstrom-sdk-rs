@@ -253,7 +253,7 @@ where
             self.root(),
             chain.constants().uniswap_constants().pool_manager(),
             pool_id,
-            block_number
+            block_id
         )
         .await?)
     }
@@ -268,7 +268,7 @@ where
             self.root(),
             chain.constants().angstrom_l2_factory(),
             pool_id,
-            block_number
+            block_id
         )
         .await?
         .ok_or_else(|| eyre::eyre!("no hook found for pool id: {pool_id:?}"))?)
@@ -317,7 +317,7 @@ where
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
             chain.constants().uniswap_constants().position_manager(),
-            block_number,
+            block_id,
             position_token_id
         )
         .await?;
@@ -341,7 +341,7 @@ where
         chain: AngstromL2Chain
     ) -> eyre::Result<u128> {
         let consts = chain.constants();
-        let block_id = block_number;
+
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
             consts.uniswap_constants().position_manager(),
@@ -379,10 +379,9 @@ where
 
         let position_manager_address = consts.uniswap_constants().position_manager();
         let pool_manager_address = consts.uniswap_constants().pool_manager();
-        let block_id = block_number;
 
         let all_angstrom_hooks = if pool_id.is_none() {
-            self.all_pool_keys(block_number, chain)
+            self.all_pool_keys(block_id, chain)
                 .await?
                 .into_iter()
                 .map(|key| key.hooks)
@@ -469,16 +468,15 @@ where
         chain: AngstromL2Chain
     ) -> eyre::Result<LiquidityPositionFees> {
         let consts = chain.constants();
-        let block_id = block_number;
 
         let ((pool_key, position_info), position_liquidity) = tokio::try_join!(
-            self.position_and_pool_info(position_token_id, block_number, chain),
-            self.position_liquidity(position_token_id, block_number, chain),
+            self.position_and_pool_info(position_token_id, block_id, chain),
+            self.position_liquidity(position_token_id, block_id, chain),
         )?;
 
         let hook = pool_key.hooks;
         let pool_id = pool_key.into();
-        let slot0 = self.slot0_by_pool_id(pool_id, block_number, chain).await?;
+        let slot0 = self.slot0_by_pool_id(pool_id, block_id, chain).await?;
 
         let (angstrom_fee_delta, (uniswap_token0_fee_delta, uniswap_token1_fee_delta)) = tokio::try_join!(
             self.angstrom_l2_fees(
@@ -488,7 +486,7 @@ where
                 position_token_id,
                 position_info.tick_lower,
                 position_info.tick_upper,
-                block_number,
+                block_id,
                 chain
             ),
             uniswap_fee_deltas(
@@ -526,10 +524,9 @@ where
         let hook = if let Some(hook_address) = hook_address {
             hook_address
         } else {
-            self.hook_by_pool_id(pool_id, block_number, chain).await?
+            self.hook_by_pool_id(pool_id, block_id, chain).await?
         };
         let consts = chain.constants();
-        let block_id = block_number;
         let (growth_inside, last_growth_inside) = tokio::try_join!(
             angstrom_l2_growth_inside(
                 self.root(),
