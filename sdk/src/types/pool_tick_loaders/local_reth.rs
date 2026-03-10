@@ -53,7 +53,7 @@
 //     N::RethNode: NodeClientSpec
 // {
 //     let deployer_tx = GetUniswapV4TickData::deploy_builder(
-//         this.provider().root_provider().await?,
+//         this.provider().alloy_root_provider().await?,
 //         pool_id,
 //         pool_manager_address,
 //         zero_for_one,

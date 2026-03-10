@@ -101,7 +101,7 @@ where
         Ok(IC::abi_decode(&data)?)
     }
 
-    async fn root_provider(&self) -> eyre::Result<RootProvider<N>> {
+    async fn alloy_root_provider(&self) -> eyre::Result<RootProvider<N>> {
         Ok(self.provider.root().clone())
     }
 

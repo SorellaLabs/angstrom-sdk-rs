@@ -27,7 +27,7 @@ pub trait PrimitivesFetcher<N: Network>: Send + Sync {
     where
         IC: SolType + Send;
 
-    async fn root_provider(&self) -> eyre::Result<RootProvider<N>>;
+    async fn alloy_root_provider(&self) -> eyre::Result<RootProvider<N>>;
 
     async fn block_number_from_block_id(&self, block_id: BlockId) -> eyre::Result<u64>;
 

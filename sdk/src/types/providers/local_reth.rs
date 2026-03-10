@@ -60,7 +60,7 @@ where
     >
 {
     async fn fetch_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
-        Ok(self.root_provider().await?.get_logs(filter).await?)
+        Ok(self.alloy_root_provider().await?.get_logs(filter).await?)
     }
 
     async fn view_call<IC>(
@@ -103,8 +103,8 @@ where
         Ok(IC::abi_decode(data.result.output().unwrap_or_default())?)
     }
 
-    async fn root_provider(&self) -> eyre::Result<RootProvider<N::AlloyNetwork>> {
-        Ok(self.provider().root_provider().await?)
+    async fn alloy_root_provider(&self) -> eyre::Result<RootProvider<N::AlloyNetwork>> {
+        Ok(self.provider().alloy_root_provider().await?)
     }
 
     async fn block_number_from_block_id(&self, block_id: BlockId) -> eyre::Result<u64> {

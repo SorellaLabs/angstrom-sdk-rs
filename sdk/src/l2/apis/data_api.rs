@@ -206,7 +206,7 @@ pub trait AngstromL2DataApi<N: Network>:
         let pool_id: PoolId = pool_key.into();
 
         let data_deployer_call = GetUniswapV4PoolData::deploy_builder(
-            self.root_provider().await?,
+            self.alloy_root_provider().await?,
             pool_id,
             chain.constants().uniswap_constants().pool_manager(),
             pool_key.currency0,

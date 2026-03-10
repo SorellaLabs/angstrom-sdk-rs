@@ -29,7 +29,7 @@ pub trait PoolTickDataLoader<N: Network>: PrimitivesFetcher<N> + Send + Sync {
         block_number: BlockId
     ) -> eyre::Result<(Vec<TickData>, U256)> {
         let deployer_tx = GetUniswapV4TickData::deploy_builder(
-            self.root_provider().await?,
+            self.alloy_root_provider().await?,
             pool_id,
             pool_manager_address,
             zero_for_one,

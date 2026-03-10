@@ -504,7 +504,7 @@ pub trait AngstromL1DataApi:
         let pool_id: PoolId = pool_key.into();
 
         let data_deployer_call = GetUniswapV4PoolData::deploy_builder(
-            &self.root_provider().await?,
+            &self.alloy_root_provider().await?,
             pool_id,
             chain.constants().uniswap_constants().pool_manager(),
             pool_key.pool_key.currency0,
@@ -616,7 +616,7 @@ pub trait AngstromL1DataApi:
         AngstromPoolConfigStore::load_from_chain(
             chain.constants().angstrom_address(),
             block_id,
-            &self.root_provider().await?
+            &self.alloy_root_provider().await?
         )
         .await
         .map_err(|e| eyre::eyre!("{e:?}"))

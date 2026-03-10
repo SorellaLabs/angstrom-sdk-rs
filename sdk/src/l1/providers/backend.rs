@@ -116,8 +116,8 @@ where
         self.eth_provider.view_deploy_call::<IC>(block_id, tx).await
     }
 
-    async fn root_provider(&self) -> eyre::Result<RootProvider<Ethereum>> {
-        self.eth_provider.root_provider().await
+    async fn alloy_root_provider(&self) -> eyre::Result<RootProvider<Ethereum>> {
+        self.eth_provider.alloy_root_provider().await
     }
 
     async fn block_number_from_block_id(&self, block_id: BlockId) -> eyre::Result<u64> {
