@@ -50,15 +50,19 @@ use crate::{
     types::{
         common::*,
         contracts::angstrom_l2::angstrom_l_2_factory::AngstromL2Factory,
-        fees::{LiquidityPositionFees, uniswap_fee_deltas},
         pool_tick_loaders::{DEFAULT_TICKS_PER_BATCH, FullTickLoader, PoolTickDataLoader},
-        providers::AlloyProviderWrapper,
         utils::historical_pool_manager_modify_liquidity_filter
     }
 };
 
+impl<P, N> AngstromL2DataApi<N> for P
+where
+    P: PoolTickDataLoader<N> + StorageSlotFetcher + Send + Sized,
+    N: Network
+{
+}
+
 #[async_trait::async_trait]
-#[auto_impl(&, Box, Arc)]
 pub trait AngstromL2DataApi<N: Network>:
     PoolTickDataLoader<N> + StorageSlotFetcher + Send + Sized
 {

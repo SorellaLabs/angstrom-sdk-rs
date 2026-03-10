@@ -11,7 +11,7 @@ use lib_reth::{
     EthApiTypes, ExecuteEvm,
     helpers::{EthBlocks, EthTransactions},
     reth_libmdbx::{NodeClientSpec, RethNodeClient},
-    traits::{EthRevm, EthStream},
+    traits::{EthRevm, EthStream}
 };
 use revm::context::TxEnv;
 
@@ -21,15 +21,15 @@ use crate::types::providers::primitive_fetcher::PrimitivesFetcher;
 pub struct RethDbProviderWrapper<N>
 where
     N: EthNetworkExt,
-    N::RethNode: NodeClientSpec,
+    N::RethNode: NodeClientSpec
 {
-    provider: Arc<RethNodeClient<N>>,
+    provider: Arc<RethNodeClient<N>>
 }
 
 impl<N> RethDbProviderWrapper<N>
 where
     N: EthNetworkExt,
-    N::RethNode: NodeClientSpec,
+    N::RethNode: NodeClientSpec
 {
     pub fn new(provider: Arc<RethNodeClient<N>>) -> Self {
         Self { provider }
@@ -55,9 +55,9 @@ where
     N::AlloyNetwork: Network<
         BlockResponse = Block<
             <N::AlloyNetwork as Network>::TransactionResponse,
-            <N::AlloyNetwork as Network>::HeaderResponse,
-        >,
-    >,
+            <N::AlloyNetwork as Network>::HeaderResponse
+        >
+    >
 {
     async fn fetch_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
         Ok(self.root_provider().await?.get_logs(filter).await?)
@@ -67,10 +67,10 @@ where
         &self,
         block_id: BlockId,
         contract: Address,
-        call: IC,
+        call: IC
     ) -> eyre::Result<IC::Return>
     where
-        IC: SolCall + Send,
+        IC: SolCall + Send
     {
         let tx = TxEnv {
             kind: TxKind::Call(contract),
@@ -88,10 +88,10 @@ where
     async fn view_deploy_call<IC>(
         &self,
         block_id: BlockId,
-        tx: <N::AlloyNetwork as Network>::TransactionRequest,
+        tx: <N::AlloyNetwork as Network>::TransactionRequest
     ) -> eyre::Result<IC::RustType>
     where
-        IC: SolType + Send,
+        IC: SolType + Send
     {
         let call_data = tx.input().cloned().unwrap_or_default();
         let tx = TxEnv { kind: TxKind::Create, data: call_data, ..Default::default() };
@@ -123,7 +123,7 @@ where
     async fn fetch_block(
         &self,
         block_id: BlockId,
-        full: bool,
+        full: bool
     ) -> eyre::Result<<N::AlloyNetwork as Network>::BlockResponse> {
         EthBlocks::rpc_block(&self.provider.eth_api(), block_id, full)
             .await?
@@ -139,7 +139,7 @@ where
 
     async fn tx_by_hash(
         &self,
-        tx_hash: TxHash,
+        tx_hash: TxHash
     ) -> eyre::Result<Option<<N::AlloyNetwork as Network>::TransactionResponse>> {
         let api = self.provider.eth_api();
 

@@ -6,7 +6,8 @@ use alloy_rpc_types::{Filter, Log};
 use alloy_sol_types::{SolCall, SolType};
 
 #[async_trait::async_trait]
-pub trait PrimitivesFetcher<N: Network> {
+#[auto_impl::auto_impl(&, Box, Arc)]
+pub trait PrimitivesFetcher<N: Network>: Send + Sync {
     async fn fetch_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>>;
 
     async fn view_call<IC>(
