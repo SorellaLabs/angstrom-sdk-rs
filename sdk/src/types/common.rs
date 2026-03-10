@@ -174,7 +174,7 @@ impl BaselinePoolStateWithKey<Ethereum> {
         PoolKey {
             currency0:   self.pool_key.currency0,
             currency1:   self.pool_key.currency1,
-            fee:         U24::from(self.pool.bundle_fee().unwrap()),
+            fee:         U24::from(self.pool.bundle_fee().unwrap_or_default()),
             tickSpacing: self.pool_key.tickSpacing,
             hooks:       self.pool_key.hooks
         }

@@ -14,6 +14,7 @@ use op_alloy_network::Optimism;
 use uni_v4::{
     BaselinePoolState, L2FeeConfiguration, PoolKey as UniPoolKey,
     baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
+    bindings::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
     liquidity_base::BaselineLiquidity,
     pool_data_loader::{PoolData, PoolDataV4}
 };
