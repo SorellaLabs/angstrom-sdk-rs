@@ -416,14 +416,13 @@ pub trait AngstromL1DataApi:
 
         let angstrom_bundles = futures::stream::iter(txs)
             .filter_map(|transaction| async move {
-                if verify_successful_tx {
-                    if !self
+                if verify_successful_tx
+                    && !self
                         .tx_success(transaction.tx_hash())
                         .await
                         .unwrap_or_default()
-                    {
-                        return None;
-                    };
+                {
+                    return None;
                 }
 
                 let input: &[u8] = transaction.input();
