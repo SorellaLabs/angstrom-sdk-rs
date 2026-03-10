@@ -145,7 +145,7 @@ where
                 pool_id,
                 pool_data.tick.as_i32(),
                 uni_pool_key.tickSpacing.as_i32(),
-                Some(block_number),
+                block_id,
                 INITIAL_TICKS_PER_SIDE,
                 DEFAULT_TICKS_PER_BATCH,
                 chain.constants().uniswap_constants().pool_manager()
@@ -246,7 +246,7 @@ where
     async fn slot0_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<UnpackedSlot0> {
         Ok(pool_manager_pool_slot0(
@@ -261,7 +261,7 @@ where
     async fn hook_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Address> {
         Ok(angstrom_l2_factory_hook_address_for_pool_id(
@@ -311,7 +311,7 @@ where
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
@@ -337,7 +337,7 @@ where
     async fn position_liquidity(
         &self,
         position_token_id: U256,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<u128> {
         let consts = chain.constants();
@@ -372,7 +372,7 @@ where
         mut end_token_id: U256,
         pool_id: Option<PoolId>,
         max_results: Option<usize>,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Vec<V4UserLiquidityPosition>> {
         let consts = chain.constants();
@@ -465,7 +465,7 @@ where
     async fn user_position_fees(
         &self,
         position_token_id: U256,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<LiquidityPositionFees> {
         let consts = chain.constants();
@@ -520,7 +520,7 @@ where
         position_token_id: U256,
         tick_lower: I24,
         tick_upper: I24,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<U256> {
         let hook = if let Some(hook_address) = hook_address {

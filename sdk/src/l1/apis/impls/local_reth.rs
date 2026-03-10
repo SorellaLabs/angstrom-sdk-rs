@@ -5,7 +5,7 @@ use std::{
 
 use alloy_consensus::Transaction;
 use alloy_eips::BlockId;
-use alloy_network::TransactionResponse;
+use alloy_network::{Ethereum, TransactionResponse};
 use alloy_primitives::{
     Address, FixedBytes, TxHash, U256,
     aliases::{I24, U24},
@@ -29,10 +29,10 @@ use futures::StreamExt;
 use lib_reth::{EthApiServer, traits::EthStream};
 use pade::PadeDecode;
 use uni_v4::{
-    BaselinePoolState, FeeConfiguration, PoolKey as UniPoolKey,
+    BaselinePoolState, L1FeeConfiguration, PoolKey as UniPoolKey,
     baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
+    bindings::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
     liquidity_base::BaselineLiquidity,
-    loaders::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
     pool_data_loader::{PoolData, PoolDataV4}
 };
 use uniswap_storage::{
@@ -72,7 +72,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
     async fn tokens_by_partial_pool_key(
         &self,
         pool_partial_key: AngstromPoolPartialKey,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<TokenPair> {
         let out = reth_db_view_call(
@@ -88,7 +88,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
     async fn all_token_pairs_with_config_store(
         &self,
         config_store: AngstromPoolConfigStore,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<Vec<TokenPair>> {
         let partial_key_entries = config_store.all_entries();
@@ -105,7 +105,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
         &self,
         token0: Address,
         token1: Address,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<PoolKeyWithAngstromFee> {
         let (token0, token1) = sort_tokens(token0, token1);
@@ -276,16 +276,13 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
         token0: Address,
         token1: Address,
         load_ticks: bool,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL1Chain
-    ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
-        let block_number = block_number.as_u64().unwrap_or(
-            lib_reth::helpers::EthApiSpec::chain_info(&self.provider_ref().eth_api())?.best_number
-        );
+    ) -> eyre::Result<(u64, BaselinePoolStateWithKey<Ethereum>)> {
         let (token0, token1) = sort_tokens(token0, token1);
 
         let pool_key = self
-            .pool_key_by_tokens(token0, token1, BlockId::number(block_number), chain)
+            .pool_key_by_tokens(token0, token1, block_id, chain)
             .await?;
 
         let uni_pool_key = UniPoolKey {
@@ -309,7 +306,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
 
         let out_pool_data = reth_db_deploy_call::<_, PoolDataV4>(
             self.provider_ref(),
-            BlockId::number(block_number),
+            block_id,
             alloy_network::TransactionBuilder::input(&data_deployer_call)
                 .cloned()
                 .unwrap_or_default()
@@ -321,7 +318,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
                 pool_key.pool_key.currency0,
                 pool_key.pool_key.currency1,
                 Some(pool_key.pool_fee_in_e6),
-                BlockId::number(block_number),
+                block_id,
                 chain
             )
             .await?;
@@ -331,7 +328,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
                 pool_id,
                 pool_data.tick.as_i32(),
                 uni_pool_key.tickSpacing.as_i32(),
-                Some(block_number),
+                block_id,
                 INITIAL_TICKS_PER_SIDE,
                 DEFAULT_TICKS_PER_BATCH,
                 chain.constants().uniswap_constants().pool_manager()
@@ -355,6 +352,12 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
             tick_bitmap
         );
 
+        let block_number = if let Some(bn) = block_id.as_u64() {
+            bn
+        } else {
+            self.provider().eth_api().block_number()?.to()
+        };
+
         let baseline_state = BaselinePoolState::new(
             baseline_liquidity,
             block_number,
@@ -373,7 +376,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
 
     async fn pool_config_store(
         &self,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<AngstromPoolConfigStore> {
         AngstromPoolConfigStore::load_from_chain(
@@ -388,7 +391,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
     async fn slot0_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<UnpackedSlot0> {
         Ok(pool_manager_pool_slot0(
@@ -402,7 +405,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
 
     async fn get_bundle_by_block(
         &self,
-        block_number: BlockId,
+        block_id: BlockId,
         verify_successful_tx: bool,
         chain: AngstromL1Chain
     ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
@@ -514,9 +517,9 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
         token0: Address,
         token1: Address,
         bundle_fee: Option<U24>,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL1Chain
-    ) -> eyre::Result<FeeConfiguration> {
+    ) -> eyre::Result<L1FeeConfiguration> {
         const UNLOCKED_FEES_SLOT: u64 = 2;
 
         let pool_partial_key = AngstromPoolConfigStore::derive_store_key(token0, token1);
@@ -546,7 +549,7 @@ impl<T: AllExtensions> AngstromL1DataApi for RethDbProviderWrapper<MainnetExt<T>
         let unlocked_fee = U24::from_be_bytes([bytes[29], bytes[30], bytes[31]]);
         let protocol_fee = U24::from_be_bytes([bytes[26], bytes[27], bytes[28]]);
 
-        Ok(FeeConfiguration {
+        Ok(L1FeeConfiguration {
             bundle_fee:   bundle_fee.to::<u32>(),
             swap_fee:     unlocked_fee.to::<u32>(),
             protocol_fee: protocol_fee.to::<u32>()
@@ -559,7 +562,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
@@ -585,7 +588,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
     async fn position_liquidity(
         &self,
         position_token_id: U256,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<u128> {
         let block_id = block_number;
@@ -620,7 +623,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
         mut end_token_id: U256,
         pool_id: Option<PoolId>,
         max_results: Option<usize>,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<Vec<V4UserLiquidityPosition>> {
         let consts = chain.constants();
@@ -701,7 +704,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
     async fn user_position_fees(
         &self,
         position_token_id: U256,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<LiquidityPositionFees> {
         let block_id = block_number;
@@ -752,7 +755,7 @@ impl<T: AllExtensions> AngstromL1UserApi for RethDbProviderWrapper<MainnetExt<T>
         position_token_id: U256,
         tick_lower: I24,
         tick_upper: I24,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL1Chain
     ) -> eyre::Result<U256> {
         let block_id = block_number;
@@ -812,7 +815,7 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            FeeConfiguration { bundle_fee: 200, swap_fee: 238, protocol_fee: 112 },
+            L1FeeConfiguration { bundle_fee: 200, swap_fee: 238, protocol_fee: 112 },
             fee_config
         );
     }

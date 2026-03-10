@@ -2,8 +2,9 @@ mod alloy_provider;
 #[cfg(feature = "local-reth")]
 mod local_reth;
 
+use alloy_eips::BlockId;
 use alloy_network::Network;
-use alloy_primitives::{Address, BlockNumber, U256, aliases::I24};
+use alloy_primitives::{Address, U256, aliases::I24};
 use angstrom_types_primitives::PoolId;
 use auto_impl::auto_impl;
 pub use full::FullTickLoader;
@@ -22,13 +23,14 @@ pub trait PoolTickDataLoader<N: Network>: Send + Sync {
         num_ticks: u16,
         tick_spacing: I24,
         pool_manager_address: Address,
-        block_number: Option<BlockNumber>
+        block_number: BlockId
     ) -> eyre::Result<(Vec<TickData>, U256)>;
 }
 
 mod full {
     use std::collections::HashMap;
 
+    use alloy_eips::BlockId;
     use alloy_network::Network;
     use alloy_primitives::{Address, U256, aliases::I24};
     use angstrom_types_primitives::PoolId;
@@ -59,7 +61,7 @@ mod full {
             pool_id: PoolId,
             current_tick: i32,
             tick_spacing: i32,
-            block_number: Option<u64>,
+            block_number: BlockId,
             tick_band: u16,
             ticks_per_batch: usize,
             pool_manager_address: Address
@@ -71,7 +73,7 @@ mod full {
             zero_for_one: bool,
             current_tick: i32,
             tick_spacing: i32,
-            block_number: Option<u64>,
+            block_number: BlockId,
             tick_band: u16,
             ticks_per_batch: usize,
             pool_manager_address: Address
@@ -85,7 +87,7 @@ mod full {
             num_ticks: u16,
             tick_spacing: i32,
             pool_manager_address: Address,
-            block_number: Option<u64>
+            block_number: BlockId
         ) -> eyre::Result<(Vec<TickData>, i32)>;
 
         fn apply_ticks(
@@ -106,7 +108,7 @@ mod full {
             pool_id: PoolId,
             current_tick: i32,
             tick_spacing: i32,
-            block_number: Option<u64>,
+            block_number: BlockId,
             tick_band: u16,
             ticks_per_batch: usize,
             pool_manager_address: Address
@@ -153,7 +155,7 @@ mod full {
             zero_for_one: bool,
             current_tick: i32,
             tick_spacing: i32,
-            block_number: Option<u64>,
+            block_number: BlockId,
             tick_band: u16,
             ticks_per_batch: usize,
             pool_manager_address: Address
@@ -199,7 +201,7 @@ mod full {
             num_ticks: u16,
             tick_spacing: i32,
             pool_manager_address: Address,
-            block_number: Option<u64>
+            block_number: BlockId
         ) -> eyre::Result<(Vec<TickData>, i32)> {
             let (ticks, _last_tick_bitmap) = self
                 .load_tick_data(
