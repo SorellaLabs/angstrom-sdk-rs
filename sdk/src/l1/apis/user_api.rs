@@ -1,8 +1,7 @@
 use alloy_eips::BlockId;
 use alloy_primitives::{Address, U256, aliases::I24};
 use angstrom_types_primitives::{
-    contract_bindings::pool_manager::PoolManager::PoolKey,
-    primitive::PoolId
+    contract_bindings::pool_manager::PoolManager::PoolKey, primitive::PoolId
 };
 use uniswap_storage::{
     angstrom::mainnet::{angstrom_growth_inside, angstrom_last_growth_inside},

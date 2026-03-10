@@ -4,13 +4,10 @@ use alloy_eips::BlockId;
 use alloy_network::Network;
 use alloy_primitives::{Address, B256, U256, aliases::I24};
 use angstrom_types_primitives::{
-    contract_bindings::pool_manager::PoolManager::PoolKey,
-    primitive::PoolId
+    contract_bindings::pool_manager::PoolManager::PoolKey, primitive::PoolId
 };
 use uniswap_storage::{
-    angstrom::l2::{
-        angstrom_l2::{angstrom_l2_growth_inside, angstrom_l2_last_growth_inside}
-    },
+    angstrom::l2::angstrom_l2::{angstrom_l2_growth_inside, angstrom_l2_last_growth_inside},
     v4::{
         UnpackedPositionInfo, V4UserLiquidityPosition,
         pool_manager::position_state::pool_manager_position_state_liquidity,

@@ -4,10 +4,7 @@ use alloy_eips::BlockId;
 use alloy_network::Network;
 use alloy_primitives::Address;
 use alloy_sol_types::SolEvent;
-use angstrom_types_primitives::{
-    contract_bindings::pool_manager::PoolManager,
-    primitive::PoolId
-};
+use angstrom_types_primitives::{contract_bindings::pool_manager::PoolManager, primitive::PoolId};
 use futures::TryStreamExt;
 use op_alloy_network::Optimism;
 use uni_v4::{
@@ -21,8 +18,7 @@ use uniswap_storage::{
     StorageSlotFetcher,
     angstrom::l2::{
         angstrom_l2::{
-            angstrom_l2_jit_tax_enabled,
-            angstrom_l2_pool_fee_config, angstrom_l2_pool_keys_stream,
+            angstrom_l2_jit_tax_enabled, angstrom_l2_pool_fee_config, angstrom_l2_pool_keys_stream,
             angstrom_l2_priority_fee_tax_floor
         },
         angstrom_l2_factory::{
@@ -30,10 +26,7 @@ use uniswap_storage::{
             angstrom_l2_factory_hook_address_for_pool_id
         }
     },
-    v4::{
-        UnpackedSlot0,
-        pool_manager::pool_state::pool_manager_pool_slot0
-    }
+    v4::{UnpackedSlot0, pool_manager::pool_state::pool_manager_pool_slot0}
 };
 
 use crate::{
