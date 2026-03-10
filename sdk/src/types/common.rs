@@ -1,3 +1,4 @@
+use alloy_network::Ethereum;
 use alloy_primitives::{
     Address, TxHash,
     aliases::{I24, U24},
@@ -12,7 +13,7 @@ use angstrom_types_primitives::{
     sol_bindings::{RawPoolOrder, grouped_orders::AllOrders, rpc_orders::OmitOrderMeta}
 };
 use serde::{Deserialize, Serialize};
-use uni_v4::BaselinePoolState;
+use uni_v4::{BaselinePoolState, V4Network};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TokenPair {
@@ -163,17 +164,17 @@ impl<D> WithEthMeta<D> {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BaselinePoolStateWithKey {
-    pub pool:     BaselinePoolState,
+pub struct BaselinePoolStateWithKey<F: V4Network> {
+    pub pool:     BaselinePoolState<F>,
     pub pool_key: PoolKey
 }
 
-impl BaselinePoolStateWithKey {
+impl BaselinePoolStateWithKey<Ethereum> {
     pub fn angstrom_pool_id(&self) -> PoolId {
         PoolKey {
             currency0:   self.pool_key.currency0,
             currency1:   self.pool_key.currency1,
-            fee:         U24::from(self.pool.bundle_fee()),
+            fee:         U24::from(self.pool.bundle_fee().unwrap()),
             tickSpacing: self.pool_key.tickSpacing,
             hooks:       self.pool_key.hooks
         }

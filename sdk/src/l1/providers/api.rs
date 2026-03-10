@@ -1,5 +1,6 @@
+use alloy_eips::BlockId;
 use alloy_network::{Ethereum, TxSigner};
-use alloy_primitives::{Address, BlockNumber, FixedBytes, Signature, U256, aliases::I24};
+use alloy_primitives::{Address, FixedBytes, Signature, U256, aliases::I24};
 use alloy_provider::Provider;
 use alloy_signer::{Signer, SignerSync};
 use angstrom_types_primitives::{PoolId, sol_bindings::grouped_orders::AllOrders};
@@ -214,7 +215,7 @@ where
         num_ticks: u16,
         tick_spacing: I24,
         pool_manager_address: Address,
-        block_number: Option<BlockNumber>
+        block_id: BlockId
     ) -> eyre::Result<(Vec<TickData>, U256)> {
         self.provider
             .load_tick_data(
@@ -224,7 +225,7 @@ where
                 num_ticks,
                 tick_spacing,
                 pool_manager_address,
-                block_number
+                block_id
             )
             .await
     }

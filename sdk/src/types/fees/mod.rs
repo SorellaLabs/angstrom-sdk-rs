@@ -6,6 +6,8 @@ use uniswap_storage::v4::utils::{FIXED_POINT_128, full_mul_x128, mul_div};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LiquidityPositionFees {
     pub position_liquidity:   u128,
+    /// l1 -> token0
+    /// l2 -> token0 (native ETH)
     pub angstrom_token0_fees: U256,
     pub uniswap_token0_fees:  U256,
     pub uniswap_token1_fees:  U256

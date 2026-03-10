@@ -9,7 +9,7 @@ use eth_network_exts::{AllExtensions, EthNetworkExt};
 use eth_network_exts::{base_mainnet::BaseMainnetExt, unichain_mainnet::UnichainMainnetExt};
 use lib_reth::{reth_libmdbx::NodeClientSpec, traits::EthStream};
 use uni_v4::{
-    loaders::get_uniswap_v_4_tick_data::GetUniswapV4TickData,
+    bindings::get_uniswap_v_4_tick_data::GetUniswapV4TickData,
     pool_data_loader::{TickData, TicksWithBlock}
 };
 
@@ -32,7 +32,7 @@ macro_rules! reth_db_pool_tick_data_loader_impl {
                     num_ticks: u16,
                     tick_spacing: I24,
                     pool_manager_address: Address,
-                    block_number: Option<u64>
+                    block_number: BlockId,
                 ) -> eyre::Result<(Vec<TickData>, U256)> {
                     __load_tick_data(
                         self,
@@ -65,7 +65,7 @@ async fn __load_tick_data<N>(
     num_ticks: u16,
     tick_spacing: I24,
     pool_manager_address: Address,
-    block_number: Option<u64>
+    block_number: BlockId
 ) -> eyre::Result<(Vec<TickData>, U256)>
 where
     N: EthNetworkExt,
@@ -84,9 +84,7 @@ where
 
     let out_tick_data = reth_db_deploy_call::<N, TicksWithBlock>(
         this.provider_ref(),
-        block_number
-            .map(BlockId::number)
-            .unwrap_or_else(BlockId::latest),
+        block_number,
         TransactionBuilder::input(&deployer_tx)
             .cloned()
             .unwrap_or_default()

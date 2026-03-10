@@ -66,8 +66,24 @@ jobs:
         run: cargo clippy --workspace --all-features --all-targets
 
   cargo-test:
-    name: cargo test
+    name: cargo test (${{ matrix.scope }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - scope: l1
+            test_filter: "l1::"
+            skip_filter_1: ""
+            skip_filter_2: ""
+          - scope: l2
+            test_filter: "l2::"
+            skip_filter_1: ""
+            skip_filter_2: ""
+          - scope: other
+            test_filter: ""
+            skip_filter_1: "l1::"
+            skip_filter_2: "l2::"
     env:
       ETH_WS_URL: ${{ secrets.ETH_WS_URL }} 
       BASE_WS_URL: ${{ secrets.BASE_WS_URL }} 
@@ -80,5 +96,24 @@ jobs:
         with:
           version: stable
       - uses: Swatinem/rust-cache@v2
-      - name: cargo test
-        run: cargo test --workspace --all-targets -- --nocapture
+      - name: Run tests for ${{ matrix.scope }}
+        env:
+          TEST_FILTER: ${{ matrix.test_filter }}
+          SKIP_FILTER_1: ${{ matrix.skip_filter_1 }}
+          SKIP_FILTER_2: ${{ matrix.skip_filter_2 }}
+        run: |
+          cargo_args=(--workspace --all-targets)
+          if [ -n "${TEST_FILTER}" ]; then
+            cargo_args+=("${TEST_FILTER}")
+          fi
+
+          test_args=(--nocapture)
+          if [ -n "${SKIP_FILTER_1}" ]; then
+            test_args+=(--skip "${SKIP_FILTER_1}")
+          fi
+          if [ -n "${SKIP_FILTER_2}" ]; then
+            test_args+=(--skip "${SKIP_FILTER_2}")
+          fi
+
+          echo "Running: cargo test ${cargo_args[*]} -- ${test_args[*]}"
+          cargo test "${cargo_args[@]}" -- "${test_args[@]}"

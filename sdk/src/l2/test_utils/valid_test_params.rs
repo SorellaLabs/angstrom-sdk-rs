@@ -9,10 +9,7 @@ use angstrom_types_primitives::{
 };
 use uniswap_storage::v4::UnpackedPositionInfo;
 
-use crate::l2::{
-    ANGSTROM_L2_CONSTANTS_BASE_MAINNET, AngstromL2Chain,
-    test_utils::{BASE_USDC, BASE_WETH}
-};
+use crate::l2::{ANGSTROM_L2_CONSTANTS_BASE_MAINNET, AngstromL2Chain, test_utils::BASE_USDC};
 #[cfg(feature = "local-reth")]
 use crate::types::BaseMainnetExt;
 #[cfg(not(feature = "local-reth"))]
@@ -73,38 +70,38 @@ pub fn init_valid_position_params() -> ValidPositionTestParameters {
     let chain_consts = ANGSTROM_L2_CONSTANTS_BASE_MAINNET;
     let _ = try_init_with_chain_id(chain_consts.chain_id());
 
-    let owner = address!("0xe344c3d419B7788006ab5aF4355E03b04CE75579");
-    let pool_id = b256!("0xe500210c7ea6bfd9f69dce044b09ef384ec2b34832f132baec3b418208e3a657");
-    let tick_lower = I24::unchecked_from(194970);
-    let tick_upper = I24::unchecked_from(198000);
-    let position_token_id = U256::from(102303_u128);
+    let owner = address!("0x2A49fF6D0154506D0e1Eda03655F274126ceF7B6");
+    let pool_id = b256!("0x71deb282904d0f76bc8c7867f4618ff91dcb43cf4574bc64700ffc48791d369c");
+    let hook_address = address!("0x631352Aaa9d6554848aF674106bCD8Bb9E59a5CF");
+    let tick_lower = I24::unchecked_from(-203530);
+    let tick_upper = I24::unchecked_from(-197310);
+    let position_token_id = U256::from(1970005u64);
 
     let position_manager_pool_map_key = [
-        229, 0, 33, 12, 126, 166, 191, 217, 246, 157, 206, 4, 75, 9, 239, 56, 78, 194, 179, 72, 50,
-        241, 50, 186, 236
+        113, 222, 178, 130, 144, 77, 15, 118, 188, 140, 120, 103, 244, 97, 143, 249, 29, 203, 67,
+        207, 69, 116, 188, 100, 112
     ];
 
-    let angstrom_address = Address::random();
     let pool_key = PoolManager::PoolKey {
-        currency0:   BASE_USDC,
-        currency1:   BASE_WETH,
-        fee:         U24::from(0x800000),
+        currency0:   Address::ZERO,
+        currency1:   BASE_USDC,
+        fee:         U24::from(160),
         tickSpacing: I24::unchecked_from(10),
-        hooks:       angstrom_address
+        hooks:       hook_address
     };
 
     ValidPositionTestParameters {
         pool_id,
         position_token_id,
         tick_lower,
-        position_liquidity: 807449445327074,
-        block_number: 23870000,
-        current_pool_tick: I24::unchecked_from(196699),
+        position_liquidity: 590304962892303,
+        block_number: 43100000,
+        current_pool_tick: I24::unchecked_from(-200640),
         tick_upper,
         position_manager_pool_map_key,
         owner,
         pool_key,
-        block_for_liquidity_add: 23871281,
+        block_for_liquidity_add: 42976298,
         chain: AngstromL2Chain::Base
     }
 }

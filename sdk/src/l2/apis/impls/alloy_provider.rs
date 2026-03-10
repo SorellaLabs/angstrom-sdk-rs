@@ -4,26 +4,31 @@ use alloy_eips::BlockId;
 use alloy_network::Network;
 use alloy_primitives::{Address, B256, U256, aliases::I24};
 use alloy_provider::Provider;
-use alloy_rpc_types::Filter;
 use alloy_sol_types::SolEvent;
 use angstrom_types_primitives::{
     contract_bindings::pool_manager::PoolManager::{self, PoolKey},
     primitive::PoolId
 };
+use futures::TryStreamExt;
+use op_alloy_network::Optimism;
 use uni_v4::{
-    BaselinePoolState, FeeConfiguration, PoolKey as UniPoolKey,
+    BaselinePoolState, L2FeeConfiguration, PoolKey as UniPoolKey,
     baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
+    bindings::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
     liquidity_base::BaselineLiquidity,
-    loaders::get_uniswap_v_4_pool_data::GetUniswapV4PoolData,
     pool_data_loader::{PoolData, PoolDataV4}
 };
 use uniswap_storage::{
     angstrom::l2::{
-        AngstromL2PoolFeeConfiguration,
         angstrom_l2::{
-            angstrom_l2_growth_inside, angstrom_l2_last_growth_inside, angstrom_l2_pool_fee_config
+            angstrom_l2_growth_inside, angstrom_l2_jit_tax_enabled, angstrom_l2_last_growth_inside,
+            angstrom_l2_pool_fee_config, angstrom_l2_pool_keys_stream,
+            angstrom_l2_priority_fee_tax_floor
         },
-        angstrom_l2_factory::angstrom_l2_factory_hook_address_for_pool_id
+        angstrom_l2_factory::{
+            angstrom_l2_factory_all_hooks, angstrom_l2_factory_get_slot0,
+            angstrom_l2_factory_hook_address_for_pool_id
+        }
     },
     v4::{
         UnpackedPositionInfo, UnpackedSlot0, V4UserLiquidityPosition,
@@ -60,31 +65,34 @@ where
 {
     async fn all_pool_keys(
         &self,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Vec<AngstromL2Factory::PoolKey>> {
-        let constants = chain.constants();
+        let hooks =
+            angstrom_l2_factory_all_hooks(self, chain.constants().angstrom_l2_factory(), block_id)
+                .await?;
 
-        let mut filter = Filter::new()
-            .address(constants.angstrom_l2_factory())
-            .from_block(constants.angstrom_deploy_block())
-            .event_signature(AngstromL2Factory::PoolCreated::SIGNATURE_HASH);
-
-        if let BlockId::Number(bn) = block_number {
-            filter = filter.to_block(bn);
-        }
-
-        let keys = self
-            .provider()
-            .get_logs(&filter)
+        let pool_key_stream = futures::stream::select_all(
+            futures::future::try_join_all(
+                hooks
+                    .into_iter()
+                    .map(|hook| angstrom_l2_pool_keys_stream(self, hook, block_id))
+            )
             .await?
             .into_iter()
-            .flat_map(|raw_log| {
-                AngstromL2Factory::PoolCreated::decode_log(&raw_log.inner)
-                    .map(|log| log.key)
-                    .ok()
+            .flatten()
+        );
+
+        let keys = pool_key_stream
+            .map_ok(|pool_key| AngstromL2Factory::PoolKey {
+                currency0:   pool_key.currency0,
+                currency1:   pool_key.currency1,
+                fee:         pool_key.fee,
+                tickSpacing: pool_key.tickSpacing,
+                hooks:       pool_key.hooks
             })
-            .collect();
+            .try_collect()
+            .await?;
 
         Ok(keys)
     }
@@ -93,16 +101,16 @@ where
         &self,
         pool_id: PoolId,
         load_ticks: bool,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
-    ) -> eyre::Result<(u64, BaselinePoolStateWithKey)> {
-        let block_number = block_number
-            .as_u64()
-            .unwrap_or(self.provider().get_block_number().await?);
+    ) -> eyre::Result<(u64, BaselinePoolStateWithKey<Optimism>)> {
+        let block_number = if let Some(bn) = block_id.as_u64() {
+            bn
+        } else {
+            self.provider().get_block_number().await?
+        };
 
-        let pool_key = self
-            .pool_key_by_pool_id(pool_id, BlockId::number(block_number), chain)
-            .await?;
+        let pool_key = self.pool_key_by_pool_id(pool_id, block_id, chain).await?;
 
         let uni_pool_key = UniPoolKey {
             currency0:   pool_key.currency0,
@@ -123,29 +131,21 @@ where
         )
         .into_transaction_request();
 
-        let out_pool_data = alloy_view_deploy::<_, _, PoolDataV4>(
-            self.provider(),
-            BlockId::number(block_number),
-            data_deployer_call
-        )
-        .await??;
+        let out_pool_data =
+            alloy_view_deploy::<_, _, PoolDataV4>(self.provider(), block_id, data_deployer_call)
+                .await??;
         let pool_data: PoolData = (uni_pool_key, out_pool_data).into();
 
-        // let fee_config = self
-        //     .fee_configuration_by_pool_id(pool_id, block_number, chain)
-        //     .await?;
-        let fee_config = FeeConfiguration {
-            bundle_fee:   Default::default(),
-            swap_fee:     Default::default(),
-            protocol_fee: Default::default()
-        };
+        let fee_config = self
+            .fee_configuration_by_pool_id(pool_id, block_id, chain)
+            .await?;
 
         let (ticks, tick_bitmap) = if load_ticks {
             self.load_tick_data_in_band(
                 pool_id,
                 pool_data.tick.as_i32(),
                 uni_pool_key.tickSpacing.as_i32(),
-                Some(block_number),
+                block_id,
                 INITIAL_TICKS_PER_SIDE,
                 DEFAULT_TICKS_PER_BATCH,
                 chain.constants().uniswap_constants().pool_manager()
@@ -204,7 +204,7 @@ where
             .all_pool_keys(end_block.map(Into::into).unwrap_or_else(BlockId::latest), chain)
             .await?
             .into_iter()
-            .map(|pool_key| PoolId::from(pool_key))
+            .map(PoolId::from)
             .collect::<HashSet<_>>();
 
         let consts = chain.constants();
@@ -246,14 +246,14 @@ where
     async fn slot0_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<UnpackedSlot0> {
         Ok(pool_manager_pool_slot0(
             self.root(),
             chain.constants().uniswap_constants().pool_manager(),
             pool_id,
-            block_number
+            block_id
         )
         .await?)
     }
@@ -261,14 +261,14 @@ where
     async fn hook_by_pool_id(
         &self,
         pool_id: PoolId,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Address> {
         Ok(angstrom_l2_factory_hook_address_for_pool_id(
             self.root(),
             chain.constants().angstrom_l2_factory(),
             pool_id,
-            block_number
+            block_id
         )
         .await?
         .ok_or_else(|| eyre::eyre!("no hook found for pool id: {pool_id:?}"))?)
@@ -278,10 +278,28 @@ where
         &self,
         pool_id: PoolId,
         hook_address: Address,
-        block_number: BlockId,
-        _chain: AngstromL2Chain
-    ) -> eyre::Result<AngstromL2PoolFeeConfiguration> {
-        angstrom_l2_pool_fee_config(self.root(), hook_address, pool_id, block_number).await
+        block_id: BlockId,
+        chain: AngstromL2Chain
+    ) -> eyre::Result<L2FeeConfiguration> {
+        let (fee_config, priority_fee_tax_floor, jit_tax_enabled, factory_slot0, pool_key) = tokio::try_join!(
+            angstrom_l2_pool_fee_config(self.root(), hook_address, pool_id, block_id),
+            angstrom_l2_priority_fee_tax_floor(self.root(), hook_address, block_id),
+            angstrom_l2_jit_tax_enabled(self.root(), hook_address, block_id),
+            angstrom_l2_factory_get_slot0(self.root(), hook_address, block_id),
+            self.pool_key_by_pool_id(pool_id, block_id, chain)
+        )?;
+
+        Ok(L2FeeConfiguration {
+            is_initialized: fee_config.is_initialized,
+            lp_fee: pool_key.fee.to(),
+            creator_tax_fee_e6: fee_config.creator_tax_fee_e6,
+            protocol_tax_fee_e6: fee_config.protocol_tax_fee_e6,
+            creator_swap_fee_e6: fee_config.creator_swap_fee_e6,
+            protocol_swap_fee_e6: fee_config.protocol_swap_fee_e6,
+            priority_fee_tax_floor: priority_fee_tax_floor.to(),
+            jit_tax_enabled,
+            withdraw_only: factory_slot0.withdraw_only
+        })
     }
 }
 
@@ -293,13 +311,13 @@ where
     async fn position_and_pool_info(
         &self,
         position_token_id: U256,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<(PoolKey, UnpackedPositionInfo)> {
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
             chain.constants().uniswap_constants().position_manager(),
-            block_number,
+            block_id,
             position_token_id
         )
         .await?;
@@ -319,11 +337,11 @@ where
     async fn position_liquidity(
         &self,
         position_token_id: U256,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<u128> {
         let consts = chain.constants();
-        let block_id = block_number;
+
         let (pool_key, position_info) = position_manager_pool_key_and_info(
             self.root(),
             consts.uniswap_constants().position_manager(),
@@ -354,17 +372,16 @@ where
         mut end_token_id: U256,
         pool_id: Option<PoolId>,
         max_results: Option<usize>,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<Vec<V4UserLiquidityPosition>> {
         let consts = chain.constants();
 
         let position_manager_address = consts.uniswap_constants().position_manager();
         let pool_manager_address = consts.uniswap_constants().pool_manager();
-        let block_id = block_number;
 
         let all_angstrom_hooks = if pool_id.is_none() {
-            self.all_pool_keys(block_number, chain)
+            self.all_pool_keys(block_id, chain)
                 .await?
                 .into_iter()
                 .map(|key| key.hooks)
@@ -432,10 +449,10 @@ where
                 pool_key
             });
 
-            if let Some(max_res) = max_results {
-                if all_positions.len() >= max_res {
-                    break;
-                }
+            if let Some(max_res) = max_results
+                && all_positions.len() >= max_res
+            {
+                break;
             }
 
             start_token_id += U256::from(1u8);
@@ -447,20 +464,19 @@ where
     async fn user_position_fees(
         &self,
         position_token_id: U256,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<LiquidityPositionFees> {
         let consts = chain.constants();
-        let block_id = block_number;
 
         let ((pool_key, position_info), position_liquidity) = tokio::try_join!(
-            self.position_and_pool_info(position_token_id, block_number, chain),
-            self.position_liquidity(position_token_id, block_number, chain),
+            self.position_and_pool_info(position_token_id, block_id, chain),
+            self.position_liquidity(position_token_id, block_id, chain),
         )?;
 
         let hook = pool_key.hooks;
         let pool_id = pool_key.into();
-        let slot0 = self.slot0_by_pool_id(pool_id, block_number, chain).await?;
+        let slot0 = self.slot0_by_pool_id(pool_id, block_id, chain).await?;
 
         let (angstrom_fee_delta, (uniswap_token0_fee_delta, uniswap_token1_fee_delta)) = tokio::try_join!(
             self.angstrom_l2_fees(
@@ -470,7 +486,7 @@ where
                 position_token_id,
                 position_info.tick_lower,
                 position_info.tick_upper,
-                block_number,
+                block_id,
                 chain
             ),
             uniswap_fee_deltas(
@@ -502,16 +518,15 @@ where
         position_token_id: U256,
         tick_lower: I24,
         tick_upper: I24,
-        block_number: BlockId,
+        block_id: BlockId,
         chain: AngstromL2Chain
     ) -> eyre::Result<U256> {
         let hook = if let Some(hook_address) = hook_address {
             hook_address
         } else {
-            self.hook_by_pool_id(pool_id, block_number, chain).await?
+            self.hook_by_pool_id(pool_id, block_id, chain).await?
         };
         let consts = chain.constants();
-        let block_id = block_number;
         let (growth_inside, last_growth_inside) = tokio::try_join!(
             angstrom_l2_growth_inside(
                 self.root(),
@@ -542,22 +557,38 @@ where
 mod data_api_tests {
 
     use super::*;
-    use crate::l2::test_utils::valid_test_params::init_valid_position_params_with_provider;
+    use crate::l2::test_utils::{
+        BASE_USDC, valid_test_params::init_valid_position_params_with_provider
+    };
 
-    // #[tokio::test]
-    // async fn test_fetch_fee_configuration() {
-    //     let (provider, state) = init_valid_position_params_with_provider().await;
+    #[tokio::test]
+    async fn test_fetch_fee_configuration() {
+        let (provider, state) = init_valid_position_params_with_provider().await;
 
-    //     let fee_config = provider
-    //         .fee_configuration_by_pool_id(state.pool_id,
-    // state.block_number.into(), state.chain)         .await
-    //         .unwrap();
+        let fee_config = provider
+            .fee_configuration_by_pool_id_and_hook(
+                state.pool_id,
+                state.pool_key.hooks,
+                state.block_number.into(),
+                state.chain
+            )
+            .await
+            .unwrap();
 
-    //     assert_eq!(
-    //         FeeConfiguration { bundle_fee: 200, swap_fee: 238, protocol_fee: 112
-    // },         fee_config
-    //     );
-    // }
+        let expected = L2FeeConfiguration {
+            is_initialized:         true,
+            lp_fee:                 160,
+            creator_tax_fee_e6:     Default::default(),
+            protocol_tax_fee_e6:    Default::default(),
+            creator_swap_fee_e6:    Default::default(),
+            protocol_swap_fee_e6:   35,
+            priority_fee_tax_floor: 10000000,
+            jit_tax_enabled:        false,
+            withdraw_only:          false
+        };
+
+        assert_eq!(expected, fee_config);
+    }
 
     #[tokio::test]
     async fn test_all_token_pairs() {
@@ -568,8 +599,8 @@ mod data_api_tests {
             .await
             .unwrap();
 
-        assert_eq!(all_pairs.len(), 2);
-        assert!(!all_pairs.contains(&TokenPair { token0: Address::ZERO, token1: Address::ZERO }));
+        assert_eq!(all_pairs.len(), 3);
+        assert!(all_pairs.contains(&TokenPair { token0: Address::ZERO, token1: BASE_USDC }));
     }
 
     #[tokio::test]
@@ -581,8 +612,7 @@ mod data_api_tests {
             .await
             .unwrap();
 
-        assert_eq!(all_tokens.len(), 3);
-        assert!(!all_tokens.contains(&Address::ZERO));
+        assert_eq!(all_tokens.len(), 6);
     }
 
     #[tokio::test]
@@ -590,7 +620,7 @@ mod data_api_tests {
         let (provider, state) = init_valid_position_params_with_provider().await;
 
         let pool_key = provider
-            .pool_key_by_pool_id(state.pool_key.into(), state.block_number.into(), state.chain)
+            .pool_key_by_pool_id(state.pool_id, state.block_number.into(), state.chain)
             .await
             .unwrap();
 
@@ -611,26 +641,6 @@ mod data_api_tests {
             .unwrap();
 
         assert_eq!(modify_liquidity.len(), 1);
-    }
-
-    #[tokio::test]
-    async fn test_pool_data_by_tokens() {
-        let (provider, state) = init_valid_position_params_with_provider().await;
-
-        let (_, pool_data) = provider
-            .pool_data_by_pool_id(state.pool_id, true, state.block_number.into(), state.chain)
-            .await
-            .unwrap();
-
-        assert_eq!(pool_data.pool.token0, state.pool_key.currency0);
-        assert_eq!(pool_data.pool.token1, state.pool_key.currency1);
-        assert!(
-            !pool_data
-                .pool
-                .get_baseline_liquidity()
-                .initialized_ticks()
-                .is_empty()
-        );
     }
 
     #[tokio::test]
@@ -667,7 +677,7 @@ mod data_api_tests {
             .await
             .unwrap();
 
-        assert_eq!(all_pool_data.len(), 2);
+        assert_eq!(all_pool_data.len(), 3);
     }
 
     #[tokio::test]
@@ -759,10 +769,10 @@ mod user_api_tests {
         assert_eq!(
             results,
             LiquidityPositionFees {
-                position_liquidity:   807449445327074,
-                angstrom_token0_fees: U256::from(45197_u128),
-                uniswap_token0_fees:  U256::from(2754_u128),
-                uniswap_token1_fees:  U256::from(837588354352_u128)
+                position_liquidity:   590304962892303,
+                angstrom_token0_fees: U256::from(256339146590766_u128),
+                uniswap_token0_fees:  U256::from(1754215834261727_u128),
+                uniswap_token1_fees:  U256::from(3705800_u128)
             }
         );
     }
