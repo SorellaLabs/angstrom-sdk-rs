@@ -343,6 +343,7 @@ pub trait AngstromL1DataApi:
                                 log.block_number,
                                 log.transaction_hash,
                                 log.transaction_index,
+                                None,
                                 inner_log.data
                             )
                         })
@@ -391,6 +392,7 @@ pub trait AngstromL1DataApi:
                                     log.block_number,
                                     log.transaction_hash,
                                     log.transaction_index,
+                                    None,
                                     inner_log.data
                                 )
                             }
@@ -438,6 +440,7 @@ pub trait AngstromL1DataApi:
                         transaction.block_number(),
                         Some(transaction.tx_hash()),
                         transaction.transaction_index(),
+                        Some(transaction.from()),
                         decoded_input
                     )
                 ))
@@ -474,6 +477,7 @@ pub trait AngstromL1DataApi:
                     transaction.block_number(),
                     Some(transaction.tx_hash()),
                     transaction.transaction_index(),
+                    Some(transaction.from()),
                     AngstromBundle::pade_decode(&mut input, None).ok()?
                 ))
             }))

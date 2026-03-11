@@ -178,6 +178,7 @@ pub trait AngstromL2DataApi<N: Network>:
                                 log.block_number,
                                 log.transaction_hash,
                                 log.transaction_index,
+                                None,
                                 inner_log.data
                             )
                         })
