@@ -16975,76 +16975,7 @@ version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eaea85b334db583fe3274d12b4cd1880032beab409c0d774be044d4480ab9a94"
 
-[[package]]
-name = "uni-v4"
-version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom-v4.git#2a9d82f938d815f5879bec0354c072ed8e962f0f"
-dependencies = [
- "uni-v4-common",
- "uni-v4-structure",
- "uni-v4-upkeeper",
-]
 
-[[package]]
-name = "uni-v4-common"
-version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom-v4.git#2a9d82f938d815f5879bec0354c072ed8e962f0f"
-dependencies = [
- "alloy-contract",
- "alloy-primitives",
- "alloy-sol-types",
- "dashmap 6.1.0",
- "eyre",
- "thiserror 1.0.69",
- "tokio",
- "uni-v4-structure",
- "uniswap_v3_math",
-]
-
-[[package]]
-name = "uni-v4-structure"
-version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom-v4.git#2a9d82f938d815f5879bec0354c072ed8e962f0f"
-dependencies = [
- "alloy-network",
- "alloy-primitives",
- "alloy-sol-types",
- "eyre",
- "itertools 0.10.5",
- "malachite",
- "op-alloy-network 0.22.4",
- "serde",
- "uniswap_v3_math",
-]
-
-[[package]]
-name = "uni-v4-upkeeper"
-version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom-v4.git#2a9d82f938d815f5879bec0354c072ed8e962f0f"
-dependencies = [
- "alloy-consensus",
- "alloy-contract",
- "alloy-eips",
- "alloy-network",
- "alloy-primitives",
- "alloy-provider",
- "alloy-rpc-types",
- "alloy-sol-types",
- "async-trait",
- "convert_case 0.7.1",
- "dashmap 6.1.0",
- "futures",
- "itertools 0.10.5",
- "jsonrpsee",
- "op-alloy-network 0.22.4",
- "serde",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "uni-v4-common",
- "uni-v4-structure",
- "uniswap_v3_math",
-]
 
 [[package]]
 name = "unicase"
