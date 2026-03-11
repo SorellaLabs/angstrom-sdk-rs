@@ -37,7 +37,7 @@ pub trait PrimitivesFetcher<N: Network>: Send + Sync {
         full: bool
     ) -> eyre::Result<<N as Network>::BlockResponse>;
 
-    async fn tx_success(&self, tx_hash: TxHash) -> eyre::Result<bool>;
+    async fn tx_success_primitive(&self, tx_hash: TxHash) -> eyre::Result<bool>;
 
     async fn tx_by_hash_primitive(
         &self,

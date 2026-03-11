@@ -420,7 +420,7 @@ pub trait AngstromL1DataApi:
             .filter_map(|transaction| async move {
                 if verify_successful_tx
                     && !self
-                        .tx_success(transaction.tx_hash())
+                        .tx_success_primitive(transaction.tx_hash())
                         .await
                         .unwrap_or_default()
                 {
@@ -464,7 +464,7 @@ pub trait AngstromL1DataApi:
             return Ok(None);
         };
 
-        if verify_successful_tx && !self.tx_success(tx_hash).await? {
+        if verify_successful_tx && !self.tx_success_primitive(tx_hash).await? {
             return Ok(None);
         }
 

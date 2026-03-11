@@ -251,8 +251,8 @@ where
         self.provider.fetch_block_primitive(block_id, full).await
     }
 
-    async fn tx_success(&self, tx_hash: TxHash) -> eyre::Result<bool> {
-        self.provider.tx_success(tx_hash).await
+    async fn tx_success_primitive(&self, tx_hash: TxHash) -> eyre::Result<bool> {
+        self.provider.tx_success_primitive(tx_hash).await
     }
 
     async fn tx_by_hash_primitive(

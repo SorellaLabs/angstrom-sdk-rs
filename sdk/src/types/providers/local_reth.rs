@@ -130,7 +130,7 @@ where
             .ok_or_else(|| eyre::eyre!("block does not exist: {block_id:?}"))
     }
 
-    async fn tx_success(&self, tx_hash: TxHash) -> eyre::Result<bool> {
+    async fn tx_success_primitive(&self, tx_hash: TxHash) -> eyre::Result<bool> {
         Ok(EthTransactions::transaction_receipt(&self.provider.eth_api(), tx_hash)
             .await?
             .ok_or_else(|| eyre::eyre!("tx does not exist: {tx_hash:?}"))?
