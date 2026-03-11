@@ -8,7 +8,7 @@ use alloy_sol_types::{SolCall, SolType};
 #[async_trait::async_trait]
 #[auto_impl::auto_impl(&, Box, Arc)]
 pub trait PrimitivesFetcher<N: Network>: Send + Sync {
-    async fn fetch_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>>;
+    async fn fetch_logs_primitive(&self, filter: &Filter) -> eyre::Result<Vec<Log>>;
 
     async fn view_call<IC>(
         &self,
@@ -31,7 +31,7 @@ pub trait PrimitivesFetcher<N: Network>: Send + Sync {
 
     async fn block_number_from_block_id(&self, block_id: BlockId) -> eyre::Result<u64>;
 
-    async fn fetch_block(
+    async fn fetch_block_primitive(
         &self,
         block_id: BlockId,
         full: bool
@@ -39,7 +39,7 @@ pub trait PrimitivesFetcher<N: Network>: Send + Sync {
 
     async fn tx_success(&self, tx_hash: TxHash) -> eyre::Result<bool>;
 
-    async fn tx_by_hash(
+    async fn tx_by_hash_primitive(
         &self,
         tx_hash: TxHash
     ) -> eyre::Result<Option<<N as Network>::TransactionResponse>>;

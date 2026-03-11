@@ -162,7 +162,7 @@ pub trait AngstromL2DataApi<N: Network>:
         let logs = futures::future::try_join_all(
             filters
                 .into_iter()
-                .map(async move |filter| self.fetch_logs(&filter).await)
+                .map(async move |filter| self.fetch_logs_primitive(&filter).await)
         )
         .await?;
 

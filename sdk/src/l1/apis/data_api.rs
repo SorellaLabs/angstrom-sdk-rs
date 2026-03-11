@@ -281,7 +281,7 @@ pub trait AngstromL1DataApi:
         let logs = futures::future::try_join_all(
             filters
                 .into_iter()
-                .map(async |filter| self.fetch_logs(&filter).await)
+                .map(async |filter| self.fetch_logs_primitive(&filter).await)
         )
         .await?;
 
@@ -327,7 +327,7 @@ pub trait AngstromL1DataApi:
         let logs = futures::future::try_join_all(
             filters
                 .into_iter()
-                .map(async |filter| self.fetch_logs(&filter).await)
+                .map(async |filter| self.fetch_logs_primitive(&filter).await)
         )
         .await?;
 
@@ -375,7 +375,7 @@ pub trait AngstromL1DataApi:
         let logs = futures::future::try_join_all(
             filters
                 .into_iter()
-                .map(async |filter| self.fetch_logs(&filter).await)
+                .map(async |filter| self.fetch_logs_primitive(&filter).await)
         )
         .await?;
 
@@ -408,7 +408,7 @@ pub trait AngstromL1DataApi:
         verify_successful_tx: bool,
         chain: AngstromL1Chain
     ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
-        let block = self.fetch_block(block_id, true).await?;
+        let block = self.fetch_block_primitive(block_id, true).await?;
         let angstrom_address = chain.constants().angstrom_address();
 
         let txs = block
@@ -460,7 +460,7 @@ pub trait AngstromL1DataApi:
         tx_hash: TxHash,
         verify_successful_tx: bool
     ) -> eyre::Result<Option<WithEthMeta<AngstromBundle>>> {
-        let Some(transaction) = self.tx_by_hash(tx_hash).await? else {
+        let Some(transaction) = self.tx_by_hash_primitive(tx_hash).await? else {
             return Ok(None);
         };
 

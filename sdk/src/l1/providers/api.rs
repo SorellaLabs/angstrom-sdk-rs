@@ -208,8 +208,8 @@ where
     T: AngstromOrderApiClient + Sync,
     F: AngstromFiller + Sync
 {
-    async fn fetch_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
-        self.provider.fetch_logs(filter).await
+    async fn fetch_logs_primitive(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
+        self.provider.fetch_logs_primitive(filter).await
     }
 
     async fn view_call<IC>(
@@ -243,23 +243,23 @@ where
         self.provider.block_number_from_block_id(block_id).await
     }
 
-    async fn fetch_block(
+    async fn fetch_block_primitive(
         &self,
         block_id: BlockId,
         full: bool
     ) -> eyre::Result<<Ethereum as Network>::BlockResponse> {
-        self.provider.fetch_block(block_id, full).await
+        self.provider.fetch_block_primitive(block_id, full).await
     }
 
     async fn tx_success(&self, tx_hash: TxHash) -> eyre::Result<bool> {
         self.provider.tx_success(tx_hash).await
     }
 
-    async fn tx_by_hash(
+    async fn tx_by_hash_primitive(
         &self,
         tx_hash: TxHash
     ) -> eyre::Result<Option<<Ethereum as Network>::TransactionResponse>> {
-        self.provider.tx_by_hash(tx_hash).await
+        self.provider.tx_by_hash_primitive(tx_hash).await
     }
 }
 

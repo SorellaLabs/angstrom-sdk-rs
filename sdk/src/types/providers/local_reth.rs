@@ -59,7 +59,7 @@ where
         >
     >
 {
-    async fn fetch_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
+    async fn fetch_logs_primitive(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
         Ok(self.alloy_root_provider().await?.get_logs(filter).await?)
     }
 
@@ -120,7 +120,7 @@ where
         Ok(number)
     }
 
-    async fn fetch_block(
+    async fn fetch_block_primitive(
         &self,
         block_id: BlockId,
         full: bool
@@ -137,7 +137,7 @@ where
             .status())
     }
 
-    async fn tx_by_hash(
+    async fn tx_by_hash_primitive(
         &self,
         tx_hash: TxHash
     ) -> eyre::Result<Option<<N::AlloyNetwork as Network>::TransactionResponse>> {

@@ -89,8 +89,8 @@ impl<T> PrimitivesFetcher<Ethereum> for AngstromProvider<T>
 where
     T: AngstromOrderApiClient + Sync
 {
-    async fn fetch_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
-        self.eth_provider.fetch_logs(filter).await
+    async fn fetch_logs_primitive(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
+        self.eth_provider.fetch_logs_primitive(filter).await
     }
 
     async fn view_call<IC>(
@@ -124,22 +124,24 @@ where
         self.eth_provider.block_number_from_block_id(block_id).await
     }
 
-    async fn fetch_block(
+    async fn fetch_block_primitive(
         &self,
         block_id: BlockId,
         full: bool
     ) -> eyre::Result<<Ethereum as Network>::BlockResponse> {
-        self.eth_provider.fetch_block(block_id, full).await
+        self.eth_provider
+            .fetch_block_primitive(block_id, full)
+            .await
     }
 
     async fn tx_success(&self, tx_hash: TxHash) -> eyre::Result<bool> {
         self.eth_provider.tx_success(tx_hash).await
     }
 
-    async fn tx_by_hash(
+    async fn tx_by_hash_primitive(
         &self,
         tx_hash: TxHash
     ) -> eyre::Result<Option<<Ethereum as Network>::TransactionResponse>> {
-        self.eth_provider.tx_by_hash(tx_hash).await
+        self.eth_provider.tx_by_hash_primitive(tx_hash).await
     }
 }

@@ -68,7 +68,7 @@ impl<N: Network> PrimitivesFetcher<N> for AlloyProviderWrapper<N>
 where
     DynProvider<N>: Provider<N>
 {
-    async fn fetch_logs(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
+    async fn fetch_logs_primitive(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
         Ok(self.provider.get_logs(filter).await?)
     }
 
@@ -119,7 +119,7 @@ where
         Ok(number)
     }
 
-    async fn fetch_block(
+    async fn fetch_block_primitive(
         &self,
         block_id: BlockId,
         full: bool
@@ -141,7 +141,7 @@ where
             .status())
     }
 
-    async fn tx_by_hash(
+    async fn tx_by_hash_primitive(
         &self,
         tx_hash: TxHash
     ) -> eyre::Result<Option<<N as Network>::TransactionResponse>> {
