@@ -1,15 +1,21 @@
 use std::sync::Arc;
 
 use alloy_eips::BlockId;
-use alloy_primitives::{Address, Bytes, TxKind};
+use alloy_network::{Network, ReceiptResponse, TransactionBuilder};
+use alloy_primitives::{Address, TxHash, TxKind};
+use alloy_provider::{Provider, RootProvider};
+use alloy_rpc_types::{Block, Filter, Log, TransactionRequest};
 use alloy_sol_types::{SolCall, SolType};
 use eth_network_exts::EthNetworkExt;
 use lib_reth::{
-    ExecuteEvm,
+    EthApiTypes, ExecuteEvm,
+    helpers::{EthBlocks, EthTransactions},
     reth_libmdbx::{NodeClientSpec, RethNodeClient},
-    traits::EthRevm
+    traits::{EthRevm, EthStream}
 };
 use revm::context::TxEnv;
+
+use crate::types::providers::primitive_fetcher::PrimitivesFetcher;
 
 #[derive(Clone)]
 pub struct RethDbProviderWrapper<N>
@@ -38,45 +44,109 @@ where
     }
 }
 
-pub(crate) fn reth_db_view_call<Node, IC>(
-    provider: &RethNodeClient<Node>,
-    block_id: BlockId,
-    contract: Address,
-    call: IC
-) -> eyre::Result<Result<IC::Return, alloy_sol_types::Error>>
+#[async_trait::async_trait]
+impl<N: EthNetworkExt> PrimitivesFetcher<N::AlloyNetwork> for RethDbProviderWrapper<N>
 where
-    Node: EthNetworkExt,
-    Node::RethNode: NodeClientSpec,
-    IC: SolCall + Send
+    N: EthNetworkExt,
+    N::RethNode: NodeClientSpec,
+    <N::RethNode as NodeClientSpec>::Api: EthApiTypes<NetworkTypes = N::AlloyNetwork>,
+    <N::AlloyNetwork as Network>::TransactionRequest:
+        AsRef<TransactionRequest> + AsMut<TransactionRequest>,
+    N::AlloyNetwork: Network<
+        BlockResponse = Block<
+            <N::AlloyNetwork as Network>::TransactionResponse,
+            <N::AlloyNetwork as Network>::HeaderResponse
+        >
+    >
 {
-    let tx = TxEnv {
-        kind: TxKind::Call(contract),
-        data: call.abi_encode().into(),
-        ..Default::default()
-    };
+    async fn fetch_logs_primitive(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
+        Ok(self.alloy_root_provider().await?.get_logs(filter).await?)
+    }
 
-    let mut evm = provider.make_empty_evm(block_id)?;
+    async fn view_call<IC>(
+        &self,
+        block_id: BlockId,
+        contract: Address,
+        call: IC
+    ) -> eyre::Result<IC::Return>
+    where
+        IC: SolCall + Send
+    {
+        let tx = TxEnv {
+            kind: TxKind::Call(contract),
+            data: call.abi_encode().into(),
+            ..Default::default()
+        };
 
-    let data = evm.transact(tx)?;
+        let mut evm = self.provider.make_empty_evm(block_id)?;
 
-    Ok(IC::abi_decode_returns(data.result.output().unwrap_or_default()))
-}
+        let data = evm.transact(tx)?;
 
-pub(crate) fn reth_db_deploy_call<Node, IC>(
-    provider: &RethNodeClient<Node>,
-    block_id: BlockId,
-    call_data: Bytes
-) -> eyre::Result<Result<IC::RustType, alloy_sol_types::Error>>
-where
-    Node: EthNetworkExt,
-    Node::RethNode: NodeClientSpec,
-    IC: SolType + Send
-{
-    let tx = TxEnv { kind: TxKind::Create, data: call_data, ..Default::default() };
+        Ok(IC::abi_decode_returns(data.result.output().unwrap_or_default())?)
+    }
 
-    let mut evm = provider.make_empty_evm(block_id)?;
+    async fn view_deploy_call<IC>(
+        &self,
+        block_id: BlockId,
+        tx: <N::AlloyNetwork as Network>::TransactionRequest
+    ) -> eyre::Result<IC::RustType>
+    where
+        IC: SolType + Send
+    {
+        let call_data = tx.input().cloned().unwrap_or_default();
+        let tx = TxEnv { kind: TxKind::Create, data: call_data, ..Default::default() };
 
-    let data = evm.transact(tx)?;
+        let mut evm = self.provider.make_empty_evm(block_id)?;
 
-    Ok(IC::abi_decode(data.result.output().unwrap_or_default()))
+        let data = evm.transact(tx)?;
+
+        Ok(IC::abi_decode(data.result.output().unwrap_or_default())?)
+    }
+
+    async fn alloy_root_provider(&self) -> eyre::Result<RootProvider<N::AlloyNetwork>> {
+        Ok(self.provider().root_provider().await?)
+    }
+
+    async fn block_number_from_block_id(&self, block_id: BlockId) -> eyre::Result<u64> {
+        let number = if let Some(b) = block_id.as_u64() {
+            b
+        } else {
+            EthBlocks::rpc_block(&self.provider.eth_api(), block_id, false)
+                .await?
+                .ok_or_else(|| eyre::eyre!("block not found: {block_id:?}"))?
+                .number()
+        };
+
+        Ok(number)
+    }
+
+    async fn fetch_block_primitive(
+        &self,
+        block_id: BlockId,
+        full: bool
+    ) -> eyre::Result<<N::AlloyNetwork as Network>::BlockResponse> {
+        EthBlocks::rpc_block(&self.provider.eth_api(), block_id, full)
+            .await?
+            .ok_or_else(|| eyre::eyre!("block does not exist: {block_id:?}"))
+    }
+
+    async fn tx_success_primitive(&self, tx_hash: TxHash) -> eyre::Result<bool> {
+        Ok(EthTransactions::transaction_receipt(&self.provider.eth_api(), tx_hash)
+            .await?
+            .ok_or_else(|| eyre::eyre!("tx does not exist: {tx_hash:?}"))?
+            .status())
+    }
+
+    async fn tx_by_hash_primitive(
+        &self,
+        tx_hash: TxHash
+    ) -> eyre::Result<Option<<N::AlloyNetwork as Network>::TransactionResponse>> {
+        let api = self.provider.eth_api();
+
+        Ok(EthTransactions::transaction_by_hash(&api, tx_hash)
+            .await?
+            .map(|tx| tx.into_transaction(api.converter()))
+            .transpose()
+            .map_err(<<N::RethNode as NodeClientSpec>::Api as EthApiTypes>::Error::from)?)
+    }
 }

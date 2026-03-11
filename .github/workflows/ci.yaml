@@ -51,6 +51,7 @@ jobs:
   cargo-clippy:
     name: cargo clippy
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Check-Out
         uses: actions/checkout@v4
@@ -62,8 +63,8 @@ jobs:
           key: cargo-clippy
           cache-on-failure: true
 
-      - name: cargo clippy --workspace --all-features --all-targets
-        run: cargo clippy --workspace --all-features --all-targets
+      - name: RUSTFLAGS="-D warnings" cargo clippy --workspace --all-targets --all-features
+        run: RUSTFLAGS="-D warnings" cargo clippy --workspace --all-targets --all-features
 
   cargo-test:
     name: cargo test (${{ matrix.scope }})
