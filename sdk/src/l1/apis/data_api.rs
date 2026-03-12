@@ -992,13 +992,7 @@ mod data_api_tests {
 
         assert_eq!(pool_data.pool.token0, state.pool_key.currency0);
         assert_eq!(pool_data.pool.token1, state.pool_key.currency1);
-        assert!(
-            !pool_data
-                .pool
-                .get_baseline_liquidity()
-                .initialized_ticks()
-                .is_empty()
-        );
+        assert!(!pool_data.pool.liquidity().initialized_ticks().is_empty());
     }
 
     #[tokio::test]
@@ -1017,13 +1011,7 @@ mod data_api_tests {
 
         assert_eq!(pool_data.pool.token0, state.pool_key.currency0);
         assert_eq!(pool_data.pool.token1, state.pool_key.currency1);
-        assert!(
-            !pool_data
-                .pool
-                .get_baseline_liquidity()
-                .initialized_ticks()
-                .is_empty()
-        );
+        assert!(!pool_data.pool.liquidity().initialized_ticks().is_empty());
     }
 
     #[tokio::test]

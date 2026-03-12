@@ -70,4 +70,10 @@ ipc = []
 ws = []
 
 l1 = ["uniswap-storage/l1-angstrom"]
-l2 = ["lib-reth/op-reth-libmdbx", "dep:op-alloy-network", "uniswap-storage/l2-angstrom", "eth-network-exts/l2"]
+l2 = [
+    "lib-reth/op-reth-libmdbx",
+    "dep:op-alloy-network",
+    "uniswap-storage/l2-angstrom",
+    "eth-network-exts/l2",
+    "uni-v4/l2",
+]
