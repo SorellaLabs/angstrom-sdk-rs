@@ -41,11 +41,11 @@ jsonrpsee-http-client = "0.26.0"
 jsonrpsee-ws-client = "0.26.0"
 lazy_static = "1.5.0"
 
-eth-network-exts = { git = "https://github.com/jnoorchashm37/lib-eth" }
+eth-network-exts = { git = "https://github.com/jnoorchashm37/lib-eth", default-features = false }
 lib-reth = { git = "https://github.com/jnoorchashm37/lib-eth", features = ["rayon"] }
 malachite = "0.4"
 malachite-q = "0.4"
-op-alloy-network = "0.23.1"
+op-alloy-network = "0.22.1"
 pade = { git = "https://github.com/SorellaLabs/pade", version = "0.1.0" }
 paste = "1"
 rand = "0.9"
