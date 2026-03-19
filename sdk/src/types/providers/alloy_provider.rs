@@ -2,6 +2,7 @@ use std::ops::Deref;
 
 use alloy_consensus::BlockHeader;
 use alloy_eips::BlockId;
+use alloy_json_rpc::RpcError;
 use alloy_network::{BlockResponse, Ethereum, Network, ReceiptResponse, TransactionBuilder};
 use alloy_primitives::{Address, StorageKey, StorageValue, TxHash};
 use alloy_provider::{DynProvider, Provider, RootProvider};
@@ -9,7 +10,9 @@ use alloy_rpc_types::{BlockTransactionsKind, Filter, Log};
 use alloy_sol_types::{SolCall, SolType};
 use uniswap_storage::StorageSlotFetcher;
 
-use crate::types::providers::primitive_fetcher::PrimitivesFetcher;
+use crate::types::{
+    providers::primitive_fetcher::PrimitivesFetcher, utils::split_filter_by_blocks
+};
 
 /// Wrapper for alloy providers that implements SDK traits.
 /// This wrapper is necessary to avoid trait coherence conflicts with
@@ -69,7 +72,33 @@ where
     DynProvider<N>: Provider<N>
 {
     async fn fetch_logs_primitive(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
-        Ok(self.provider.get_logs(filter).await?)
+        let logs_err = match self.provider.get_logs(filter).await {
+            Ok(v) => return Ok(v),
+            Err(e) => e
+        };
+
+        match &logs_err {
+            RpcError::ErrorResp(error_payload) => {
+                if error_payload.message.contains("query exceeds max results")
+                    || error_payload
+                        .to_string()
+                        .contains("query exceeds max results")
+                {
+                    if let Some((filter_a, filter_b)) = split_filter_by_blocks(filter) {
+                        let (logs_a, logs_b) = tokio::try_join!(
+                            self.fetch_logs_primitive(&filter_a),
+                            self.fetch_logs_primitive(&filter_b)
+                        )?;
+
+                        let logs = logs_a.into_iter().chain(logs_b).collect();
+                        return Ok(logs);
+                    }
+                }
+
+                return Err(eyre::eyre!("{logs_err:?}"));
+            }
+            e => return Err(eyre::eyre!("{e:?}"))
+        }
     }
 
     async fn view_call<IC>(

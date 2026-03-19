@@ -62,3 +62,20 @@ pub(crate) fn chunk_blocks(
         vec![(start_block.into(), BlockNumberOrTag::Latest)]
     }
 }
+
+pub(crate) fn split_filter_by_blocks(filter: &Filter) -> Option<(Filter, Filter)> {
+    let (start_block, end_block) = (
+        filter.block_option.get_from_block()?.as_number()?,
+        filter.block_option.get_to_block()?.as_number()?
+    );
+
+    let midpoint = (start_block + end_block) / 2;
+
+    let filter_a = filter
+        .clone()
+        .from_block(start_block)
+        .to_block(midpoint - 1);
+    let filter_b = filter.clone().from_block(midpoint).to_block(end_block);
+
+    Some((filter_a, filter_b))
+}
