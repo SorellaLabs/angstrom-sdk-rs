@@ -79,12 +79,11 @@ where
 
         match &logs_err {
             RpcError::ErrorResp(error_payload) => {
-                if error_payload.message.contains("query exceeds max results")
+                if (error_payload.message.contains("query exceeds max results")
                     || error_payload
                         .to_string()
-                        .contains("query exceeds max results")
-                {
-                    if let Some((filter_a, filter_b)) = split_filter_by_blocks(filter) {
+                        .contains("query exceeds max results"))
+                    && let Some((filter_a, filter_b)) = split_filter_by_blocks(filter) {
                         let (logs_a, logs_b) = tokio::try_join!(
                             self.fetch_logs_primitive(&filter_a),
                             self.fetch_logs_primitive(&filter_b)
@@ -93,7 +92,6 @@ where
                         let logs = logs_a.into_iter().chain(logs_b).collect();
                         return Ok(logs);
                     }
-                }
 
                 return Err(eyre::eyre!("{logs_err:?}"));
             }
