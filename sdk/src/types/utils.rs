@@ -69,7 +69,11 @@ pub(crate) fn split_filter_by_blocks(filter: &Filter) -> Option<(Filter, Filter)
         filter.block_option.get_to_block()?.as_number()?
     );
 
-    let midpoint = (start_block + end_block) / 2;
+    if start_block >= end_block {
+        return None;
+    }
+
+    let midpoint = start_block + (end_block - start_block).div_ceil(2);
 
     let filter_a = filter
         .clone()

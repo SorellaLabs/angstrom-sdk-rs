@@ -83,15 +83,16 @@ where
                     || error_payload
                         .to_string()
                         .contains("query exceeds max results"))
-                    && let Some((filter_a, filter_b)) = split_filter_by_blocks(filter) {
-                        let (logs_a, logs_b) = tokio::try_join!(
-                            self.fetch_logs_primitive(&filter_a),
-                            self.fetch_logs_primitive(&filter_b)
-                        )?;
+                    && let Some((filter_a, filter_b)) = split_filter_by_blocks(filter)
+                {
+                    let (logs_a, logs_b) = tokio::try_join!(
+                        self.fetch_logs_primitive(&filter_a),
+                        self.fetch_logs_primitive(&filter_b)
+                    )?;
 
-                        let logs = logs_a.into_iter().chain(logs_b).collect();
-                        return Ok(logs);
-                    }
+                    let logs = logs_a.into_iter().chain(logs_b).collect();
+                    return Ok(logs);
+                }
 
                 return Err(eyre::eyre!("{logs_err:?}"));
             }
