@@ -3,7 +3,7 @@ use std::sync::Arc;
 use alloy_eips::BlockId;
 use alloy_network::{Network, ReceiptResponse, TransactionBuilder};
 use alloy_primitives::{Address, TxHash, TxKind};
-use alloy_provider::{Provider, RootProvider};
+use alloy_provider::RootProvider;
 use alloy_rpc_types::{Block, Filter, Log, TransactionRequest};
 use alloy_sol_types::{SolCall, SolType};
 use eth_network_exts::EthNetworkExt;
@@ -15,7 +15,7 @@ use lib_reth::{
 };
 use revm::context::TxEnv;
 
-use crate::types::providers::primitive_fetcher::PrimitivesFetcher;
+use crate::types::providers::{AlloyProviderWrapper, primitive_fetcher::PrimitivesFetcher};
 
 #[derive(Clone)]
 pub struct RethDbProviderWrapper<N>
@@ -60,7 +60,9 @@ where
     >
 {
     async fn fetch_logs_primitive(&self, filter: &Filter) -> eyre::Result<Vec<Log>> {
-        Ok(self.alloy_root_provider().await?.get_logs(filter).await?)
+        Ok(AlloyProviderWrapper::new(self.alloy_root_provider().await?)
+            .fetch_logs_primitive(filter)
+            .await?)
     }
 
     async fn view_call<IC>(
