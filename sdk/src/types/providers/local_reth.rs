@@ -105,8 +105,11 @@ where
     where
         IC: SolType + Send
     {
-        let call_data = tx.input().cloned().unwrap_or_default();
-        let tx = TxEnv { kind: TxKind::Create, data: call_data, ..Default::default() };
+        let tx = TxEnv {
+            kind: TxKind::Create,
+            data: tx.input().cloned().unwrap_or_default(),
+            ..Default::default()
+        };
 
         #[cfg(feature = "l2")]
         let tx = <N::AlloyNetwork as RevmNetworkSpec>::convert_build_tx(tx, |_| {});
