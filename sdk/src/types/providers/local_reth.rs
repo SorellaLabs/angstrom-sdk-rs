@@ -11,7 +11,7 @@ use lib_reth::{
     EthApiTypes, ExecuteEvm,
     helpers::{EthBlocks, EthTransactions},
     reth_libmdbx::{NodeClientSpec, RethNodeClient},
-    traits::{EthRevm, EthStream}
+    traits::{EthRevm, EthRevmParams, EthStream, RevmNetworkSpec}
 };
 use revm::context::TxEnv;
 
@@ -45,9 +45,10 @@ where
 }
 
 #[async_trait::async_trait]
-impl<N: EthNetworkExt> PrimitivesFetcher<N::AlloyNetwork> for RethDbProviderWrapper<N>
+impl<N> PrimitivesFetcher<N::AlloyNetwork> for RethDbProviderWrapper<N>
 where
     N: EthNetworkExt,
+    N::AlloyNetwork: RevmNetworkSpec,
     N::RethNode: NodeClientSpec,
     <N::RethNode as NodeClientSpec>::Api: EthApiTypes<NetworkTypes = N::AlloyNetwork>,
     <N::AlloyNetwork as Network>::TransactionRequest:
@@ -80,7 +81,16 @@ where
             ..Default::default()
         };
 
-        let mut evm = self.provider.make_empty_evm(block_id)?;
+        #[cfg(feature = "l2")]
+        let tx = <N::AlloyNetwork as RevmNetworkSpec>::convert_build_tx(tx, |_| {});
+        #[cfg(not(feature = "l2"))]
+        let tx = <N::AlloyNetwork as RevmNetworkSpec>::convert_build_tx(tx);
+
+        let mut evm: <N::AlloyNetwork as RevmNetworkSpec>::EVM<_, _> =
+            self.provider.make_empty_evm(&EthRevmParams {
+                block_id,
+                chain_id: <N as EthNetworkExt>::CHAIN_ID
+            })?;
 
         let data = evm.transact(tx)?;
 
@@ -98,7 +108,15 @@ where
         let call_data = tx.input().cloned().unwrap_or_default();
         let tx = TxEnv { kind: TxKind::Create, data: call_data, ..Default::default() };
 
-        let mut evm = self.provider.make_empty_evm(block_id)?;
+        #[cfg(feature = "l2")]
+        let tx = <N::AlloyNetwork as RevmNetworkSpec>::convert_build_tx(tx, |_| {});
+        #[cfg(not(feature = "l2"))]
+        let tx = <N::AlloyNetwork as RevmNetworkSpec>::convert_build_tx(tx);
+
+        let mut evm: N::EVM<_, _> = self.provider.make_empty_evm(&EthRevmParams {
+            block_id,
+            chain_id: <N as EthNetworkExt>::CHAIN_ID
+        })?;
 
         let data = evm.transact(tx)?;
 
