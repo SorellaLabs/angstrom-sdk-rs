@@ -63,22 +63,10 @@ itertools.workspace = true
 
 [features]
 default = ["full"]
-full = ["all-connectors", "all-chains"]
+full = ["all-chains", "local-reth"]
 
-ipc = []
-ws = []
-
-all-connectors = ["ipc", "ws", "local-reth", "revm"]
-local-reth = ["dep:lib-reth", "dep:revm", "dep:reth-provider", "uniswap-storage/local-reth", "revm"]
-revm = ["dep:lib-reth", "dep:revm", "lib-reth/revm"]
+local-reth = ["dep:lib-reth", "dep:revm", "lib-reth/mainnet-full", "uniswap-storage/local-reth", "dep:reth-provider"]
 
 all-chains = ["l1", "l2"]
 l1 = ["uniswap-storage/l1-angstrom"]
-l2 = [
-    "lib-reth/op-reth-db",
-    "lib-reth/op-revm",
-    "dep:op-alloy-network",
-    "uniswap-storage/l2-angstrom",
-    "eth-network-exts/l2",
-    "uni-v4/l2",
-]
+l2 = ["lib-reth/op-full", "dep:op-alloy-network", "uniswap-storage/l2-angstrom", "eth-network-exts/l2", "uni-v4/l2"]
