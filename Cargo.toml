@@ -41,8 +41,13 @@ jsonrpsee-http-client = "0.26.0"
 jsonrpsee-ws-client = "0.26.0"
 lazy_static = "1.5.0"
 
-eth-network-exts = { git = "https://github.com/jnoorchashm37/lib-eth", default-features = false }
-lib-reth = { git = "https://github.com/jnoorchashm37/lib-eth", features = ["rayon"] }
+eth-network-exts = { git = "https://github.com/jnoorchashm37/lib-eth", default-features = false, branch = "feat/multi-revm" }
+lib-reth = { git = "https://github.com/jnoorchashm37/lib-eth", branch = "feat/multi-revm", default-features = false, features = [
+  "uniswap-storage",
+  "ws",
+  "ipc",
+  "rayon",
+] }
 malachite = "0.4"
 malachite-q = "0.4"
 op-alloy-network = "0.23.1"
@@ -71,7 +76,7 @@ testing-tools = { git = "https://github.com/SorellaLabs/angstrom.git", default-f
 thiserror = "1.0"
 tokio = { version = "1", features = ["full"] }
 uni-v4 = { git = "https://github.com/SorellaLabs/angstrom-v4.git", default-features = false }
-uniswap-storage = { git = "https://github.com/jnoorchashm37/lib-eth" }
+uniswap-storage = { git = "https://github.com/jnoorchashm37/lib-eth", branch = "feat/multi-revm" }
 
 [patch.crates-io]
 op-alloy-rpc-types-engine = { git = "https://github.com/ethereum-optimism/optimism", tag = "op-reth/v1.11.3" }
