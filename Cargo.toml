@@ -41,7 +41,8 @@ jsonrpsee-http-client = "0.26.0"
 jsonrpsee-ws-client = "0.26.0"
 lazy_static = "1.5.0"
 
-eth-network-exts = { git = "https://github.com/jnoorchashm37/lib-eth", default-features = false, branch = "feat/multi-revm" }
+# 
+eth-network-exts = { git = "https://github.com/jnoorchashm37/lib-eth", branch = "feat/multi-revm", default-features = false }
 lib-reth = { git = "https://github.com/jnoorchashm37/lib-eth", branch = "feat/multi-revm", default-features = false, features = [
   "uniswap-storage",
   "ws",

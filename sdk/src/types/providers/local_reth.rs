@@ -11,7 +11,9 @@ use lib_reth::{
     EthApiTypes, ExecuteEvm,
     helpers::{EthBlocks, EthTransactions},
     reth_libmdbx::{NodeClientSpec, RethNodeClient},
-    traits::{EthRevm, EthRevmParams, EthStream, RevmNetworkSpec}
+    traits::{
+        EthRevm, EthRevmParams, EthStream, OpTransaction, empty_mainnet_revm, empty_op_mainnet_revm
+    }
 };
 use revm::context::TxEnv;
 
@@ -48,7 +50,6 @@ where
 impl<N> PrimitivesFetcher<N::AlloyNetwork> for RethDbProviderWrapper<N>
 where
     N: EthNetworkExt,
-    N::AlloyNetwork: RevmNetworkSpec,
     N::RethNode: NodeClientSpec,
     <N::RethNode as NodeClientSpec>::Api: EthApiTypes<NetworkTypes = N::AlloyNetwork>,
     <N::AlloyNetwork as Network>::TransactionRequest:
@@ -75,26 +76,28 @@ where
     where
         IC: SolCall + Send
     {
+        let chain_id = <N as EthNetworkExt>::CHAIN_ID;
+
         let tx = TxEnv {
             kind: TxKind::Call(contract),
             data: call.abi_encode().into(),
             ..Default::default()
         };
 
-        #[cfg(feature = "l2")]
-        let tx = <N::AlloyNetwork as RevmNetworkSpec>::convert_build_tx(tx, |_| {});
-        #[cfg(not(feature = "l2"))]
-        let tx = <N::AlloyNetwork as RevmNetworkSpec>::convert_build_tx(tx);
+        let evm_db = self
+            .provider
+            .make_cache_db(&EthRevmParams { block_id, chain_id })?;
 
-        let mut evm: <N::AlloyNetwork as RevmNetworkSpec>::EVM<_, _> =
-            self.provider.make_empty_evm(&EthRevmParams {
-                block_id,
-                chain_id: <N as EthNetworkExt>::CHAIN_ID
-            })?;
+        let data = if N::is_op_chain() {
+            let mut evm = empty_op_mainnet_revm(evm_db, chain_id, true);
 
-        let data = evm.transact(tx)?;
+            evm.transact(OpTransaction::new(tx))?.result.into_output()
+        } else {
+            let mut evm = empty_mainnet_revm(evm_db, chain_id);
+            evm.transact(tx)?.result.into_output()
+        };
 
-        Ok(IC::abi_decode_returns(data.result.output().unwrap_or_default())?)
+        Ok(IC::abi_decode_returns(&data.unwrap_or_default())?)
     }
 
     async fn view_deploy_call<IC>(
@@ -105,25 +108,28 @@ where
     where
         IC: SolType + Send
     {
+        let chain_id = <N as EthNetworkExt>::CHAIN_ID;
+
         let tx = TxEnv {
             kind: TxKind::Create,
             data: tx.input().cloned().unwrap_or_default(),
             ..Default::default()
         };
 
-        #[cfg(feature = "l2")]
-        let tx = <N::AlloyNetwork as RevmNetworkSpec>::convert_build_tx(tx, |_| {});
-        #[cfg(not(feature = "l2"))]
-        let tx = <N::AlloyNetwork as RevmNetworkSpec>::convert_build_tx(tx);
+        let evm_db = self
+            .provider
+            .make_cache_db(&EthRevmParams { block_id, chain_id })?;
 
-        let mut evm: N::EVM<_, _> = self.provider.make_empty_evm(&EthRevmParams {
-            block_id,
-            chain_id: <N as EthNetworkExt>::CHAIN_ID
-        })?;
+        let data = if N::is_op_chain() {
+            let mut evm = empty_op_mainnet_revm(evm_db, chain_id, true);
 
-        let data = evm.transact(tx)?;
+            evm.transact(OpTransaction::new(tx))?.result.into_output()
+        } else {
+            let mut evm = empty_mainnet_revm(evm_db, chain_id);
+            evm.transact(tx)?.result.into_output()
+        };
 
-        Ok(IC::abi_decode(data.result.output().unwrap_or_default())?)
+        Ok(IC::abi_decode(&data.unwrap_or_default())?)
     }
 
     async fn alloy_root_provider(&self) -> eyre::Result<RootProvider<N::AlloyNetwork>> {
