@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use alloy_eips::BlockId;
 use alloy_network::{Network, ReceiptResponse, TransactionBuilder};
-use alloy_primitives::{Address, TxHash, TxKind};
+use alloy_primitives::{Address, Bytes, TxHash, TxKind};
 use alloy_provider::RootProvider;
 use alloy_rpc_types::{Block, Filter, Log, TransactionRequest};
 use alloy_sol_types::{SolCall, SolType};
@@ -91,7 +91,9 @@ where
         let data = if N::is_op_chain() {
             let mut evm = empty_op_mainnet_revm(evm_db, chain_id, true);
 
-            evm.transact(OpTransaction::new(tx))?.result.into_output()
+            let mut tx = OpTransaction::new(tx);
+            tx.enveloped_tx = Some(Bytes::default());
+            evm.transact(tx)?.result.into_output()
         } else {
             let mut evm = empty_mainnet_revm(evm_db, chain_id);
             evm.transact(tx)?.result.into_output()
@@ -123,7 +125,9 @@ where
         let data = if N::is_op_chain() {
             let mut evm = empty_op_mainnet_revm(evm_db, chain_id, true);
 
-            evm.transact(OpTransaction::new(tx))?.result.into_output()
+            let mut tx = OpTransaction::new(tx);
+            tx.enveloped_tx = Some(Bytes::default());
+            evm.transact(tx)?.result.into_output()
         } else {
             let mut evm = empty_mainnet_revm(evm_db, chain_id);
             evm.transact(tx)?.result.into_output()
