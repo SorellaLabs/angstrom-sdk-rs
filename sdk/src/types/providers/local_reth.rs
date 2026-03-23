@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use alloy_eips::BlockId;
 use alloy_network::{Network, ReceiptResponse, TransactionBuilder};
-use alloy_primitives::{Address, Bytes, TxHash, TxKind};
+use alloy_primitives::{Address, TxHash, TxKind};
 use alloy_provider::RootProvider;
 use alloy_rpc_types::{Block, Filter, Log, TransactionRequest};
 use alloy_sol_types::{SolCall, SolType};
@@ -11,9 +11,7 @@ use lib_reth::{
     EthApiTypes, ExecuteEvm,
     helpers::{EthBlocks, EthTransactions},
     reth_libmdbx::{NodeClientSpec, RethNodeClient},
-    traits::{
-        EthRevm, EthRevmParams, EthStream, OpTransaction, empty_mainnet_revm, empty_op_mainnet_revm
-    }
+    traits::{EthRevm, EthRevmParams, EthStream, empty_mainnet_revm}
 };
 use revm::context::TxEnv;
 
