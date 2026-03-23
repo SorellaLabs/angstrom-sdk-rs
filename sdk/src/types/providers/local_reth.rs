@@ -90,7 +90,10 @@ where
             .make_cache_db(&EthRevmParams { block_id, chain_id })?;
 
         let data = if N::is_op_chain() {
-            let mut evm = empty_mainnet_revm(evm_db, chain_id, true);
+            let mut evm = empty_op_mainnet_revm(evm_db, chain_id, true);
+
+            let mut tx = OpTransaction::new(tx);
+            tx.enveloped_tx = Some(Bytes::from_iter([0x00]));
             evm.transact(tx)?.result.into_output()
         } else {
             let mut evm = empty_mainnet_revm(evm_db, chain_id, true);
@@ -122,7 +125,10 @@ where
             .make_cache_db(&EthRevmParams { block_id, chain_id })?;
 
         let data = if N::is_op_chain() {
-            let mut evm = empty_mainnet_revm(evm_db, chain_id, true);
+            let mut evm = empty_op_mainnet_revm(evm_db, chain_id, true);
+
+            let mut tx = OpTransaction::new(tx);
+            tx.enveloped_tx = Some(Bytes::from_iter([0x00]));
             evm.transact(tx)?.result.into_output()
         } else {
             let mut evm = empty_mainnet_revm(evm_db, chain_id, true);
