@@ -81,6 +81,7 @@ where
         let tx = TxEnv {
             kind: TxKind::Call(contract),
             data: call.abi_encode().into(),
+            chain_id: Some(chain_id),
             ..Default::default()
         };
 
@@ -115,6 +116,7 @@ where
         let tx = TxEnv {
             kind: TxKind::Create,
             data: tx.input().cloned().unwrap_or_default(),
+            chain_id: Some(chain_id),
             ..Default::default()
         };
 
