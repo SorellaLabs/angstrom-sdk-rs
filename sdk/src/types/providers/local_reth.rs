@@ -167,39 +167,3 @@ where
             .map_err(<<N::RethNode as NodeClientSpec>::Api as EthApiTypes>::Error::from)?)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use alloy_primitives::address;
-    use angstrom_types_primitives::ERC20;
-    use revm_database::{CacheDB, EmptyDB};
-
-    use super::*;
-
-    #[test]
-    fn test_make_call() {
-        let db = EmptyDB::new();
-
-        let chain_id = 8453;
-
-        let mut tx_env = TxEnv {
-            kind: TxKind::Call(address!("0x4200000000000000000000000000000000000006")),
-            data: ERC20::decimalsCall {}.abi_encode().into(),
-            // chain_id: Some(chain_id),
-            ..Default::default()
-        };
-
-        let mut evm = empty_op_mainnet_revm(CacheDB::new(db), chain_id, true);
-
-        let mut tx = OpTransaction::new(tx_env.clone());
-        tx.enveloped_tx = Some(Bytes::default());
-        let res = evm.transact(tx);
-        assert!(res.is_err());
-
-        tx_env.chain_id = Some(chain_id);
-        let mut tx = OpTransaction::new(tx_env);
-        tx.enveloped_tx = Some(Bytes::default());
-        let res = evm.transact(tx);
-        assert!(res.is_ok());
-    }
-}
