@@ -105,7 +105,6 @@ pub mod {mod_name} {{
     for contract_build in sol_macro_invocation {
         write!(&mut f, "{contract_build}").expect("failed to write sol macro to contract");
     }
-
 }
 
 pub fn workspace_dir() -> std::path::PathBuf {
