@@ -125,7 +125,7 @@ where
             let mut evm = empty_mainnet_revm(evm_db, chain_id, true);
             evm.transact(tx)?.result.into_output()
         } else {
-            let mut evm = empty_mainnet_revm(evm_db, chain_id);
+            let mut evm = empty_mainnet_revm(evm_db, chain_id, true);
             evm.transact(tx)?.result.into_output()
         };
 
