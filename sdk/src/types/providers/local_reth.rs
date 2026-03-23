@@ -11,7 +11,7 @@ use lib_reth::{
     EthApiTypes, ExecuteEvm,
     helpers::{EthBlocks, EthTransactions},
     reth_libmdbx::{NodeClientSpec, RethNodeClient},
-    traits::{EthRevm, EthStream}
+    traits::{EthRevm, EthRevmParams, EthStream, empty_mainnet_revm}
 };
 use revm::context::TxEnv;
 
@@ -45,7 +45,7 @@ where
 }
 
 #[async_trait::async_trait]
-impl<N: EthNetworkExt> PrimitivesFetcher<N::AlloyNetwork> for RethDbProviderWrapper<N>
+impl<N> PrimitivesFetcher<N::AlloyNetwork> for RethDbProviderWrapper<N>
 where
     N: EthNetworkExt,
     N::RethNode: NodeClientSpec,
@@ -74,17 +74,23 @@ where
     where
         IC: SolCall + Send
     {
+        let chain_id = <N as EthNetworkExt>::CHAIN_ID;
+
         let tx = TxEnv {
             kind: TxKind::Call(contract),
             data: call.abi_encode().into(),
+            chain_id: Some(chain_id),
             ..Default::default()
         };
 
-        let mut evm = self.provider.make_empty_evm(block_id)?;
+        let evm_db = self
+            .provider
+            .make_cache_db(&EthRevmParams { block_id, chain_id })?;
 
-        let data = evm.transact(tx)?;
+        let mut evm = empty_mainnet_revm(evm_db, chain_id, true);
+        let data = evm.transact(tx)?.result.into_output();
 
-        Ok(IC::abi_decode_returns(data.result.output().unwrap_or_default())?)
+        Ok(IC::abi_decode_returns(&data.unwrap_or_default())?)
     }
 
     async fn view_deploy_call<IC>(
@@ -95,14 +101,23 @@ where
     where
         IC: SolType + Send
     {
-        let call_data = tx.input().cloned().unwrap_or_default();
-        let tx = TxEnv { kind: TxKind::Create, data: call_data, ..Default::default() };
+        let chain_id = <N as EthNetworkExt>::CHAIN_ID;
 
-        let mut evm = self.provider.make_empty_evm(block_id)?;
+        let tx = TxEnv {
+            kind: TxKind::Create,
+            data: tx.input().cloned().unwrap_or_default(),
+            chain_id: Some(chain_id),
+            ..Default::default()
+        };
 
-        let data = evm.transact(tx)?;
+        let evm_db = self
+            .provider
+            .make_cache_db(&EthRevmParams { block_id, chain_id })?;
 
-        Ok(IC::abi_decode(data.result.output().unwrap_or_default())?)
+        let mut evm = empty_mainnet_revm(evm_db, chain_id, true);
+        let data = evm.transact(tx)?.result.into_output();
+
+        Ok(IC::abi_decode(&data.unwrap_or_default())?)
     }
 
     async fn alloy_root_provider(&self) -> eyre::Result<RootProvider<N::AlloyNetwork>> {

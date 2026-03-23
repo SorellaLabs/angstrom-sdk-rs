@@ -26,13 +26,13 @@ fn main() {
     if let Some(src_dir_str) = src_dir.to_str() {
         println!("cargo::rerun-if-changed={src_dir_str}");
     }
-    println!("cargo::rerun-if-changed={OUT_DIRECTORY}");
+    println!("cargo::rerun-if-changed={CONTRACT_LOCATION}");
 
     let mut out_dir = base_dir.clone();
     out_dir.push(OUT_DIRECTORY);
 
     let Ok(mut res) = Command::new("forge")
-        .arg("bind")
+        .arg("build")
         .arg("--out")
         .arg(format!("../../{OUT_DIRECTORY}"))
         .current_dir(contract_dir)

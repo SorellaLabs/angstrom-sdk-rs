@@ -103,7 +103,7 @@ jobs:
           SKIP_FILTER_1: ${{ matrix.skip_filter_1 }}
           SKIP_FILTER_2: ${{ matrix.skip_filter_2 }}
         run: |
-          cargo_args=(--workspace --all-targets)
+          cargo_args=(--workspace --all-targets --no-default-features --features all-chains)
           if [ -n "${TEST_FILTER}" ]; then
             cargo_args+=("${TEST_FILTER}")
           fi
