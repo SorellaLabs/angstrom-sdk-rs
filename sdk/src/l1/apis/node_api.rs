@@ -1,9 +1,10 @@
 use std::collections::HashSet;
 
 use alloy_primitives::{Address, B256, FixedBytes, TxHash, U256};
-use angstrom_rpc_api::OrderApiClient;
+use angstrom_rpc_api::{MetricsApiClient, OrderApiClient};
 use angstrom_rpc_types::{
-    OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult, PendingOrder
+    MetricsEventEnvelope, OrderSubscriptionFilter, OrderSubscriptionKind, OrderSubscriptionResult,
+    PendingOrder
 };
 use angstrom_types_primitives::{
     orders::CancelOrderRequest,
@@ -18,7 +19,7 @@ use jsonrpsee_ws_client::WsClient;
 use crate::l1::types::errors::AngstromSdkError;
 
 #[auto_impl(&, Box, Arc)]
-pub trait AngstromOrderApiClient: OrderApiClient + Send + Sync {}
+pub trait AngstromOrderApiClient: OrderApiClient + MetricsApiClient + Send + Sync {}
 impl AngstromOrderApiClient for WsClient {}
 impl AngstromOrderApiClient for HttpClient {}
 
@@ -164,5 +165,18 @@ pub trait AngstromNodeApi<T: AngstromOrderApiClient>: Send + Sync {
     ) -> Result<Vec<AllOrders>, AngstromSdkError> {
         let provider = self.angstrom_rpc_provider();
         Ok(provider.orders_by_pool_ids(pool_ids_with_location).await?)
+    }
+
+    async fn subscribe_metrics_events(
+        &self
+    ) -> Result<impl Stream<Item = Result<MetricsEventEnvelope, AngstromSdkError>>, AngstromSdkError>
+    {
+        let provider = self.angstrom_rpc_provider();
+
+        Ok(provider
+            .subscribe_metric_events()
+            .await?
+            .map(|order| order.map_err(|e| AngstromSdkError::AngstromRpc(e.to_string())))
+            .into_stream())
     }
 }
