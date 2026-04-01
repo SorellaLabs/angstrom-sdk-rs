@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use alloy_eips::BlockId;
 use alloy_network::Network;
 use alloy_primitives::{Address, TxHash};
@@ -17,7 +19,7 @@ pub trait PrimitivesFetcher<N: Network>: Send + Sync {
         call: IC
     ) -> eyre::Result<IC::Return>
     where
-        IC: SolCall + Send;
+        IC: SolCall + Send + Debug;
 
     async fn view_deploy_call<IC>(
         &self,

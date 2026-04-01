@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use alloy_eips::BlockId;
 use alloy_network::{Ethereum, EthereumWallet, Network, TxSigner};
 use alloy_primitives::{Address, Signature, TxHash};
@@ -100,7 +102,7 @@ where
         call: IC
     ) -> eyre::Result<IC::Return>
     where
-        IC: SolCall + Send
+        IC: SolCall + Send + Debug
     {
         self.eth_provider.view_call(block_id, contract, call).await
     }

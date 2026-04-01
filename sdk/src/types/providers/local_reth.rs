@@ -7,6 +7,7 @@ use alloy_provider::RootProvider;
 use alloy_rpc_types::{Block, Filter, Log, TransactionRequest};
 use alloy_sol_types::{SolCall, SolType};
 use eth_network_exts::EthNetworkExt;
+use eyre::Context;
 use lib_reth::{
     EthApiTypes, ExecuteEvm,
     helpers::{EthBlocks, EthTransactions},
@@ -72,7 +73,7 @@ where
         call: IC
     ) -> eyre::Result<IC::Return>
     where
-        IC: SolCall + Send
+        IC: SolCall + Send + std::fmt::Debug
     {
         let chain_id = <N as EthNetworkExt>::CHAIN_ID;
 
@@ -90,7 +91,9 @@ where
         let mut evm = empty_mainnet_revm(evm_db, chain_id, true);
         let data = evm.transact(tx)?.result.into_output();
 
-        Ok(IC::abi_decode_returns(&data.unwrap_or_default())?)
+        Ok(IC::abi_decode_returns(&data.clone().unwrap_or_default()).wrap_err(format!(
+            "block_id: {block_id:?}, contract: {contract:?}, call: {call:?}\noutput: {data:?}"
+        ))?)
     }
 
     async fn view_deploy_call<IC>(
