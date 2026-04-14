@@ -335,7 +335,7 @@ mod user_api_tests {
             .await
             .unwrap();
 
-        assert_eq!(position_liquidity.len(), 1);
+        assert_eq!(position_liquidity.len(), 2);
     }
 
     #[tokio::test]
@@ -351,10 +351,10 @@ mod user_api_tests {
         assert_eq!(
             results,
             LiquidityPositionFees {
-                position_liquidity:   590304962892303,
-                angstrom_token0_fees: U256::from(256339146590766_u128),
-                uniswap_token0_fees:  U256::from(1754215834261727_u128),
-                uniswap_token1_fees:  U256::from(3705800_u128)
+                position_liquidity:   41433601053552,
+                angstrom_token0_fees: U256::ZERO,
+                uniswap_token0_fees:  U256::from(3143446492832_u128),
+                uniswap_token1_fees:  U256::from(25_u128)
             }
         );
     }
