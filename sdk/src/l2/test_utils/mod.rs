@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 pub mod valid_test_params;
 
 use alloy_primitives::{Address, address};
@@ -6,6 +8,7 @@ use alloy_primitives::{Address, address};
 use crate::types::providers::AlloyProviderWrapper;
 
 pub const BASE_USDC: Address = address!("0x833589fcd6edb6e08f4c7c32d4f71b54bda02913");
+pub const BASE_CB_BTC: Address = address!("0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf");
 
 pub fn base_eth_ws_url() -> String {
     dotenv::dotenv().ok();
