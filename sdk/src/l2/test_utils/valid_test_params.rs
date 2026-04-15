@@ -78,7 +78,8 @@ pub fn init_valid_position_params() -> ValidPositionTestParameters {
     let position_token_id = U256::from(2092345_u64);
 
     let position_manager_pool_map_key = [
-        209, 45, 59, 167, 107, 61, 204, 217, 165, 81, 245, 24, 103, 113, 217, 212, 254, 210, 138, 102, 18, 190, 176, 7, 243
+        209, 45, 59, 167, 107, 61, 204, 217, 165, 81, 245, 24, 103, 113, 217, 212, 254, 210, 138,
+        102, 18, 190, 176, 7, 243
     ];
 
     let pool_key = PoolManager::PoolKey {
