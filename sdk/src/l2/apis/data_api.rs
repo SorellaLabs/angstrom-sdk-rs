@@ -462,7 +462,8 @@ mod data_api_tests {
             .await
             .unwrap();
 
-        assert_eq!(modify_liquidity.len(), 1);
+        // The same transaction also added liquidity to the ETH/cbBTC pool.
+        assert_eq!(modify_liquidity.len(), 2);
     }
 
     #[tokio::test]
