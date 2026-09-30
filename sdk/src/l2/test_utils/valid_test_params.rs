@@ -32,7 +32,7 @@ pub struct ValidPositionTestParameters {
 
 #[cfg(not(feature = "local-reth"))]
 pub async fn init_valid_position_params_with_provider()
--> (AlloyProviderWrapper<op_alloy_network::Optimism>, ValidPositionTestParameters) {
+-> (AlloyProviderWrapper<base_common_network::Base>, ValidPositionTestParameters) {
     let params = init_valid_position_params();
     let provider = crate::l2::test_utils::eth_provider().await.unwrap();
 
