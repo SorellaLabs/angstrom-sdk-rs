@@ -1512,7 +1512,7 @@ checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
 [[package]]
 name = "angstrom"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy 2.4.1",
  "alloy-chains",
@@ -1551,7 +1551,7 @@ dependencies = [
 [[package]]
 name = "angstrom-amm-quoter"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "angstrom-types",
  "eyre",
@@ -1567,7 +1567,7 @@ dependencies = [
 [[package]]
 name = "angstrom-eth"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy 2.4.1",
  "angstrom-types",
@@ -1575,7 +1575,7 @@ dependencies = [
  "chrono",
  "futures",
  "futures-util",
- "itertools 0.15.0",
+ "itertools 0.10.5",
  "pade",
  "reth-ethereum-primitives",
  "reth-execution-types",
@@ -1594,7 +1594,7 @@ dependencies = [
 [[package]]
 name = "angstrom-metrics"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy-primitives",
  "angstrom-rpc-types",
@@ -1617,7 +1617,7 @@ dependencies = [
 [[package]]
 name = "angstrom-network"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy 2.4.1",
  "alloy-chains",
@@ -1627,7 +1627,7 @@ dependencies = [
  "eyre",
  "futures",
  "homedir",
- "itertools 0.15.0",
+ "itertools 0.10.5",
  "linked_hash_set",
  "once_cell",
  "order-pool",
@@ -1657,7 +1657,7 @@ dependencies = [
 [[package]]
 name = "angstrom-rpc"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy-primitives",
  "angstrom-amm-quoter",
@@ -1681,7 +1681,7 @@ dependencies = [
 [[package]]
 name = "angstrom-rpc-api"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy-primitives",
  "angstrom-rpc-types",
@@ -1695,7 +1695,7 @@ dependencies = [
 [[package]]
 name = "angstrom-rpc-types"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy-primitives",
  "angstrom-types-primitives",
@@ -1759,7 +1759,7 @@ dependencies = [
 [[package]]
 name = "angstrom-types"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy 2.4.1",
  "alloy-primitives",
@@ -1770,7 +1770,7 @@ dependencies = [
  "dashmap",
  "eyre",
  "futures",
- "itertools 0.15.0",
+ "itertools 0.10.5",
  "malachite",
  "pade",
  "reqwest 0.12.28",
@@ -1798,7 +1798,7 @@ dependencies = [
 [[package]]
 name = "angstrom-types-constants"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy-dyn-abi",
  "alloy-primitives",
@@ -1809,7 +1809,7 @@ dependencies = [
 [[package]]
 name = "angstrom-types-primitives"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy-consensus 2.4.1",
  "alloy-contract 2.4.1",
@@ -1825,12 +1825,12 @@ dependencies = [
  "bincode 1.3.3",
  "bytes",
  "clap",
- "convert_case 0.12.0",
+ "convert_case 0.10.0",
  "dashmap",
  "enr",
  "eyre",
  "hsm-signer",
- "itertools 0.15.0",
+ "itertools 0.10.5",
  "k256",
  "malachite",
  "pade",
@@ -1846,7 +1846,7 @@ dependencies = [
 [[package]]
 name = "angstrom-utils"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "futures",
  "tokio",
@@ -4529,7 +4529,7 @@ dependencies = [
 [[package]]
 name = "consensus"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy 2.4.1",
  "angstrom-eth",
@@ -5561,7 +5561,7 @@ dependencies = [
 [[package]]
 name = "eth-network-exts"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/lib-eth?branch=update-base-mainnet#0bfd3dcc87e137c7a7e61b4d0dfe402879eec052"
+source = "git+https://github.com/SorellaLabs/lib-eth#311866587b533fea34a4ea7c587001924d2cc800"
 dependencies = [
  "alloy-network 2.4.1",
  "base-common-network",
@@ -5636,7 +5636,7 @@ dependencies = [
 [[package]]
 name = "exe-runners"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/lib-eth?branch=update-base-mainnet#0bfd3dcc87e137c7a7e61b4d0dfe402879eec052"
+source = "git+https://github.com/SorellaLabs/lib-eth#311866587b533fea34a4ea7c587001924d2cc800"
 dependencies = [
  "crossbeam-utils",
  "dashmap",
@@ -6453,7 +6453,7 @@ dependencies = [
 [[package]]
 name = "hsm-signer"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/hsm-signer?branch=feat%2Fupdate-reth#af160461176a33b8118af482742e5b7705ef3cd3"
+source = "git+https://github.com/SorellaLabs/hsm-signer#af160461176a33b8118af482742e5b7705ef3cd3"
 dependencies = [
  "alloy-consensus 2.4.1",
  "alloy-network 2.4.1",
@@ -7554,7 +7554,7 @@ dependencies = [
 [[package]]
 name = "lib-reth"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/lib-eth?branch=update-base-mainnet#0bfd3dcc87e137c7a7e61b4d0dfe402879eec052"
+source = "git+https://github.com/SorellaLabs/lib-eth#311866587b533fea34a4ea7c587001924d2cc800"
 dependencies = [
  "alloy-eips 2.4.1",
  "alloy-network 2.4.1",
@@ -7941,7 +7941,7 @@ dependencies = [
 [[package]]
 name = "matching-engine"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy 2.4.1",
  "alloy-primitives",
@@ -7951,7 +7951,7 @@ dependencies = [
  "eyre",
  "futures",
  "futures-util",
- "itertools 0.15.0",
+ "itertools 0.10.5",
  "rand 0.9.5",
  "rand_distr",
  "reth-tasks",
@@ -8704,7 +8704,7 @@ dependencies = [
 [[package]]
 name = "order-pool"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy 2.4.1",
  "angstrom-metrics",
@@ -14067,7 +14067,7 @@ dependencies = [
 [[package]]
 name = "telemetry"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy-primitives",
  "angstrom-eth",
@@ -14092,7 +14092,7 @@ dependencies = [
 [[package]]
 name = "telemetry-recorder"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "angstrom-types",
  "chrono",
@@ -14117,7 +14117,7 @@ dependencies = [
 [[package]]
 name = "testing-tools"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy 2.4.1",
  "alloy-chains",
@@ -14134,7 +14134,7 @@ dependencies = [
  "dashmap",
  "eyre",
  "futures",
- "itertools 0.15.0",
+ "itertools 0.10.5",
  "jsonrpsee",
  "matching-engine",
  "order-pool",
@@ -14919,7 +14919,7 @@ checksum = "eaea85b334db583fe3274d12b4cd1880032beab409c0d774be044d4480ab9a94"
 [[package]]
 name = "uni-v4"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom-v4.git?branch=update-base-mainnet#3fc50fb5e088a0bf499d6ec10eb26469c77082a8"
+source = "git+https://github.com/SorellaLabs/angstrom-v4.git#0131f1332dab6686cd548cb2475d4ba2ed6a0be2"
 dependencies = [
  "uni-v4-common",
  "uni-v4-structure",
@@ -14929,7 +14929,7 @@ dependencies = [
 [[package]]
 name = "uni-v4-common"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom-v4.git?branch=update-base-mainnet#3fc50fb5e088a0bf499d6ec10eb26469c77082a8"
+source = "git+https://github.com/SorellaLabs/angstrom-v4.git#0131f1332dab6686cd548cb2475d4ba2ed6a0be2"
 dependencies = [
  "alloy-contract 2.4.1",
  "alloy-primitives",
@@ -14945,14 +14945,14 @@ dependencies = [
 [[package]]
 name = "uni-v4-structure"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom-v4.git?branch=update-base-mainnet#3fc50fb5e088a0bf499d6ec10eb26469c77082a8"
+source = "git+https://github.com/SorellaLabs/angstrom-v4.git#0131f1332dab6686cd548cb2475d4ba2ed6a0be2"
 dependencies = [
  "alloy-network 2.4.1",
  "alloy-primitives",
  "alloy-sol-types",
  "base-common-network",
  "eyre",
- "itertools 0.11.0",
+ "itertools 0.10.5",
  "malachite",
  "serde",
  "uniswap_v3_math",
@@ -14961,7 +14961,7 @@ dependencies = [
 [[package]]
 name = "uni-v4-upkeeper"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom-v4.git?branch=update-base-mainnet#3fc50fb5e088a0bf499d6ec10eb26469c77082a8"
+source = "git+https://github.com/SorellaLabs/angstrom-v4.git#0131f1332dab6686cd548cb2475d4ba2ed6a0be2"
 dependencies = [
  "alloy-consensus 2.4.1",
  "alloy-contract 2.4.1",
@@ -14973,10 +14973,10 @@ dependencies = [
  "alloy-sol-types",
  "async-trait",
  "base-common-network",
- "convert_case 0.12.0",
+ "convert_case 0.10.0",
  "dashmap",
  "futures",
- "itertools 0.11.0",
+ "itertools 0.10.5",
  "jsonrpsee",
  "serde",
  "thiserror 1.0.69",
@@ -15031,7 +15031,7 @@ checksum = "ebc1c04c71510c7f702b52b7c350734c9ff1295c464a03335b00bb84fc54f853"
 [[package]]
 name = "uniswap-storage"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/lib-eth?branch=update-base-mainnet#0bfd3dcc87e137c7a7e61b4d0dfe402879eec052"
+source = "git+https://github.com/SorellaLabs/lib-eth#311866587b533fea34a4ea7c587001924d2cc800"
 dependencies = [
  "alloy-eips 2.4.1",
  "alloy-network 2.4.1",
@@ -15055,7 +15055,7 @@ dependencies = [
 [[package]]
 name = "uniswap-storage-constants"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/lib-eth?branch=update-base-mainnet#0bfd3dcc87e137c7a7e61b4d0dfe402879eec052"
+source = "git+https://github.com/SorellaLabs/lib-eth#311866587b533fea34a4ea7c587001924d2cc800"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -15064,20 +15064,20 @@ dependencies = [
 [[package]]
 name = "uniswap-v4"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy 2.4.1",
  "alloy-primitives",
  "angstrom-eth",
  "angstrom-types",
  "arraydeque",
- "convert_case 0.12.0",
+ "convert_case 0.10.0",
  "dashmap",
  "eyre",
  "futures",
  "futures-util",
  "hex",
- "itertools 0.15.0",
+ "itertools 0.10.5",
  "malachite",
  "rand 0.9.5",
  "rayon",
@@ -15197,7 +15197,7 @@ dependencies = [
 [[package]]
 name = "validation"
 version = "0.1.0"
-source = "git+https://github.com/SorellaLabs/angstrom.git?branch=feat%2Fupdate-reth#e38356b87139911f944ccefc4354099a764abe58"
+source = "git+https://github.com/SorellaLabs/angstrom.git#98216596f3df0e40f9558dada56528f6ae6bb25a"
 dependencies = [
  "alloy 2.4.1",
  "angstrom-metrics",
