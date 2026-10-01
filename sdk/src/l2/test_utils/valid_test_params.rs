@@ -70,8 +70,8 @@ pub fn init_valid_position_params() -> ValidPositionTestParameters {
     let chain_consts = ANGSTROM_L2_CONSTANTS_BASE_MAINNET;
     let _ = try_init_with_chain_id(chain_consts.chain_id());
 
-    // Owner at `block_for_liquidity_add`; the position was later transferred to the
-    // multisig.
+    // Owner at `block_for_liquidity_add`; the position was later transferred to
+    // the multisig.
     let owner = address!("0xbb660CaA10c6b28BDf44E10351C7FDE561D87d6b");
     let pool_id = b256!("0x922154690ae4d86388bd85aa62e654ee7eb8c70d736025525b8dfcfd4d82eaa1");
     let hook_address = address!("0x02C17501E53fBB7EB0E243c74AfC6a9e01C265CF");
