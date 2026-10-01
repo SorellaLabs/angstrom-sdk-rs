@@ -9,7 +9,7 @@ use alloy_sol_types::{SolCall, SolType};
 use eth_network_exts::EthNetworkExt;
 use eyre::Context;
 use lib_reth::{
-    EthApiTypes, ExecuteEvm,
+    EthApiTypes, ExecuteEvm, RpcTypes,
     helpers::{EthBlocks, EthTransactions},
     reth_libmdbx::{NodeClientSpec, RethNodeClient},
     traits::{EthRevm, EthRevmParams, EthStream, empty_mainnet_revm}
@@ -50,7 +50,12 @@ impl<N> PrimitivesFetcher<N::AlloyNetwork> for RethDbProviderWrapper<N>
 where
     N: EthNetworkExt,
     N::RethNode: NodeClientSpec,
-    <N::RethNode as NodeClientSpec>::Api: EthApiTypes<NetworkTypes = N::AlloyNetwork>,
+    // Base's reth API reports `BaseRpcTypes`, a separate type from the `Base` network, so the
+    // response types are matched instead of the network type itself.
+    <<N::RethNode as NodeClientSpec>::Api as EthApiTypes>::NetworkTypes: RpcTypes<
+            Header = <N::AlloyNetwork as Network>::HeaderResponse,
+            TransactionResponse = <N::AlloyNetwork as Network>::TransactionResponse
+        >,
     <N::AlloyNetwork as Network>::TransactionRequest:
         AsRef<TransactionRequest> + AsMut<TransactionRequest>,
     N::AlloyNetwork: Network<

@@ -6,7 +6,7 @@ resolver = "2"
 [workspace.package]
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.88.0"
+rust-version = "1.96.0"
 license = "BUSL-1.1"
 exclude = [".github/"]
 
@@ -14,24 +14,25 @@ exclude = [".github/"]
 
 angstrom-sdk = { path = "./sdk" }
 
-alloy-consensus = { version = "1.8.2", default-features = false }
-alloy-contract = { version = "1.8.2", default-features = false }
-alloy-eips = { version = "1.8.2", default-features = false }
-alloy-json-rpc = { version = "1.8.2", default-features = false }
-alloy-network = { version = "1.8.2", default-features = false }
-alloy-node-bindings = { version = "1.8.2", default-features = false }
-alloy-primitives = { version = "1.5.6", default-features = false, features = ["map-foldhash"] }
-alloy-provider = { version = "1.8.2", default-features = false, features = ["reqwest", "anvil-api"] }
-alloy-rpc-types = { version = "1.8.2", default-features = false, features = ["eth"] }
-alloy-signer = { version = "1.8.2", default-features = false }
-alloy-signer-local = { version = "1.8.2", default-features = false }
-alloy-sol-types = "1.5.6"
-alloy-transport = { version = "1.8.2", default-features = false }
+alloy-consensus = { version = "2.3.0", default-features = false }
+alloy-contract = { version = "2.3.0", default-features = false }
+alloy-eips = { version = "2.3.0", default-features = false }
+alloy-json-rpc = { version = "2.3.0", default-features = false }
+alloy-network = { version = "2.3.0", default-features = false }
+alloy-node-bindings = { version = "2.3.0", default-features = false }
+alloy-primitives = { version = "1.6.1", default-features = false, features = ["map-foldhash"] }
+alloy-provider = { version = "2.3.0", default-features = false, features = ["reqwest", "anvil-api"] }
+alloy-rpc-types = { version = "2.3.0", default-features = false, features = ["eth"] }
+alloy-signer = { version = "2.3.0", default-features = false }
+alloy-signer-local = { version = "2.3.0", default-features = false }
+alloy-sol-types = "1.6.1"
+alloy-transport = { version = "2.3.0", default-features = false }
 angstrom-rpc-api = { git = "https://github.com/SorellaLabs/angstrom.git" }
 angstrom-rpc-types = { git = "https://github.com/SorellaLabs/angstrom.git" }
 angstrom-types-primitives = { git = "https://github.com/SorellaLabs/angstrom.git" }
 async-trait = "0"
 auto_impl = "1.3"
+base-common-network = { git = "https://github.com/base/base", tag = "v1.4.2" }
 dotenv = "0.15"
 eth-network-exts = { git = "https://github.com/SorellaLabs/lib-eth", default-features = false }
 eyre = "0.6.12"
@@ -49,25 +50,18 @@ lib-reth = { git = "https://github.com/SorellaLabs/lib-eth", default-features = 
 ] }
 malachite = "0.4"
 malachite-q = "0.4"
-# op-alloy-network = { version = "0.24.0", default-features = false }
-op-alloy-network = { git = "https://github.com/ethereum-optimism/optimism", rev = "1e3ee25", default-features = false }
 pade = { git = "https://github.com/SorellaLabs/pade", version = "0.1.0" }
 paste = "1"
 rand = "0.9"
-reth-db = { git = "https://github.com/paradigmxyz/reth", version = "2.0.0", tag = "v2.0.0", default-features = false, features = [
-  "mdbx",
-] }
-reth-node-ethereum = { git = "https://github.com/paradigmxyz/reth", version = "2.0.0", tag = "v2.0.0" }
-reth-node-types = { git = "https://github.com/paradigmxyz/reth", version = "2.0.0", tag = "v2.0.0" }
-reth-provider = { git = "https://github.com/paradigmxyz/reth", version = "2.0.0", tag = "v2.0.0" }
-revm = { version = "36.0.0", features = [
+reth-provider = { git = "https://github.com/paradigmxyz/reth", tag = "v2.5.2" }
+revm = { version = "42.0.1", features = [
   "std",
   "secp256k1",
   "optional_balance_check",
   "optional_block_gas_limit",
   "c-kzg",
 ], default-features = false }
-revm-database = { version = "12.0.0", default-features = false }
+revm-database = { version = "42.0.0", default-features = false }
 rust-utils = { git = "https://github.com/jnoorchashm37/rust-utils.git" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -77,3 +71,37 @@ thiserror = "1.0"
 tokio = { version = "1", features = ["full"] }
 uni-v4 = { git = "https://github.com/SorellaLabs/angstrom-v4.git", default-features = false }
 uniswap-storage = { git = "https://github.com/SorellaLabs/lib-eth" }
+uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git" }
+
+# The Base crates build against Base's reth fork, so every reth crate the dependencies pull from
+# paradigmxyz/reth is redirected to it to link a single reth. This tag, the base/base tag and the
+# reth tag above (the release the fork is based on) move together.
+[patch."https://github.com/paradigmxyz/reth"]
+reth = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-chainspec = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-db = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-eth-wire = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-ethereum-primitives = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-evm = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-execution-types = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-metrics = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-net-banlist = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-network = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-network-api = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-network-p2p = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-network-peers = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-node-builder = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-node-ethereum = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-node-metrics = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-node-types = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-provider = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-revm = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-rpc = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-rpc-convert = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-rpc-eth-api = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-rpc-eth-types = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-storage-api = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-tasks = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-transaction-pool = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-trie = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }
+reth-trie-common = { git = "https://github.com/base/reth", tag = "base-v2.5.2.6" }

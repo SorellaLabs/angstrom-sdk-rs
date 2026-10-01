@@ -5,8 +5,8 @@ use alloy_network::Network;
 use alloy_primitives::Address;
 use alloy_sol_types::SolEvent;
 use angstrom_types_primitives::{contract_bindings::pool_manager::PoolManager, primitive::PoolId};
+use base_common_network::Base;
 use futures::TryStreamExt;
-use op_alloy_network::Optimism;
 use uni_v4::{
     BaselinePoolState, L2FeeConfiguration, PoolKey as UniPoolKey,
     baseline_pool_factory::INITIAL_TICKS_PER_SIDE,
@@ -193,7 +193,7 @@ pub trait AngstromL2DataApi<N: Network>:
         load_ticks: bool,
         block_id: BlockId,
         chain: AngstromL2Chain
-    ) -> eyre::Result<(u64, BaselinePoolStateWithKey<Optimism>)> {
+    ) -> eyre::Result<(u64, BaselinePoolStateWithKey<Base>)> {
         let pool_key = self.pool_key_by_pool_id(pool_id, block_id, chain).await?;
 
         let uni_pool_key = UniPoolKey {
@@ -285,7 +285,7 @@ pub trait AngstromL2DataApi<N: Network>:
         load_ticks: bool,
         block_id: BlockId,
         chain: AngstromL2Chain
-    ) -> eyre::Result<Vec<(u64, BaselinePoolStateWithKey<Optimism>)>> {
+    ) -> eyre::Result<Vec<(u64, BaselinePoolStateWithKey<Base>)>> {
         let pool_ids = self
             .all_pool_keys(block_id, chain)
             .await?
@@ -462,7 +462,8 @@ mod data_api_tests {
             .await
             .unwrap();
 
-        assert_eq!(modify_liquidity.len(), 1);
+        // The same transaction also added liquidity to the ETH/cbBTC pool.
+        assert_eq!(modify_liquidity.len(), 2);
     }
 
     #[tokio::test]

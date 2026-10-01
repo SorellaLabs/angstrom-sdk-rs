@@ -351,10 +351,10 @@ mod user_api_tests {
         assert_eq!(
             results,
             LiquidityPositionFees {
-                position_liquidity:   41433601053552,
+                position_liquidity:   727070318961784,
                 angstrom_token0_fees: U256::ZERO,
-                uniswap_token0_fees:  U256::from(3143446492832_u128),
-                uniswap_token1_fees:  U256::from(25_u128)
+                uniswap_token0_fees:  U256::from(7370969208207_u128),
+                uniswap_token1_fees:  U256::ZERO
             }
         );
     }

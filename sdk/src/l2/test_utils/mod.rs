@@ -16,7 +16,7 @@ pub fn base_eth_ws_url() -> String {
 }
 
 #[cfg(not(feature = "local-reth"))]
-pub async fn eth_provider() -> eyre::Result<AlloyProviderWrapper<op_alloy_network::Optimism>> {
+pub async fn eth_provider() -> eyre::Result<AlloyProviderWrapper<base_common_network::Base>> {
     use alloy_provider::{Provider, RootProvider, WsConnect};
     use angstrom_types_primitives::try_init_with_chain_id;
     use eth_network_exts::{EthNetworkExt, base_mainnet::BaseMainnetExt};

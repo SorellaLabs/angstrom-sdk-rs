@@ -25,6 +25,7 @@ angstrom-rpc-types.workspace = true
 angstrom-types-primitives.workspace = true
 async-trait.workspace = true
 auto_impl.workspace = true
+base-common-network = { workspace = true, optional = true }
 dotenv.workspace = true
 eth-network-exts.workspace = true
 eyre.workspace = true
@@ -35,7 +36,6 @@ jsonrpsee-http-client.workspace = true
 jsonrpsee-ws-client.workspace = true
 lazy_static.workspace = true
 lib-reth = { workspace = true, optional = true }
-op-alloy-network = { workspace = true, optional = true }
 pade.workspace = true
 paste.workspace = true
 rand.workspace = true
@@ -55,7 +55,7 @@ revm = { workspace = true, features = ["alloydb"], default-features = false }
 revm-database.workspace = true
 serial_test.workspace = true
 testing-tools.workspace = true
-uniswap-v4 = { git = "https://github.com/SorellaLabs/angstrom.git" }
+uniswap-v4.workspace = true
 
 [build-dependencies]
 convert_case = "0"
@@ -69,4 +69,4 @@ local-reth = ["dep:lib-reth", "dep:revm", "lib-reth/mainnet-full", "uniswap-stor
 
 all-chains = ["l1", "l2"]
 l1 = ["uniswap-storage/l1-angstrom"]
-l2 = ["lib-reth/op-full", "dep:op-alloy-network", "uniswap-storage/l2-angstrom", "eth-network-exts/l2", "uni-v4/l2"]
+l2 = ["lib-reth/op-full", "dep:base-common-network", "uniswap-storage/l2-angstrom", "eth-network-exts/l2", "uni-v4/l2"]
